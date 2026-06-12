@@ -1,0 +1,1 @@
+- [SvelteKit Migration QA](project_sveltekit_migration.md) — migration Next.js→SvelteKit patterns, icon renames, PostCSS conflict, Svelte 4 syntax checks

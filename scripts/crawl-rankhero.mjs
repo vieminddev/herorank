@@ -1,14 +1,21 @@
 /**
  * Firecrawl Script — Crawl RankHero.com UI/UX Data (Fixed)
- * 
- * API Key: fc-d1241b9a22b94ab48b01a0c492a61166
+ *
+ * Requires the FIRECRAWL_API_KEY environment variable.
  */
 
 import FirecrawlApp from '@mendable/firecrawl-js';
 import fs from 'fs';
 import path from 'path';
 
-const API_KEY = 'fc-d1241b9a22b94ab48b01a0c492a61166';
+const API_KEY = process.env.FIRECRAWL_API_KEY;
+
+if (!API_KEY) {
+  console.error('Error: FIRECRAWL_API_KEY environment variable is not set.');
+  console.error('Set it before running, e.g. FIRECRAWL_API_KEY=fc-... node scripts/crawl-rankhero.mjs');
+  process.exit(1);
+}
+
 const app = new FirecrawlApp({ apiKey: API_KEY });
 
 const OUTPUT_DIR = path.join(process.cwd(), 'crawl-data');

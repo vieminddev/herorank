@@ -3,7 +3,14 @@
  */
 import FirecrawlApp from '@mendable/firecrawl-js';
 
-const API_KEY = 'fc-d1241b9a22b94ab48b01a0c492a61166';
+const API_KEY = process.env.FIRECRAWL_API_KEY;
+
+if (!API_KEY) {
+  console.error('Error: FIRECRAWL_API_KEY environment variable is not set.');
+  console.error('Set it before running, e.g. FIRECRAWL_API_KEY=fc-... node scripts/test-firecrawl.mjs');
+  process.exit(1);
+}
+
 const app = new FirecrawlApp({ apiKey: API_KEY });
 
 async function main() {
