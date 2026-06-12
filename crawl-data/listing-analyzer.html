@@ -1,0 +1,947 @@
+<!-- Source: https://www.rankhero.com/tools/etsy/listing-analyzer -->
+<!-- Scraped: 2026-06-12T06:55:01.332Z -->
+<!DOCTYPE html><html lang="en" class="h-full" data-theme="light">
+
+<body class="bg-base-200 antialiased h-full">
+  <el-dialog>
+    
+  </el-dialog>
+
+  <div class="flex min-h-screen flex-col pt-16">
+    <div class="fixed top-0 z-40 flex h-16 w-full shrink-0 items-center gap-x-4 border-b border-base-content bg-[#222f3e] dark:border-base-content/5 dark:bg-base-100 px-4  sm:gap-x-6 sm:px-6 lg:px-8">
+      <button type="button" command="show-modal" commandfor="sidebar" class="-m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer lg:hidden" aria-expanded="false">
+        <span class="sr-only">Open sidebar</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
+          <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+
+      <!-- Separator -->
+      <div aria-hidden="true" class="h-6 w-px bg-white lg:hidden"></div>
+
+      <div class="flex flex-1 items-center gap-x-4 self-stretch lg:gap-x-6">
+        <a href="https://www.rankhero.com/" class="flex items-center shrink-0">
+          <img src="https://www.rankhero.com/static/images/logo/rankhero-logo.svg" alt="RankHero" class="h-8 w-auto" width="300" height="150">
+          <span class="ml-2 text-xl md:text-xl text-white dark:text-base-content">RankHero</span>
+        </a>
+
+        <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto">
+          
+          
+          <a href="https://www.rankhero.com/pricing" class="hidden lg:inline-flex items-center gap-1.5 text-sm font-medium text-white dark:text-base-content hover:text-secondary dark:hover:text-secondary transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" class="size-4">
+              <path d="M423.5 117.2C419 118.9 416 123.2 416 128C416 132.8 419 137.1 423.5 138.8L480 160L501.2 216.5C502.9 221 507.2 224 512 224C516.8 224 521.1 221 522.8 216.5L544 160L600.5 138.8C605 137.1 608 132.8 608 128C608 123.2 605 118.9 600.5 117.2L544 96L522.8 39.5C521.1 35 516.8 32 512 32C507.2 32 502.9 35 501.2 39.5L480 96L423.5 117.2zM199.9 272.5L224 220.4L248.1 272.5C252.9 282.9 261.2 291.2 271.6 296L323.7 320.1L271.6 344.2C261.2 349 252.9 357.3 248.1 367.7L224 419.8L199.9 367.7C195.1 357.3 186.8 349 176.4 344.2L124.3 320L176.5 295.9C186.9 291.1 195.2 282.8 200 272.4zM197.6 163.1L156.4 252.4L67.1 293.6L66.5 293.9C62.6 295.7 54.2 299.6 41.3 305.5C35.6 308.1 32 313.8 32 320C32 326.2 35.6 331.9 41.3 334.5C54.2 340.4 62.5 344.3 66.5 346.1L67.1 346.4L156.4 387.6L197.6 476.9L197.9 477.5C199.7 481.4 203.6 489.8 209.5 502.7C212.1 508.4 217.8 512 224 512C230.2 512 235.9 508.4 238.5 502.7C252.9 471.6 253.6 470 291.6 387.7L380.9 346.5L381.5 346.2C385.4 344.4 393.8 340.5 406.7 334.6C412.4 332 416 326.3 416 320.1C416 313.9 412.4 308.2 406.7 305.6C375.6 291.2 374 290.5 291.7 252.5L250.5 163.2L250.2 162.6C248.4 158.7 244.5 150.3 238.6 137.4C236 131.7 230.3 128.1 224.1 128.1C217.9 128.1 212.2 131.7 209.6 137.4C195.8 167.2 198.1 162.4 197.7 163.2zM448 480L391.5 501.2C387 502.9 384 507.2 384 512C384 516.8 387 521.1 391.5 522.8L448 544L469.2 600.5C470.9 605 475.2 608 480 608C484.8 608 489.1 605 490.8 600.5L512 544L568.5 522.8C573 521.1 576 516.8 576 512C576 507.2 573 502.9 568.5 501.2L512 480L490.8 423.5C489.1 419 484.8 416 480 416C475.2 416 470.9 419 469.2 423.5L448 480z"></path>
+            </svg>
+            Upgrade
+          </a>
+          
+          <label class="swap swap-rotate -m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer">
+            <!-- this hidden checkbox controls the state -->
+            <input id="theme-toggle" type="checkbox" class="theme-controller" value="dark">
+
+            <!-- sun icon -->
+            <svg class="swap-off size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"></path>
+            </svg>
+
+            <!-- moon icon -->
+            <svg class="swap-on size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"></path>
+            </svg>
+          </label>
+          <!-- Separator -->
+          <div aria-hidden="true" class="hidden lg:block lg:h-6 lg:w-px bg-white lg:bg-white"></div>
+
+          
+          <a href="https://www.rankhero.com/auth/login" class="btn btn-accent btn-sm">Login</a>
+
+          
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Static sidebar for desktop -->
+    <div class="hidden bg-base-100 lg:fixed lg:top-16 lg:bottom-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
+      <!-- Sidebar component, swap this element with another sidebar if you like -->
+      <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-base-content/5 bg-base-100 px-6 pb-4 pt-0">
+        
+      </div>
+    </div>
+
+    <div class="flex flex-col flex-1 lg:pl-72">
+      <main class="py-4 sm:py-6 lg:py-8 bg-base-200 flex-1">
+        <div class="px-4 sm:px-6 lg:px-12 xl:px-16 container mx-auto">
+          <!--Alerts-->
+          <div class="">
+            
+            
+
+            
+            
+
+            
+          </div>
+
+          <!-- Toast container for auto-dismissing messages -->
+          <div id="flash-toast-container" class="toast toast-end toast-top top-20 z-50"></div>
+          
+          
+          
+          <!-- Your content -->
+          
+
+
+
+<!-- Hero -->
+<div class="mb-10">
+  <div class="max-w-7xl mx-auto">
+    
+
+    <div class="mt-6 flex items-start justify-between gap-8">
+      <div>
+        <h1 class="font-cabinet-grotesk text-5xl sm:text-6xl font-black tracking-tight leading-[1.02] text-base-content">
+          Etsy<br>
+          <span class="text-primary">Listing Analyzer.</span>
+        </h1>
+
+        <p class="mt-4 text-lg sm:text-xl text-base-content/70 leading-relaxed max-w-2xl">
+          Get instant feedback on any Etsy listing and clear fixes to improve visibility. Paste a listing URL or ID to start.
+        </p>
+      </div>
+
+      <svg class="hidden sm:block shrink-0 h-40 w-40 lg:h-48 lg:w-48 text-primary opacity-15" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+        <path d="M224 80C215.2 80 208 87.2 208 96L208 448C208 509.9 258.1 560 320 560C381.9 560 432 509.9 432 448L432 96C432 87.2 424.8 80 416 80L224 80zM160 96C160 60.7 188.7 32 224 32L416 32C451.3 32 480 60.7 480 96L480 448C480 536.4 408.4 608 320 608C231.6 608 160 536.4 160 448L160 96zM320 408C350.9 408 376 433.1 376 464C376 494.9 350.9 520 320 520C289.1 520 264 494.9 264 464C264 433.1 289.1 408 320 408zM376 320C376 350.9 350.9 376 320 376C289.1 376 264 350.9 264 320C264 289.1 289.1 264 320 264C350.9 264 376 289.1 376 320zM320 232C289.1 232 264 206.9 264 176C264 145.1 289.1 120 320 120C350.9 120 376 145.1 376 176C376 206.9 350.9 232 320 232zM344 320C344 306.7 333.3 296 320 296C306.7 296 296 306.7 296 320C296 333.3 306.7 344 320 344C333.3 344 344 333.3 344 320zM320 488C333.3 488 344 477.3 344 464C344 450.7 333.3 440 320 440C306.7 440 296 450.7 296 464C296 477.3 306.7 488 320 488z"></path>
+      </svg>
+    </div>
+
+    <form id="form" class="mt-10 flex flex-col sm:flex-row items-stretch sm:items-end gap-3" aria-label="Listing Analyzer Form" method="post">
+
+      <!-- Listing -->
+      <div class="flex-1">
+        <label for="search-query" class="block text-xs font-bold uppercase tracking-wider text-base-content/55 mb-1.5">
+          Listing URL or ID<span class="text-error ml-1 normal-case tracking-normal">(required)</span>
+        </label>
+        <div class="relative">
+          <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-base-content/45">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </g>
+            </svg>
+          </span>
+          <input id="search-query" name="search_query" type="text" required="" autocomplete="on" spellcheck="false" placeholder="Enter an Etsy listing URL or ID" class="w-full rounded-lg bg-base-100 border border-base-content/15 pl-12 pr-5 py-4 text-base placeholder:text-base-content/45 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition shadow-xs">
+        </div>
+      </div>
+
+      <button type="submit" id="submit-btn" class="rounded-lg bg-primary px-7 py-4 text-base font-bold text-primary-content cursor-pointer hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/25 transition shadow-xs disabled:cursor-not-allowed disabled:opacity-70">
+        Analyze
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Error Alert -->
+<div id="error" role="alert" class="hidden max-w-7xl mx-auto mb-8">
+  <div class="rounded-lg border border-error/20 bg-error/5 px-4 py-3 flex items-start gap-3">
+    <svg class="h-4 w-4 text-error mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <span id="error-content" class="flex-1 text-sm text-error"></span>
+    <button type="button" class="text-error/60 hover:text-error transition-colors shrink-0" aria-label="Close" data-dismiss-parent="#error">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Marketing -->
+<section id="marketing-section" class="max-w-7xl mx-auto mt-16 mb-16 space-y-16">
+  <!-- Overview -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Overview</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content max-w-2xl">Stop guessing why a listing isn't selling.</h2>
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-lg font-bold">What it does</h3>
+        <p class="mt-3 text-base-content/65 leading-relaxed">
+          Listing Analyzer pulls every listing element — title, tags, description, images, videos, materials — and grades each one against Etsy's best practices. You get a letter grade plus actionable feedback on what to fix first.
+        </p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-lg font-bold">Why it matters</h3>
+        <p class="mt-3 text-base-content/65 leading-relaxed">
+          Most listings look fine on the surface but quietly miss search visibility from a few fixable details. Audit any listing — yours or a competitor's — and you'll know exactly which levers to pull.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Features</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">Every listing element graded.</h2>
+
+    <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Instant optimization grade</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">A letter grade (A+ to F) summarizing how search-ready and buyer-clear the listing is — at a glance.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">SEO audit</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Spot the optimization gaps Etsy's search rewards: title structure, tag completeness, keyword positioning, and more.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Photo &amp; video audit</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Audit every image and video against Etsy's recommendations — number of photos, video usage, and presentation quality.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Clarity guidance</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Specific, actionable feedback to improve listing clarity, click-through rates, and conversion.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Description, tags, materials</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Each section graded individually with detailed completeness and quality feedback so you know exactly what to fix.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Review summary</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Read the rating distribution and a condensed summary of recent reviews to understand buyer sentiment quickly.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Sales &amp; revenue estimates</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Estimated total sales, revenue, faves, and views — plus a daily pace — so you can compare listings and spot momentum.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Listing details breakdown</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Quantity, currency, processing time, customizable, listing type, item dimensions — all the operational settings in one view.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Free, no signup needed</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Run audits without an account. Upgrade for higher daily limits and unrestricted use.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- How to use -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Getting started</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">How to use it.</h2>
+
+    <ol class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">01</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Enter a listing URL or ID</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Paste the full Etsy listing URL or just the listing ID number. Works for any public Etsy listing.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">02</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Wait for the analysis to load</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">We fetch fresh data from Etsy and grade every element of the listing — title, tags, description, images, videos, materials. Takes a few seconds.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">03</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Review the optimization grade</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Start with the overall letter grade, then drill into per-section scores to see which elements are pulling the grade down.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">04</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Apply the feedback</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Expand each section to see specific suggestions. Tackle the lowest-scoring sections first — small fixes across multiple areas usually give the biggest grade lift.</p>
+        </div>
+      </li>
+
+    </ol>
+  </div>
+
+  <!-- FAQ -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">FAQ</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">Frequently asked questions.</h2>
+    <div class="mt-8 rounded-lg border border-base-content/10 bg-base-100 divide-y divide-base-content/10 px-6">
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Is this tool free to use without an account?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Yes — fully free, no account or credit card required. There's a daily limit on free use; create an account or upgrade for higher daily limits and unrestricted analysis.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">What does the optimization grade mean?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">A letter grade from A+ to F summarizing how search-ready and buyer-clear the listing is. It blends signals across SEO, content, and media. Higher grades mean the listing is more discoverable and easier for buyers to understand.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Can I analyze my competitors' listings?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Yes. Any public Etsy listing — yours or a competitor's. Use the same data to see what's working in your niche and apply those insights to your own SEO, content, and media.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">How accurate are the sales and revenue estimates?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">They're estimates derived from Etsy's public signals — solid for relative comparison and trend-spotting, but not exact financials. Use them to gauge momentum, not to set financial projections.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">What should I do if my listing gets a low grade?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Expand each section to see specific feedback. Low grades usually mean missing or weak elements that limit search visibility or buyer clarity. Tackle the lowest-scoring areas first — small fixes across multiple sections usually compound into a big grade lift.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Does a higher grade guarantee more sales?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">A higher grade improves discoverability and buyer clarity — which both drive sales. But sales also depend on product quality, pricing, reviews, and demand. Optimization opens the door; the product and presentation close the sale.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">What's the difference between completeness and quality?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed"><span class="font-medium text-base-content">Completeness</span> = filling all the fields Etsy recommends (e.g., all 13 tag slots). <span class="font-medium text-base-content">Quality</span> = those fields being well-chosen. The analyzer scores both — which is why a listing can still grade poorly even with all 13 tags filled.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Why does the analysis take a few seconds?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">The analyzer pulls fresh data from Etsy and runs multiple checks across title structure, tag quality, description, images, and more. The wait gets you up-to-date insights instead of stale cached data.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- Video modal (kept on daisyUI for the dialog mechanics) -->
+
+
+
+<!-- Results -->
+<div id="results-section" class="hidden max-w-7xl mx-auto mb-16">
+
+  <!-- Listing hero card -->
+  <div id="listing-hero" class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden mb-4">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto py-6 md:py-8">
+      <div class="lg:grid lg:grid-cols-12 lg:gap-8 xl:gap-10 items-stretch">
+
+        <!-- Image with overall grade overlay -->
+        <div class="col-span-12 lg:col-span-5 flex justify-center items-stretch">
+          <div id="listing-hero-image" class="group relative w-full max-w-[520px] overflow-hidden rounded-lg aspect-4/5 sm:aspect-3/2 xl:aspect-16/10 max-h-[360px] lg:aspect-auto lg:max-h-none lg:h-full">
+            <img id="image-url" class="h-full w-full object-cover" src="https://placehold.co/520x360?text=No+Image" data-fallback-src="https://placehold.co/520x360?text=No+Image" alt="Listing preview">
+            <div id="listing-hero-overlay" class="pointer-events-none absolute inset-0">
+              <div class="absolute inset-0 bg-linear-to-t from-black/95 via-black/10 to-black/10 opacity-100 transition-opacity duration-300 group-hover:opacity-20"></div>
+              <div class="relative flex h-full flex-col justify-end p-4 text-base-100 opacity-100 transition-opacity duration-300 group-hover:opacity-0">
+                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-white/80">Optimization Grade</p>
+                <p id="overall-status" class="font-cabinet-grotesk mt-3 text-5xl font-black leading-none drop-shadow-lg text-base-100">—</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Title + meta + metrics -->
+        <div class="col-span-12 lg:col-span-7 mt-8 lg:mt-0 flex flex-col">
+          <div class="flex flex-col gap-1">
+            <h2 id="title" class="font-cabinet-grotesk text-2xl font-bold leading-tight text-base-content sm:text-2xl">
+              Apple iMac 24" All-In-One Computer, Apple M1, 8GB RAM, 256GB SSD, Mac OS, Pink
+            </h2>
+            <a id="shop-name" href="https://www.rankhero.com/tools/etsy/listing-analyzer#" class="inline-flex items-center text-sm font-bold text-primary hover:text-accent transition-colors" rel="noopener noreferrer" target="_blank">
+              Shop Name
+            </a>
+          </div>
+          <div class="mt-4 flex flex-wrap items-center gap-4 text-sm text-base-content/65">
+            <p id="price" class="font-cabinet-grotesk text-xl font-bold tabular-nums text-base-content">$1,249.99</p>
+            <div id="listing-rating-block" class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-2">
+                <div id="listing-rating-stars" class="rating rating-sm rating-half hidden" aria-label="Listing rating">
+                  <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="0.5" aria-label="0.5 star"></div>
+                  <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="1" aria-label="1 star"></div>
+                  <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="1.5" aria-label="1.5 star"></div>
+                  <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="2" aria-label="2 stars"></div>
+                  <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="2.5" aria-label="2.5 stars"></div>
+                  <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="3" aria-label="3 stars"></div>
+                  <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="3.5" aria-label="3.5 stars"></div>
+                  <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="4" aria-label="4 stars"></div>
+                  <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="4.5" aria-label="4.5 stars"></div>
+                  <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="5" aria-label="5 stars"></div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span id="listing-rating-average" class="text-sm font-medium text-base-content tabular-nums">No reviews yet</span>
+                  <span id="listing-rating-count" class="text-sm text-base-content/55 hidden tabular-nums">(0)</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+                <path d="M216 64C229.3 64 240 74.7 240 88L240 128L400 128L400 88C400 74.7 410.7 64 424 64C437.3 64 448 74.7 448 88L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 88C192 74.7 202.7 64 216 64zM216 176L160 176C151.2 176 144 183.2 144 192L144 240L496 240L496 192C496 183.2 488.8 176 480 176L216 176zM144 288L144 480C144 488.8 151.2 496 160 496L480 496C488.8 496 496 488.8 496 480L496 288L144 288z"></path>
+              </svg>
+              <span id="date-created">—</span>
+            </div>
+            <a id="view-on-etsy" href="https://www.rankhero.com/tools/etsy/listing-analyzer#" target="_blank" rel="noopener noreferrer" aria-label="View this listing on Etsy" class="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-base-content/15 bg-base-100 px-3 py-1.5 text-xs font-bold text-base-content/75 hover:border-base-content/30 hover:text-base-content cursor-pointer transition shadow-xs">
+              <svg class="size-3.5" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+                <path d="M354.4 83.8C359.4 71.8 371.1 64 384 64L544 64C561.7 64 576 78.3 576 96L576 256C576 268.9 568.2 280.6 556.2 285.6C544.2 290.6 530.5 287.8 521.3 278.7L464 221.3L310.6 374.6C298.1 387.1 277.8 387.1 265.3 374.6C252.8 362.1 252.8 341.8 265.3 329.3L418.7 176L361.4 118.6C352.2 109.4 349.5 95.7 354.5 83.7zM64 240C64 195.8 99.8 160 144 160L224 160C241.7 160 256 174.3 256 192C256 209.7 241.7 224 224 224L144 224C135.2 224 128 231.2 128 240L128 496C128 504.8 135.2 512 144 512L400 512C408.8 512 416 504.8 416 496L416 416C416 398.3 430.3 384 448 384C465.7 384 480 398.3 480 416L480 496C480 540.2 444.2 576 400 576L144 576C99.8 576 64 540.2 64 496L64 240z"></path>
+              </svg>
+              <span>View on Etsy</span>
+            </a>
+          </div>
+
+          <section id="listing-hero-metrics" class="mt-4 grid grid-cols-1 sm:grid-cols-1 gap-3 text-xs" data-card-section="metrics"></section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto py-3 mt-0 pt-0 pb-4">
+      <div class="inline-flex rounded-lg bg-base-200 border border-base-content/10 p-1" role="tablist" aria-labelledby="listing-sections-label">
+        <input type="radio" name="listing_overview_tabs" id="lo-tab-overview" class="peer/loverview sr-only" aria-label="Overview" aria-controls="overview-section" data-section-target="overview" checked="">
+        <label for="lo-tab-overview" class="cursor-pointer px-4 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/loverview:bg-base-100 peer-checked/loverview:text-primary peer-checked/loverview:shadow-xs transition-colors">Overview</label>
+
+        <input type="radio" name="listing_overview_tabs" id="lo-tab-reviews" class="peer/lreviews sr-only pointer-events-none opacity-50" aria-label="Reviews" aria-controls="reviews-section" data-section-target="reviews" disabled="" aria-disabled="true">
+        <label for="lo-tab-reviews" class="cursor-pointer px-4 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/lreviews:bg-base-100 peer-checked/lreviews:text-primary peer-checked/lreviews:shadow-xs transition-colors">Reviews</label>
+
+        <input type="radio" name="listing_overview_tabs" id="lo-tab-about" class="peer/labout sr-only" aria-label="About" aria-controls="about-section" data-section-target="about">
+        <label for="lo-tab-about" class="cursor-pointer px-4 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/labout:bg-base-100 peer-checked/labout:text-primary peer-checked/labout:shadow-xs transition-colors">About</label>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Overview Tab -->
+  <div id="overview-section" class="mt-6 space-y-4" aria-hidden="false">
+
+    <!-- Stat cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-base-content/55">Estimated Sales</p>
+        <p id="estimated-sales" class="font-cabinet-grotesk mt-3 text-2xl font-bold tabular-nums leading-tight">26,524</p>
+        <p id="sales-per-day" class="mt-1 text-xs text-base-content/55">884 per day</p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-base-content/55">Estimated Revenue</p>
+        <p id="estimated-revenue" class="font-cabinet-grotesk mt-3 text-2xl font-bold tabular-nums leading-tight">26,524</p>
+        <p id="revenue-per-day" class="mt-1 text-xs text-base-content/55">884 per day</p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-base-content/55">Faves</p>
+        <p id="faves" class="font-cabinet-grotesk mt-3 text-2xl font-bold tabular-nums leading-tight">26,524</p>
+        <p id="faves-per-day" class="mt-1 text-xs text-base-content/55">884 per day</p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-base-content/55">Views</p>
+        <p id="views" class="font-cabinet-grotesk mt-3 text-2xl font-bold tabular-nums leading-tight">26,524</p>
+        <p id="views-per-day" class="mt-1 text-xs text-base-content/55">884 per day</p>
+      </div>
+    </div>
+
+    <!-- Score collapse cards -->
+    <div class="grid grid-cols-1 gap-4">
+
+      <div class="collapse collapse-arrow rounded-lg bg-base-100 border border-base-content/10" id="title-card">
+        <input type="checkbox" id="title-card-toggle" class="peer" checked="" aria-controls="title-card-content">
+        <div class="collapse-title items-center justify-between gap-4 px-6 py-4 pr-12 sm:pr-16 text-base-content">
+          <label id="title-card-label" for="title-card-toggle" class="flex w-full cursor-pointer items-center gap-3 sm:gap-4">
+            <div class="space-y-2 w-full">
+              <div class="flex items-center justify-between gap-3">
+                <span class="font-cabinet-grotesk text-lg font-bold">Title</span>
+                <span id="title-score" data-base-class="font-cabinet-grotesk text-base font-bold tabular-nums" class="font-cabinet-grotesk text-base font-bold tabular-nums text-base-content">—</span>
+              </div>
+              <progress id="title-progress" class="progress h-1 w-full" max="100" value="0" data-progress-base-class="progress h-1 w-full"></progress>
+            </div>
+          </label>
+        </div>
+        <div id="title-card-content" class="collapse-content px-6 pb-0" aria-labelledby="title-card-label">
+          <div class="space-y-5">
+            <p id="title-metrics" class="text-sm text-base-content/65"></p>
+            <div class="rounded-lg bg-base-200/60 p-5 pb-6 relative">
+              <h2 id="title2" class="text-lg font-medium leading-relaxed text-base-content"></h2>
+              <span id="title-length" class="pointer-events-none absolute bottom-2 right-3 text-xs font-medium text-base-content/55 opacity-0 transition-opacity"></span>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-base-content/55 mb-2">Feedback</h3>
+              <div class="rounded-lg bg-base-200/60 p-4">
+                <ul class="space-y-3" id="title-feedback-groups">
+                  <li id="title-clarity-panel" class="rounded-lg bg-base-100 px-4 py-4 border border-base-content/10">
+                    <div class="flex items-center gap-3 mb-3">
+                      <span id="title-clarity-status-dot" class="inline-flex h-3.5 w-3.5 shrink-0 rounded-full bg-base-300" aria-hidden="true"></span>
+                      <p class="text-base font-bold text-base-content flex items-center gap-1">
+                        <span>Clarity</span>
+                        <span class="tooltip tooltip-right" data-tip="Benefits click-through-rate and conversions" tabindex="0" aria-label="Benefits click-through-rate and conversions">
+                          <svg class="h-4 w-4 text-base-content/45" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+                            <path fill="currentColor" d="M528 320C528 205.1 434.9 112 320 112C205.1 112 112 205.1 112 320C112 434.9 205.1 528 320 528C434.9 528 528 434.9 528 320zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM320 240C302.3 240 288 254.3 288 272C288 285.3 277.3 296 264 296C250.7 296 240 285.3 240 272C240 227.8 275.8 192 320 192C364.2 192 400 227.8 400 272C400 319.2 364 339.2 344 346.5L344 350.3C344 363.6 333.3 374.3 320 374.3C306.7 374.3 296 363.6 296 350.3L296 342.2C296 321.7 310.8 307 326.1 302C332.5 299.9 339.3 296.5 344.3 291.7C348.6 287.5 352 281.7 352 272.1C352 254.4 337.7 240.1 320 240.1zM288 432C288 414.3 302.3 400 320 400C337.7 400 352 414.3 352 432C352 449.7 337.7 464 320 464C302.3 464 288 449.7 288 432z"></path>
+                          </svg>
+                        </span>
+                      </p>
+                    </div>
+                    <ul id="title-clarity-feedback" class="space-y-2 pl-6"></ul>
+                    <p id="title-clarity-feedback-empty" class="hidden text-sm text-base-content/55">No clarity feedback yet.</p>
+                  </li>
+                  <li id="title-seo-panel" class="rounded-lg bg-base-100 px-4 py-4 border border-base-content/10">
+                    <div class="flex items-center gap-3 mb-3">
+                      <span id="title-seo-status-dot" class="inline-flex h-3.5 w-3.5 shrink-0 rounded-full bg-base-300" aria-hidden="true"></span>
+                      <p class="text-base font-bold text-base-content flex items-center gap-1">
+                        <span>SEO</span>
+                        <span class="tooltip tooltip-right" data-tip="Benefits discoverability in search" tabindex="0" aria-label="Benefits discoverability in search">
+                          <svg class="h-4 w-4 text-base-content/45" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+                            <path fill="currentColor" d="M528 320C528 205.1 434.9 112 320 112C205.1 112 112 205.1 112 320C112 434.9 205.1 528 320 528C434.9 528 528 434.9 528 320zM64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320zM320 240C302.3 240 288 254.3 288 272C288 285.3 277.3 296 264 296C250.7 296 240 285.3 240 272C240 227.8 275.8 192 320 192C364.2 192 400 227.8 400 272C400 319.2 364 339.2 344 346.5L344 350.3C344 363.6 333.3 374.3 320 374.3C306.7 374.3 296 363.6 296 350.3L296 342.2C296 321.7 310.8 307 326.1 302C332.5 299.9 339.3 296.5 344.3 291.7C348.6 287.5 352 281.7 352 272.1C352 254.4 337.7 240.1 320 240.1zM288 432C288 414.3 302.3 400 320 400C337.7 400 352 414.3 352 432C352 449.7 337.7 464 320 464C302.3 464 288 449.7 288 432z"></path>
+                          </svg>
+                        </span>
+                      </p>
+                    </div>
+                    <ul id="title-seo-feedback" class="space-y-2 pl-6"></ul>
+                    <p id="title-seo-feedback-empty" class="hidden text-sm text-base-content/55">No SEO feedback yet.</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="py-5">
+              <a class="text-xs font-bold text-primary hover:text-accent transition-colors flex items-center justify-between" href="https://www.rankhero.com/tools/etsy/title-generator" target="_blank">
+                <span>Need help writing titles?</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
+                  <path d="M601 337C610.4 327.6 610.4 312.4 601 303.1L465 167C455.6 157.6 440.4 157.6 431.1 167C421.8 176.4 421.7 191.6 431.1 200.9L526.1 295.9L56 295.9C42.7 295.9 32 306.6 32 319.9C32 333.2 42.7 343.9 56 343.9L526.1 343.9L431.1 438.9C421.7 448.3 421.7 463.5 431.1 472.8C440.5 482.1 455.7 482.2 465 472.8L601 337z"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapse collapse-arrow rounded-lg bg-base-100 border border-base-content/10" id="tags-card">
+        <input type="checkbox" id="tags-card-toggle" class="peer" aria-controls="tags-card-content">
+        <div class="collapse-title items-center justify-between gap-4 px-6 py-4 pr-12 sm:pr-16 text-base-content">
+          <label id="tags-card-label" for="tags-card-toggle" class="flex w-full cursor-pointer items-center gap-3 sm:gap-4">
+            <div class="space-y-2 w-full">
+              <div class="flex items-center justify-between gap-3">
+                <span class="font-cabinet-grotesk text-lg font-bold">Tags</span>
+                <span id="tags-score" data-base-class="font-cabinet-grotesk text-base font-bold tabular-nums" class="font-cabinet-grotesk text-base font-bold tabular-nums text-base-content">—</span>
+              </div>
+              <progress id="tags-progress" class="progress h-1 w-full" max="100" value="0" data-progress-base-class="progress h-1 w-full"></progress>
+            </div>
+          </label>
+        </div>
+        <div id="tags-card-content" class="collapse-content px-6 pb-0" aria-labelledby="tags-card-label">
+          <div class="space-y-5">
+            <p id="tags-metrics" class="text-sm text-base-content/65"></p>
+            <div class="rounded-lg bg-base-200/60 p-5 pb-6 relative">
+              <div id="tags-list" class="flex flex-wrap gap-2"></div>
+              <span id="tags-length" class="pointer-events-none absolute bottom-2 right-3 text-xs font-medium text-base-content/55 opacity-0 transition-opacity"></span>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-base-content/55 mb-2">Feedback</h3>
+              <div class="rounded-lg bg-base-200/60 p-4">
+                <ul id="tags-feedback" class="space-y-2"></ul>
+                <p id="tags-feedback-empty" class="hidden text-sm text-base-content/55">No feedback available.</p>
+              </div>
+            </div>
+            <div class="py-5">
+              <a class="text-xs font-bold text-primary hover:text-accent transition-colors flex items-center justify-between" href="https://www.rankhero.com/tools/etsy/tag-generator" target="_blank">
+                <span>Need help writing tags?</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
+                  <path d="M601 337C610.4 327.6 610.4 312.4 601 303.1L465 167C455.6 157.6 440.4 157.6 431.1 167C421.8 176.4 421.7 191.6 431.1 200.9L526.1 295.9L56 295.9C42.7 295.9 32 306.6 32 319.9C32 333.2 42.7 343.9 56 343.9L526.1 343.9L431.1 438.9C421.7 448.3 421.7 463.5 431.1 472.8C440.5 482.1 455.7 482.2 465 472.8L601 337z"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapse collapse-arrow rounded-lg bg-base-100 border border-base-content/10" id="images-card">
+        <input type="checkbox" id="images-card-toggle" class="peer" aria-controls="images-card-content">
+        <div class="collapse-title items-center justify-between gap-4 px-6 py-4 pr-12 sm:pr-16 text-base-content">
+          <label id="images-card-label" for="images-card-toggle" class="flex w-full cursor-pointer items-center gap-3 sm:gap-4">
+            <div class="space-y-2 w-full">
+              <div class="flex items-center justify-between gap-3">
+                <span class="font-cabinet-grotesk text-lg font-bold">Images</span>
+                <span id="images-score" data-base-class="font-cabinet-grotesk text-base font-bold tabular-nums" class="font-cabinet-grotesk text-base font-bold tabular-nums text-base-content">—</span>
+              </div>
+              <progress id="images-progress" class="progress h-1 w-full" max="100" value="0" data-progress-base-class="progress h-1 w-full"></progress>
+            </div>
+          </label>
+        </div>
+        <div id="images-card-content" class="collapse-content px-6 pb-0" aria-labelledby="images-card-label">
+          <div class="space-y-5">
+            <p id="images-metrics" class="text-sm text-base-content/65"></p>
+            <div class="rounded-lg bg-base-200/60 p-5 pb-8 relative">
+              <div id="images-list" class="grid grid-cols-5 gap-3 sm:grid-cols-10"></div>
+              <span id="images-length" class="pointer-events-none absolute bottom-2 right-3 text-xs font-medium text-base-content/55 opacity-0 transition-opacity"></span>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-base-content/55 mb-2">Feedback</h3>
+              <div class="rounded-lg bg-base-200/60 p-4 mb-6">
+                <ul id="images-feedback" class="space-y-2"></ul>
+                <p id="images-feedback-empty" class="hidden text-sm text-base-content/55">No feedback available.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapse collapse-arrow rounded-lg bg-base-100 border border-base-content/10" id="videos-card">
+        <input type="checkbox" id="videos-card-toggle" class="peer" aria-controls="videos-card-content">
+        <div class="collapse-title items-center justify-between gap-4 px-6 py-4 pr-12 sm:pr-16 text-base-content">
+          <label id="videos-card-label" for="videos-card-toggle" class="flex w-full cursor-pointer items-center gap-3 sm:gap-4">
+            <div class="space-y-2 w-full">
+              <div class="flex items-center justify-between gap-3">
+                <span class="font-cabinet-grotesk text-lg font-bold">Videos</span>
+                <span id="videos-score" data-base-class="font-cabinet-grotesk text-base font-bold tabular-nums" class="font-cabinet-grotesk text-base font-bold tabular-nums text-base-content">—</span>
+              </div>
+              <progress id="videos-progress" class="progress h-1 w-full" max="100" value="0" data-progress-base-class="progress h-1 w-full"></progress>
+            </div>
+          </label>
+        </div>
+        <div id="videos-card-content" class="collapse-content px-6 pb-0" aria-labelledby="videos-card-label">
+          <div class="space-y-5">
+            <p id="videos-metrics" class="text-sm text-base-content/65"></p>
+            <div class="rounded-lg bg-base-200/60 p-5 pb-6 relative">
+              <div id="videos-list" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <p class="col-span-full text-center text-sm text-base-content/55">No listing videos available.</p>
+              </div>
+              <span id="videos-length" class="pointer-events-none absolute bottom-2 right-3 text-xs font-medium text-base-content/55 opacity-0 transition-opacity"></span>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-base-content/55 mb-2">Feedback</h3>
+              <div class="rounded-lg bg-base-200/60 p-4 mb-6">
+                <ul id="videos-feedback" class="space-y-2"></ul>
+                <p id="videos-feedback-empty" class="hidden text-sm text-base-content/55">No feedback available.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapse collapse-arrow rounded-lg bg-base-100 border border-base-content/10" id="description-card">
+        <input type="checkbox" id="description-card-toggle" class="peer" aria-controls="description-card-content">
+        <div class="collapse-title items-center justify-between gap-4 px-6 py-4 pr-12 sm:pr-16 text-base-content">
+          <label id="description-card-label" for="description-card-toggle" class="flex w-full cursor-pointer items-center gap-3 sm:gap-4">
+            <div class="space-y-2 w-full">
+              <div class="flex items-center justify-between gap-3">
+                <span class="font-cabinet-grotesk text-lg font-bold">Description</span>
+                <span id="description-score" data-base-class="font-cabinet-grotesk text-base font-bold tabular-nums" class="font-cabinet-grotesk text-base font-bold tabular-nums text-base-content">—</span>
+              </div>
+              <progress id="description-progress" class="progress h-1 w-full" max="100" value="0" data-progress-base-class="progress h-1 w-full"></progress>
+            </div>
+          </label>
+        </div>
+        <div id="description-card-content" class="collapse-content px-6 pb-0" aria-labelledby="description-card-label">
+          <div class="space-y-5">
+            <p id="description-metrics" class="text-sm text-base-content/65 hidden"></p>
+            <div class="rounded-lg bg-base-200/60 p-5 pb-6 relative">
+              <div id="description-content" class="space-y-3 text-sm leading-relaxed text-base-content">
+                <p class="text-base-content/55">No description available.</p>
+              </div>
+              <span id="description-length" class="pointer-events-none absolute bottom-2 right-3 text-xs font-medium text-base-content/55 opacity-0 transition-opacity"></span>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-base-content/55 mb-2">Feedback</h3>
+              <div class="rounded-lg bg-base-200/60 p-4">
+                <ul id="description-feedback" class="space-y-2"></ul>
+                <p id="description-feedback-empty" class="hidden text-sm text-base-content/55">No feedback available.</p>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-5">
+            <a class="text-xs font-bold text-primary hover:text-accent transition-colors flex items-center justify-between" href="https://www.rankhero.com/tools/etsy/description-generator" target="_blank">
+              <span>Need help writing a description?</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true">
+                <path d="M601 337C610.4 327.6 610.4 312.4 601 303.1L465 167C455.6 157.6 440.4 157.6 431.1 167C421.8 176.4 421.7 191.6 431.1 200.9L526.1 295.9L56 295.9C42.7 295.9 32 306.6 32 319.9C32 333.2 42.7 343.9 56 343.9L526.1 343.9L431.1 438.9C421.7 448.3 421.7 463.5 431.1 472.8C440.5 482.1 455.7 482.2 465 472.8L601 337z"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Reviews Tab -->
+  <div id="reviews-section" class="mb-4 hidden" aria-hidden="true">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+
+      <div class="md:col-span-4 space-y-4">
+
+        <!-- Distribution -->
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Review Distribution</h3>
+          </div>
+          <div class="px-6 py-5">
+            <div class="text-center">
+              <p id="reviews-section-review-score" class="font-cabinet-grotesk text-5xl font-black tracking-tight text-base-content">No reviews</p>
+              <div id="review-summary-stars" class="mt-2 flex justify-center gap-1" role="img" aria-label="No reviews yet"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg></div>
+              <p class="mt-1 text-sm text-base-content/60">based on the most recent <span id="review-section-num-reviews" class="text-base-content tabular-nums">0 reviews</span></p>
+            </div>
+
+            <div class="mt-6 space-y-3">
+              <div class="flex items-center gap-3" data-review-distribution-row="5">
+                <span class="w-14 text-sm text-base-content/65">5 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="4">
+                <span class="w-14 text-sm text-base-content/65">4 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="3">
+                <span class="w-14 text-sm text-base-content/65">3 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="2">
+                <span class="w-14 text-sm text-base-content/65">2 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="1">
+                <span class="w-14 text-sm text-base-content/65">1 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Review Summary</h3>
+          </div>
+          <div class="px-6 py-5">
+            <span id="review-summary-text" class="text-sm text-base-content/70">No summary available.</span>
+            <div id="review-summary-upgrade" class="hidden flex flex-col items-center text-center py-2">
+              <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 672 672" fill="currentColor" aria-hidden="true">
+                  <path d="M370.8 436C366.9 439.1 364.1 443.6 364.1 448.6L364.1 476C364.1 491.5 351.6 504 336.1 504C320.6 504 308.1 491.5 308.1 476L308.1 448.6C308.1 443.6 305.3 439.1 301.4 436C288.4 425.7 280.1 409.9 280.1 392C280.1 361.1 305.2 336 336.1 336C367 336 392.1 361.1 392.1 392C392.1 409.8 383.8 425.7 370.8 436zM196.2 196L196.2 236.9C179.3 242.8 164.3 251.3 151.9 263.7C134.6 281 124.9 303.2 119.4 328.8C109.6 374.2 109.6 465.8 119.4 511.2C124.9 536.8 134.6 559 151.9 576.3C169.2 593.6 191.4 603.3 217 608.8C242.3 614.3 272.7 616 308.2 616L364.2 616C399.8 616 430.1 614.3 455.4 608.8C481 603.3 503.2 593.6 520.5 576.3C537.8 559 547.5 536.8 553 511.2C562.8 465.8 562.8 374.2 553 328.8C547.5 303.2 537.8 281 520.5 263.7C508.1 251.3 493.1 242.8 476.2 236.9L476.2 196C476.2 155.7 463.3 120.1 437.7 94.5C412.1 68.9 376.4 56 336.2 56C296 56 260.3 68.9 234.7 94.5C209.1 120.1 196.2 155.7 196.2 196zM274.3 134.1C287.6 120.8 308 112 336.2 112C364.4 112 384.8 120.8 398.1 134.1C411.4 147.4 420.2 167.8 420.2 196L420.2 226.1C403.2 224.6 384.6 224 364.2 224L308.2 224C287.8 224 269.2 224.6 252.2 226.1L252.2 196C252.2 167.8 261 147.4 274.3 134.1zM174.1 340.6C178.2 321.6 184.2 310.5 191.5 303.3C198.8 296.1 209.8 290 228.8 285.9C248.1 281.7 273.8 280 308.2 280L364.2 280C398.6 280 424.3 281.8 443.6 285.9C462.6 290 473.7 296 480.9 303.3C488.1 310.6 494.2 321.6 498.3 340.6C502.5 359.9 504.2 385.6 504.2 420C504.2 454.4 502.4 480.1 498.3 499.4C494.2 518.4 488.2 529.5 480.9 536.7C473.6 543.9 462.6 550 443.6 554.1C424.3 558.3 398.6 560 364.2 560L308.2 560C273.8 560 248.1 558.2 228.8 554.1C209.8 550 198.7 544 191.5 536.7C184.3 529.4 178.2 518.4 174.1 499.4C169.9 480.1 168.2 454.4 168.2 420C168.2 385.6 170 359.9 174.1 340.6z"></path>
+                </svg>
+              </div>
+              <h4 class="font-cabinet-grotesk text-base font-bold text-base-content mb-1">Review summary</h4>
+              <p class="text-sm text-base-content/65 mb-4">Upgrade to Business or Enterprise to unlock summarized review insights.</p>
+              <a href="https://www.rankhero.com/pricing" class="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2 text-sm font-bold text-primary-content hover:bg-primary/90 transition shadow-xs">View Plans</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="md:col-span-8">
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 class="font-cabinet-grotesk text-lg font-bold">Reviews</h3>
+              <div class="inline-flex rounded-lg bg-base-200 border border-base-content/10 p-1" role="tablist" aria-label="Filter reviews">
+                <input type="radio" name="listing_reviews_filter_tabs" id="lrev-filter-all" class="peer/lrall sr-only tab-active" data-review-filter="all" aria-label="All" checked="" aria-checked="true">
+                <label for="lrev-filter-all" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/lrall:bg-base-100 peer-checked/lrall:text-primary peer-checked/lrall:shadow-xs transition-colors">All</label>
+
+                <input type="radio" name="listing_reviews_filter_tabs" id="lrev-filter-positive" class="peer/lrpos sr-only" data-review-filter="positive" aria-label="Positive" aria-checked="false">
+                <label for="lrev-filter-positive" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/lrpos:bg-base-100 peer-checked/lrpos:text-primary peer-checked/lrpos:shadow-xs transition-colors">Positive</label>
+
+                <input type="radio" name="listing_reviews_filter_tabs" id="lrev-filter-neutral" class="peer/lrneut sr-only" data-review-filter="neutral" aria-label="Neutral" aria-checked="false">
+                <label for="lrev-filter-neutral" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/lrneut:bg-base-100 peer-checked/lrneut:text-primary peer-checked/lrneut:shadow-xs transition-colors">Neutral</label>
+
+                <input type="radio" name="listing_reviews_filter_tabs" id="lrev-filter-negative" class="peer/lrneg sr-only" data-review-filter="negative" aria-label="Negative" aria-checked="false">
+                <label for="lrev-filter-negative" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/lrneg:bg-base-100 peer-checked/lrneg:text-primary peer-checked/lrneg:shadow-xs transition-colors">Negative</label>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-5">
+            <div id="reviews-list" class="space-y-6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- About Tab -->
+  <div id="about-section" class="mb-4 hidden" aria-hidden="true">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+
+      <div class="md:col-span-4">
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Listing Details</h3>
+          </div>
+          <div class="px-6 py-2">
+            <ul role="list" class="divide-y divide-base-content/10">
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">State</span><span id="about-state" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Quantity</span><span id="about-quantity" class="text-sm font-medium tabular-nums text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Currency</span><span id="about-currency" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Processing Time</span><span id="about-processing-time" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Is taxable?</span><span id="about-is-taxable" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Is customizable?</span><span id="about-is-customizable" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Is personalizable?</span><span id="about-is-personalizable" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Listing type</span><span id="about-listing-type" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Item dimensions</span><span id="about-item-dimensions" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Item weight</span><span id="about-item-weight" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Created</span><span id="about-created" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Age</span><span id="about-days-old" class="text-sm font-medium tabular-nums text-base-content">—</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="md:col-span-8 space-y-4">
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">More Listing Details</h3>
+          </div>
+          <div class="px-6 py-4 flex flex-col gap-3">
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" id="about-category-toggle" name="about-accordion" aria-controls="most_common_category">
+              <div class="collapse-title text-sm font-medium">
+                <label id="about-category-label" for="about-category-toggle" class="block cursor-pointer">Category</label>
+              </div>
+              <div id="most_common_category" class="collapse-content text-sm text-base-content/70 whitespace-pre-line" aria-labelledby="about-category-label">No announcement available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" id="about-styles-toggle" name="about-accordion" aria-controls="styles">
+              <div class="collapse-title text-sm font-medium">
+                <label id="about-styles-label" for="about-styles-toggle" class="block cursor-pointer">Styles</label>
+              </div>
+              <div id="styles" class="collapse-content text-sm text-base-content/70 whitespace-pre-line" aria-labelledby="about-styles-label">No styles available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" id="about-materials-toggle" name="about-accordion" aria-controls="materials">
+              <div class="collapse-title text-sm font-medium">
+                <label id="about-materials-label" for="about-materials-toggle" class="block cursor-pointer">Materials</label>
+              </div>
+              <div id="materials" class="collapse-content text-sm text-base-content/70 whitespace-pre-line" aria-labelledby="about-materials-label">No materials available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" id="about-description-toggle" name="about-accordion" aria-controls="description">
+              <div class="collapse-title text-sm font-medium">
+                <label id="about-description-label" for="about-description-toggle" class="block cursor-pointer">Description</label>
+              </div>
+              <div id="description" class="collapse-content text-sm text-base-content/70 whitespace-pre-line" aria-labelledby="about-description-label">No description available.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<section id="loading-section" class="hidden max-w-7xl mx-auto mb-4" data-tool="listingAnalyzer">
+  <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden mb-4">
+    <div class="p-6 flex flex-row items-center gap-6">
+      <div class="flex items-center pr-6 border-r border-base-content/5">
+        <svg class="w-12 h-12 text-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+          <path class="currentColor" fill="currentColor" opacity=".8" d="M128 256C128 307.2 148 353.7 180.7 388.1C204.3 413 224 443.4 224 477.7L224 480L416 480L416 477.7C416 443.4 435.7 413 459.3 388.1C492 353.7 512 307.2 512 256C512 150 426 64 320 64C214 64 128 150 128 256zM192 248C192 181.7 245.7 128 312 128C325.3 128 336 138.7 336 152C336 165.3 325.3 176 312 176C272.2 176 240 208.2 240 248C240 261.3 229.3 272 216 272C202.7 272 192 261.3 192 248z"></path>
+          <path fill="currentColor" opacity=".8" d="M58.7 90.5C46.8 84.6 32.4 89.4 26.5 101.2C20.6 113 25.4 127.5 37.3 133.5L69.3 149.5C81.2 155.4 95.6 150.6 101.5 138.8C107.4 127 102.6 112.5 90.8 106.6L58.8 90.6zM602.7 133.4C614.6 127.5 619.4 113.1 613.4 101.2C607.4 89.3 593.1 84.5 581.2 90.5L549.2 106.5C537.3 112.4 532.5 126.8 538.5 138.7C544.5 150.6 558.8 155.4 570.7 149.4L602.7 133.4zM24 232C10.7 232 0 242.7 0 256C0 269.3 10.7 280 24 280L56 280C69.3 280 80 269.3 80 256C80 242.7 69.3 232 56 232L24 232zM584 232C570.7 232 560 242.7 560 256C560 269.3 570.7 280 584 280L616 280C629.3 280 640 269.3 640 256C640 242.7 629.3 232 616 232L584 232zM90.7 405.5C102.6 399.6 107.4 385.2 101.4 373.3C95.4 361.4 81.1 356.6 69.2 362.6L37.2 378.6C25.3 384.5 20.5 398.9 26.5 410.8C32.5 422.7 46.8 427.5 58.7 421.5L90.7 405.5zM570.7 362.6C558.8 356.7 544.4 361.5 538.5 373.3C532.6 385.1 537.4 399.6 549.2 405.5L581.2 421.5C593.1 427.4 607.5 422.6 613.4 410.8C619.3 399 614.5 384.5 602.7 378.6L570.7 362.6zM416 480L224 480L224 512C224 556.2 259.8 592 304 592L336 592C380.2 592 416 556.2 416 512L416 480z"></path>
+        </svg>
+      </div>
+      <div>
+        <h5 class="mb-2 text-2xl font-bold text-base-content">Pro Tip</h5>
+        <p data-loading-tip="" class="text-base-content/80">
+          Hang tight—we're gathering fresh insights for you.
+        </p>
+      </div>
+    </div>
+    <progress class="progress progress-primary h-1 w-full block"></progress>
+  </div>
+  <div class="rounded-lg border border-base-content/10 bg-base-100 h-full mb-4">
+    <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-20 items-stretch">
+      <div class="flex flex-col gap-4 col-span-3">
+        <div class="skeleton h-32 w-full"></div>
+        <div class="skeleton h-4 w-28"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+        </div>
+      </main>
+      
+    </div>
+  </div>
+
+  
+
+  
+  
+  <!-- Analytics -->
+
+
+  
+<!-- Signup/Login Modal -->
+
+
+<!-- Pricing/Upgrade Modal -->
+
+
+
+
+
+
+
+  
+  
+<div height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;" data-original-tag="iframe"></div>
+
+
+</body></html>

@@ -1,0 +1,210 @@
+<!-- Source: https://www.rankhero.com/tools/rankhero-ai -->
+<!-- Scraped: 2026-06-12T06:55:25.461Z -->
+<!DOCTYPE html><html lang="en" class="h-full" data-theme="light">
+
+<body class="bg-base-200 antialiased h-full">
+  <el-dialog>
+    
+  </el-dialog>
+
+  <div class="flex min-h-screen flex-col pt-16">
+    <div class="fixed top-0 z-40 flex h-16 w-full shrink-0 items-center gap-x-4 border-b border-base-content bg-[#222f3e] dark:border-base-content/5 dark:bg-base-100 px-4  sm:gap-x-6 sm:px-6 lg:px-8">
+      <button type="button" command="show-modal" commandfor="sidebar" class="-m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer lg:hidden" aria-expanded="false">
+        <span class="sr-only">Open sidebar</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
+          <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+
+      <!-- Separator -->
+      <div aria-hidden="true" class="h-6 w-px bg-white lg:hidden"></div>
+
+      <div class="flex flex-1 items-center gap-x-4 self-stretch lg:gap-x-6">
+        <a href="https://www.rankhero.com/" class="flex items-center shrink-0">
+          <img src="https://www.rankhero.com/static/images/logo/rankhero-logo.svg" alt="RankHero" class="h-8 w-auto" width="300" height="150">
+          <span class="ml-2 text-xl md:text-xl text-white dark:text-base-content">RankHero</span>
+        </a>
+
+        <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto">
+          
+          
+          <a href="https://www.rankhero.com/pricing" class="hidden lg:inline-flex items-center gap-1.5 text-sm font-medium text-white dark:text-base-content hover:text-secondary dark:hover:text-secondary transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" class="size-4">
+              <path d="M423.5 117.2C419 118.9 416 123.2 416 128C416 132.8 419 137.1 423.5 138.8L480 160L501.2 216.5C502.9 221 507.2 224 512 224C516.8 224 521.1 221 522.8 216.5L544 160L600.5 138.8C605 137.1 608 132.8 608 128C608 123.2 605 118.9 600.5 117.2L544 96L522.8 39.5C521.1 35 516.8 32 512 32C507.2 32 502.9 35 501.2 39.5L480 96L423.5 117.2zM199.9 272.5L224 220.4L248.1 272.5C252.9 282.9 261.2 291.2 271.6 296L323.7 320.1L271.6 344.2C261.2 349 252.9 357.3 248.1 367.7L224 419.8L199.9 367.7C195.1 357.3 186.8 349 176.4 344.2L124.3 320L176.5 295.9C186.9 291.1 195.2 282.8 200 272.4zM197.6 163.1L156.4 252.4L67.1 293.6L66.5 293.9C62.6 295.7 54.2 299.6 41.3 305.5C35.6 308.1 32 313.8 32 320C32 326.2 35.6 331.9 41.3 334.5C54.2 340.4 62.5 344.3 66.5 346.1L67.1 346.4L156.4 387.6L197.6 476.9L197.9 477.5C199.7 481.4 203.6 489.8 209.5 502.7C212.1 508.4 217.8 512 224 512C230.2 512 235.9 508.4 238.5 502.7C252.9 471.6 253.6 470 291.6 387.7L380.9 346.5L381.5 346.2C385.4 344.4 393.8 340.5 406.7 334.6C412.4 332 416 326.3 416 320.1C416 313.9 412.4 308.2 406.7 305.6C375.6 291.2 374 290.5 291.7 252.5L250.5 163.2L250.2 162.6C248.4 158.7 244.5 150.3 238.6 137.4C236 131.7 230.3 128.1 224.1 128.1C217.9 128.1 212.2 131.7 209.6 137.4C195.8 167.2 198.1 162.4 197.7 163.2zM448 480L391.5 501.2C387 502.9 384 507.2 384 512C384 516.8 387 521.1 391.5 522.8L448 544L469.2 600.5C470.9 605 475.2 608 480 608C484.8 608 489.1 605 490.8 600.5L512 544L568.5 522.8C573 521.1 576 516.8 576 512C576 507.2 573 502.9 568.5 501.2L512 480L490.8 423.5C489.1 419 484.8 416 480 416C475.2 416 470.9 419 469.2 423.5L448 480z"></path>
+            </svg>
+            Upgrade
+          </a>
+          
+          <label class="swap swap-rotate -m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer">
+            <!-- this hidden checkbox controls the state -->
+            <input id="theme-toggle" type="checkbox" class="theme-controller" value="dark">
+
+            <!-- sun icon -->
+            <svg class="swap-off size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"></path>
+            </svg>
+
+            <!-- moon icon -->
+            <svg class="swap-on size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"></path>
+            </svg>
+          </label>
+          <!-- Separator -->
+          <div aria-hidden="true" class="hidden lg:block lg:h-6 lg:w-px bg-white lg:bg-white"></div>
+
+          
+          <a href="https://www.rankhero.com/auth/login" class="btn btn-accent btn-sm">Login</a>
+
+          
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Static sidebar for desktop -->
+    <div class="hidden bg-base-100 lg:fixed lg:top-16 lg:bottom-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
+      <!-- Sidebar component, swap this element with another sidebar if you like -->
+      <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-base-content/5 bg-base-100 px-6 pb-4 pt-0">
+        
+      </div>
+    </div>
+
+    <div class="flex flex-col flex-1 lg:pl-72">
+      <main class="py-4 sm:py-6 lg:py-8 bg-base-200 flex-1">
+        <div class="px-4 sm:px-6 lg:px-12 xl:px-16 container mx-auto">
+          <!--Alerts-->
+          <div class="">
+            
+            
+
+            
+            
+
+            
+          </div>
+
+          <!-- Toast container for auto-dismissing messages -->
+          <div id="flash-toast-container" class="toast toast-end toast-top top-20 z-50"></div>
+          
+          
+          
+          <!-- Your content -->
+          
+
+<!-- Error Alert -->
+<div id="error" role="alert" class="hidden alert alert-error mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span id="error-content"></span>
+  <button type="button" class="btn btn-xs btn-circle btn-ghost ml-auto" aria-label="Close" data-dismiss-parent=".alert">✕</button>
+</div>
+
+<!-- Chat Container -->
+<div id="chat-container" class="flex flex-col h-[calc(100dvh-10rem)] sm:h-[calc(100vh-8rem)] max-w-3xl mx-auto">
+  <h1 class="sr-only">RankHero AI</h1>
+
+  <!-- Messages Area -->
+  <div id="chat-messages" class="flex-1 overflow-y-auto px-2 sm:px-4 py-4 space-y-6">
+
+    <!-- Empty State -->
+    <div id="empty-state" class="flex flex-col items-center justify-center min-h-full text-center px-4">
+      <h2 class="text-3xl sm:text-5xl font-bold text-base-content mb-2">What can I help you with?</h2>
+      <p class="text-base-content/60 mb-8 max-w-2xl">Get Etsy-specific guidance for all your selling needs.</p>
+
+      <div class="grid gap-3 w-full max-w-xl grid-cols-1 sm:grid-cols-3">
+        <button type="button" class="btn btn-soft btn-sm sm:btn-md h-auto py-3 flex-col gap-1 normal-case" data-message="Help me brainstorm tags for my Etsy listing.">
+          <span class="font-semibold">Brainstorm Tags</span>
+          <span class="text-xs opacity-60 hidden sm:inline">Generate optimized tags</span>
+        </button>
+        <button type="button" class="btn btn-soft btn-sm sm:btn-md h-auto py-3 flex-col gap-1 normal-case" data-message="Can I ask you some questions about RankHero?">
+          <span class="font-semibold">RankHero Help</span>
+          <span class="text-xs opacity-60 hidden sm:inline">Learn the features</span>
+        </button>
+        <button type="button" class="btn btn-soft btn-sm sm:btn-md h-auto py-3 flex-col gap-1 normal-case" data-message="Can I ask you some questions about Etsy selling best practices?">
+          <span class="font-semibold">Etsy Handbook</span>
+          <span class="text-xs opacity-60 hidden sm:inline">Selling best practices</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="shrink-0 px-2 sm:px-4 pb-4 pt-2">
+    <form id="chat-form" class="bg-base-100 rounded-2xl border border-base-300/70 p-3">
+      <div class="flex items-end gap-2">
+        <textarea id="user-input" rows="1" placeholder="Ask me anything about Etsy selling..." class="flex-1 resize-none bg-transparent border-none outline-none text-base min-h-6 max-h-32 py-1 leading-6" required="" autocomplete="off" style="height: 49px;"></textarea>
+        <button type="submit" id="send-btn" class="btn btn-neutral btn-circle btn-sm sm:btn-sm touch-manipulation">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4">
+            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="flex justify-between items-center mt-2 pt-2 border-t border-base-300/70">
+        <select id="model-select" class="select select-xs text-xs text-base-content/70 focus:outline-none cursor-pointer appearance-none w-fit ">
+          <option value="faster">Faster</option>
+          <option value="better">Better</option>
+        </select>
+        <button type="button" id="clear-chat" class="inline-flex items-center gap-1 text-xs text-base-content/50 hover:text-base-content/70 transition-colors cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          New chat
+        </button>
+      </div>
+    </form>
+    <p class="text-xs text-base-content/40 text-center mt-2">RankHero AI can make mistakes. Double check info.</p>
+  </div>
+</div>
+
+
+
+
+<section id="loading-section" class="hidden mb-4" data-tool="rankhero_ai">
+  <div class="card card-border border-base-content/5 bg-base-100 card-xl mb-4">
+    <div class="card-body">
+      <div class="flex w-full flex-col gap-4">
+        <div class="skeleton h-64 w-full"></div>
+        <div class="skeleton h-4 w-28"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+        </div>
+      </main>
+      
+    </div>
+  </div>
+
+  
+
+  
+  
+  <!-- Analytics -->
+
+
+  
+<!-- Signup/Login Modal -->
+
+
+<!-- Pricing/Upgrade Modal -->
+
+
+
+
+
+
+
+
+  
+  
+
+<div height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;" data-original-tag="iframe"></div>
+
+</body></html>

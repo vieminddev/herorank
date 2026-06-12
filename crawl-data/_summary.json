@@ -1,0 +1,100 @@
+{
+  "results": [
+    {
+      "success": true,
+      "name": "landing",
+      "chars": 4589
+    },
+    {
+      "success": true,
+      "name": "pricing",
+      "chars": 3851
+    },
+    {
+      "success": true,
+      "name": "tag-generator",
+      "chars": 5634
+    },
+    {
+      "success": true,
+      "name": "shop-analyzer",
+      "chars": 6968
+    },
+    {
+      "success": true,
+      "name": "listing-analyzer",
+      "chars": 6911
+    },
+    {
+      "success": true,
+      "name": "buyer-check",
+      "chars": 5265
+    },
+    {
+      "success": true,
+      "name": "rank-check",
+      "chars": 4497
+    },
+    {
+      "success": true,
+      "name": "profit-calculator",
+      "chars": 3458
+    },
+    {
+      "success": true,
+      "name": "best-sellers",
+      "chars": 4714
+    },
+    {
+      "success": true,
+      "name": "etsy-trends",
+      "chars": 6710
+    },
+    {
+      "success": true,
+      "name": "niche-finder",
+      "chars": 5695
+    },
+    {
+      "success": true,
+      "name": "title-generator",
+      "chars": 5594
+    },
+    {
+      "success": true,
+      "name": "description-generator",
+      "chars": 5153
+    },
+    {
+      "success": true,
+      "name": "video-generator",
+      "chars": 5330
+    },
+    {
+      "success": true,
+      "name": "listing-studio",
+      "chars": 4679
+    },
+    {
+      "success": true,
+      "name": "keyword-generator",
+      "chars": 5095
+    },
+    {
+      "success": true,
+      "name": "rankhero-ai",
+      "chars": 501
+    },
+    {
+      "success": true,
+      "name": "login",
+      "chars": 442
+    },
+    {
+      "success": true,
+      "name": "signup",
+      "chars": 420
+    }
+  ],
+  "scrapedAt": "2026-06-12T06:55:28.772Z"
+}

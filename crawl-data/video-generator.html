@@ -1,0 +1,542 @@
+<!-- Source: https://www.rankhero.com/tools/etsy/video-generator -->
+<!-- Scraped: 2026-06-12T06:55:20.714Z -->
+<!DOCTYPE html><html lang="en" class="h-full" data-theme="light">
+
+<body class="bg-base-200 antialiased h-full">
+  <el-dialog>
+    
+  </el-dialog>
+
+  <div class="flex min-h-screen flex-col pt-16">
+    <div class="fixed top-0 z-40 flex h-16 w-full shrink-0 items-center gap-x-4 border-b border-base-content bg-[#222f3e] dark:border-base-content/5 dark:bg-base-100 px-4  sm:gap-x-6 sm:px-6 lg:px-8">
+      <button type="button" command="show-modal" commandfor="sidebar" class="-m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer lg:hidden" aria-expanded="false">
+        <span class="sr-only">Open sidebar</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
+          <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+
+      <!-- Separator -->
+      <div aria-hidden="true" class="h-6 w-px bg-white lg:hidden"></div>
+
+      <div class="flex flex-1 items-center gap-x-4 self-stretch lg:gap-x-6">
+        <a href="https://www.rankhero.com/" class="flex items-center shrink-0">
+          <img src="https://www.rankhero.com/static/images/logo/rankhero-logo.svg" alt="RankHero" class="h-8 w-auto" width="300" height="150">
+          <span class="ml-2 text-xl md:text-xl text-white dark:text-base-content">RankHero</span>
+        </a>
+
+        <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto">
+          
+          
+          <a href="https://www.rankhero.com/pricing" class="hidden lg:inline-flex items-center gap-1.5 text-sm font-medium text-white dark:text-base-content hover:text-secondary dark:hover:text-secondary transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" class="size-4">
+              <path d="M423.5 117.2C419 118.9 416 123.2 416 128C416 132.8 419 137.1 423.5 138.8L480 160L501.2 216.5C502.9 221 507.2 224 512 224C516.8 224 521.1 221 522.8 216.5L544 160L600.5 138.8C605 137.1 608 132.8 608 128C608 123.2 605 118.9 600.5 117.2L544 96L522.8 39.5C521.1 35 516.8 32 512 32C507.2 32 502.9 35 501.2 39.5L480 96L423.5 117.2zM199.9 272.5L224 220.4L248.1 272.5C252.9 282.9 261.2 291.2 271.6 296L323.7 320.1L271.6 344.2C261.2 349 252.9 357.3 248.1 367.7L224 419.8L199.9 367.7C195.1 357.3 186.8 349 176.4 344.2L124.3 320L176.5 295.9C186.9 291.1 195.2 282.8 200 272.4zM197.6 163.1L156.4 252.4L67.1 293.6L66.5 293.9C62.6 295.7 54.2 299.6 41.3 305.5C35.6 308.1 32 313.8 32 320C32 326.2 35.6 331.9 41.3 334.5C54.2 340.4 62.5 344.3 66.5 346.1L67.1 346.4L156.4 387.6L197.6 476.9L197.9 477.5C199.7 481.4 203.6 489.8 209.5 502.7C212.1 508.4 217.8 512 224 512C230.2 512 235.9 508.4 238.5 502.7C252.9 471.6 253.6 470 291.6 387.7L380.9 346.5L381.5 346.2C385.4 344.4 393.8 340.5 406.7 334.6C412.4 332 416 326.3 416 320.1C416 313.9 412.4 308.2 406.7 305.6C375.6 291.2 374 290.5 291.7 252.5L250.5 163.2L250.2 162.6C248.4 158.7 244.5 150.3 238.6 137.4C236 131.7 230.3 128.1 224.1 128.1C217.9 128.1 212.2 131.7 209.6 137.4C195.8 167.2 198.1 162.4 197.7 163.2zM448 480L391.5 501.2C387 502.9 384 507.2 384 512C384 516.8 387 521.1 391.5 522.8L448 544L469.2 600.5C470.9 605 475.2 608 480 608C484.8 608 489.1 605 490.8 600.5L512 544L568.5 522.8C573 521.1 576 516.8 576 512C576 507.2 573 502.9 568.5 501.2L512 480L490.8 423.5C489.1 419 484.8 416 480 416C475.2 416 470.9 419 469.2 423.5L448 480z"></path>
+            </svg>
+            Upgrade
+          </a>
+          
+          <label class="swap swap-rotate -m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer">
+            <!-- this hidden checkbox controls the state -->
+            <input id="theme-toggle" type="checkbox" class="theme-controller" value="dark">
+
+            <!-- sun icon -->
+            <svg class="swap-off size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"></path>
+            </svg>
+
+            <!-- moon icon -->
+            <svg class="swap-on size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"></path>
+            </svg>
+          </label>
+          <!-- Separator -->
+          <div aria-hidden="true" class="hidden lg:block lg:h-6 lg:w-px bg-white lg:bg-white"></div>
+
+          
+          <a href="https://www.rankhero.com/auth/login" class="btn btn-accent btn-sm">Login</a>
+
+          
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Static sidebar for desktop -->
+    <div class="hidden bg-base-100 lg:fixed lg:top-16 lg:bottom-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
+      <!-- Sidebar component, swap this element with another sidebar if you like -->
+      <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-base-content/5 bg-base-100 px-6 pb-4 pt-0">
+        
+      </div>
+    </div>
+
+    <div class="flex flex-col flex-1 lg:pl-72">
+      <main class="py-4 sm:py-6 lg:py-8 bg-base-200 flex-1">
+        <div class="px-4 sm:px-6 lg:px-12 xl:px-16 container mx-auto">
+          <!--Alerts-->
+          <div class="">
+            
+            
+
+            
+            
+
+            
+          </div>
+
+          <!-- Toast container for auto-dismissing messages -->
+          <div id="flash-toast-container" class="toast toast-end toast-top top-20 z-50"></div>
+          
+          
+          
+          <!-- Your content -->
+          
+
+
+
+<!-- Hero -->
+<div class="mb-10">
+  <div class="max-w-7xl mx-auto">
+    
+
+    <div class="mt-6 flex items-start justify-between gap-8">
+      <div>
+        <h1 class="font-cabinet-grotesk text-5xl sm:text-6xl font-black tracking-tight leading-[1.02] text-base-content">
+          Etsy<br>
+          <span class="text-primary">Video Generator.</span>
+        </h1>
+
+        <p class="mt-4 text-lg sm:text-xl text-base-content/70 leading-relaxed max-w-2xl">
+          Turn your product photos into polished, Etsy-ready listing videos. Drop in images, tune transitions and zoom, preview instantly, and export in any aspect ratio.
+        </p>
+      </div>
+
+      <svg class="hidden sm:block shrink-0 h-40 w-40 lg:h-48 lg:w-48 text-primary opacity-15" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+        <path d="M128 176C119.2 176 112 183.2 112 192L112 448C112 456.8 119.2 464 128 464L384 464C392.8 464 400 456.8 400 448L400 192C400 183.2 392.8 176 384 176L128 176zM64 192C64 156.7 92.7 128 128 128L384 128C419.3 128 448 156.7 448 192L448 448C448 483.3 419.3 512 384 512L128 512C92.7 512 64 483.3 64 448L64 192zM569.6 180.8C573.8 177.7 578.8 176 584 176C597.3 176 608 186.7 608 200L608 440C608 453.3 597.3 464 584 464C578.8 464 573.8 462.3 569.6 459.2L496 404L496 344L560 392L560 248L496 296L496 236L569.6 180.8z"></path>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div id="video-alert" class="alert alert-error hidden mb-6 rounded-2xl max-w-7xl mx-auto" role="alert" aria-live="assertive" aria-atomic="true">
+  <span id="video-alert-text">Something went wrong.</span>
+  <button id="video-alert-close" type="button" class="btn btn-xs btn-circle btn-ghost ml-auto" aria-label="Close">✕</button>
+</div>
+
+<!-- Signup/Login Modal -->
+
+
+<!-- Pricing/Upgrade Modal -->
+
+
+
+
+
+<div class="grid grid-cols-1 gap-5 xl:grid-cols-12 mb-6 max-w-7xl mx-auto">
+
+  <!-- LEFT: Video Preview -->
+  <div class="xl:col-span-7 xl:sticky xl:top-24 xl:self-start space-y-5">
+    <div class="card border border-base-content/5 bg-base-100 overflow-hidden">
+      <div class="card-body p-5">
+        <h2 class="mb-3 text-sm font-semibold text-base-content">Video Preview</h2>
+        <div class="relative flex items-center justify-center overflow-hidden rounded-2xl bg-base-200/30">
+          <canvas id="preview-canvas" class="mx-auto block w-auto max-w-full rounded-2xl max-h-[70vh] opacity-0 transition-opacity duration-200" width="720" height="720" aria-label="Video preview canvas" aria-hidden="true"></canvas>
+          <label id="preview-placeholder" for="image-upload" class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-base-content/10 bg-base-200/30 text-center transition-colors duration-150 hover:border-primary/50 hover:bg-primary/4">
+            <svg class="h-12 w-12 text-base-content/30" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true"><path d="M128 144L448 144C456.8 144 464 151.2 464 160L464 242.7C474.4 241 485.1 240 496 240C501.4 240 506.7 240.2 512 240.7L512 160C512 124.7 483.3 96 448 96L128 96C92.7 96 64 124.7 64 160L64 480C64 515.3 92.7 544 128 544L340 544C329.5 529.4 321 513.3 314.9 496L128 496C119.2 496 112 488.8 112 480L112 160C112 151.2 119.2 144 128 144zM348.7 275.8C344.4 268.5 336.5 264 328 264C319.5 264 311.6 268.5 307.3 275.8L260.8 354.8L243.6 330.2C239.1 323.8 231.8 320 223.9 320C216 320 208.7 323.8 204.2 330.2L148.2 410.2C143.1 417.5 142.4 427.1 146.6 435C150.8 442.9 159.1 448 168 448L304.7 448C304.3 442.7 304 437.4 304 432C304 378.8 325.6 330.7 360.5 296L348.7 275.9zM192 256C209.7 256 224 241.7 224 224C224 206.3 209.7 192 192 192C174.3 192 160 206.3 160 224C160 241.7 174.3 256 192 256zM496 576C575.5 576 640 511.5 640 432C640 352.5 575.5 288 496 288C416.5 288 352 352.5 352 432C352 511.5 416.5 576 496 576zM512 368L512 416L560 416C568.8 416 576 423.2 576 432C576 440.8 568.8 448 560 448L512 448L512 496C512 504.8 504.8 512 496 512C487.2 512 480 504.8 480 496L480 448L432 448C423.2 448 416 440.8 416 432C416 423.2 423.2 416 432 416L480 416L480 368C480 359.2 487.2 352 496 352C504.8 352 512 359.2 512 368z"></path></svg>
+            <div>
+              <span class="text-sm font-medium text-base-content/35">Drop images or click to upload</span>
+              <span class="mt-0.5 block text-[11px] text-base-content/35">JPG, PNG, WebP · 30 MB max</span>
+            </div>
+            <span class="btn btn-primary btn-sm pointer-events-none">Upload Images</span>
+          </label>
+        </div>
+
+        <div class="mt-3 flex items-center gap-1.5 rounded-xl bg-base-200/40 px-2 py-1.5">
+          <button id="play-pause-btn" type="button" class="btn btn-primary btn-sm btn-circle shadow-sm" disabled="" aria-label="Play"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg></button>
+          <button id="restart-btn" type="button" class="btn btn-ghost btn-sm btn-circle text-base-content/30" disabled="" aria-label="Restart">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path></svg>
+          </button>
+          <button id="seek-back-btn" type="button" class="btn btn-ghost btn-xs btn-circle text-base-content/25" disabled="" aria-label="Back 1 second">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path></svg>
+          </button>
+          <input id="timeline-scrubber" type="range" min="0" max="1" value="0" class="range range-primary range-xs flex-1 mx-0.5" disabled="">
+          <button id="seek-forward-btn" type="button" class="btn btn-ghost btn-xs btn-circle text-base-content/25" disabled="" aria-label="Forward 1 second">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"></path></svg>
+          </button>
+          <span class="ml-1 select-none text-[11px] tabular-nums text-base-content/30"><span id="current-time">00:00</span><span class="text-base-content/15"> / </span><span id="total-time">00:00</span></span>
+        </div>
+        <p id="shortcut-hint" class="sr-only">Shortcuts: Space = Play/Pause, ←/→ = scrub, Ctrl + Enter = Export</p>
+      </div>
+    </div>
+
+    <!-- Download -->
+    <div class="card border border-base-content/5 bg-base-100 overflow-hidden">
+      <div class="card-body p-5">
+        <button id="export-btn" type="button" class="btn btn-primary w-full gap-2 shadow-sm" disabled="" title="Export Etsy-ready video">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download Video
+        </button>
+        <div id="export-fixes" class="hidden mt-2 flex-wrap items-center justify-center gap-1.5">
+          <button id="fix-duration-btn" type="button" class="hidden items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/8 px-3 py-1 text-[11px] font-medium text-amber-600 transition-colors hover:bg-amber-500/15 dark:text-amber-400">
+            <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span id="fix-duration-text">Fix duration</span>
+          </button>
+          <button id="fix-aspect-btn" type="button" class="hidden items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/8 px-3 py-1 text-[11px] font-medium text-amber-600 transition-colors hover:bg-amber-500/15 dark:text-amber-400">
+            <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg>
+            <span id="fix-aspect-text">Switch to 1:1</span>
+          </button>
+        </div>
+        <p id="stat-status" class="hidden">Waiting for images</p>
+        <div class="hidden"><p id="codec-hint" role="status" aria-live="polite" class="text-warning">MP4 export ready for Etsy. For QuickTime playback, use Safari.</p></div>
+        <p id="export-readiness-text" class="hidden">Upload images to start building your listing video.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Images & Settings -->
+  <div class="xl:col-span-5 flex self-stretch flex-col gap-5">
+
+    <!-- Images -->
+    <div class="card border border-base-content/5 bg-base-100 overflow-hidden">
+      <div class="card-body p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-base-content">Images</h2>
+            <span id="slide-count-badge" class="inline-flex items-center rounded-full border border-base-content/10 bg-base-content/[0.03] px-2 py-0.5 text-[11px] font-medium text-base-content/60">0 images</span>
+          </div>
+          <button id="clear-all-btn" type="button" class="inline-flex items-center gap-1 rounded-md border border-base-content/10 bg-base-content/[0.02] px-2.5 py-1 text-[11px] font-medium text-base-content/55 transition-colors duration-150 hover:border-error/25 hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:border-base-content/8 disabled:bg-transparent disabled:text-base-content/25" disabled="" aria-label="Clear all images" title="Clear all images">
+            <svg class="h-3 w-3" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true"><path opacity=".4" d="M172.9 208L195.5 513.2C196.1 521.6 203.1 528 211.5 528L428.6 528C437 528 443.9 521.5 444.6 513.2L467.1 208L172.9 208z"></path><path d="M232.2 68.8C236.9 56.3 248.8 48 262.2 48L377.8 48C391.1 48 403.1 56.3 407.8 68.8L424 112L520 112C533.3 112 544 122.7 544 136C544 149.3 533.3 160 520 160L120 160C106.7 160 96 149.3 96 136C96 122.7 106.7 112 120 112L216 112L232.2 68.8zM147.6 516.8L124.7 208L172.9 208L195.5 513.2C196.1 521.6 203.1 528 211.5 528L428.6 528C437 528 443.9 521.5 444.6 513.2L467.2 208L515.3 208L492.4 516.7C489.9 550.1 462.1 576 428.6 576L211.5 576C178 576 150.2 550.1 147.7 516.7z"></path></svg>
+            Clear
+          </button>
+        </div>
+        <div id="slides-empty" class=""></div>
+        <input id="preview-loop" type="checkbox" class="hidden" checked="">
+        <input id="image-upload" type="file" class="hidden" accept="image/png,image/jpeg,image/webp" multiple="">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div id="slides-list" class="contents"></div>
+          <label id="upload-dropzone" for="image-upload" class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-base-content/10 bg-base-200/30 transition-colors duration-150 hover:border-primary/50 hover:bg-primary/4" tabindex="0" role="button" aria-label="Upload product images">
+            <svg class="h-9 w-9 text-base-content/30" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true"><path d="M128 144L448 144C456.8 144 464 151.2 464 160L464 242.7C474.4 241 485.1 240 496 240C501.4 240 506.7 240.2 512 240.7L512 160C512 124.7 483.3 96 448 96L128 96C92.7 96 64 124.7 64 160L64 480C64 515.3 92.7 544 128 544L340 544C329.5 529.4 321 513.3 314.9 496L128 496C119.2 496 112 488.8 112 480L112 160C112 151.2 119.2 144 128 144zM348.7 275.8C344.4 268.5 336.5 264 328 264C319.5 264 311.6 268.5 307.3 275.8L260.8 354.8L243.6 330.2C239.1 323.8 231.8 320 223.9 320C216 320 208.7 323.8 204.2 330.2L148.2 410.2C143.1 417.5 142.4 427.1 146.6 435C150.8 442.9 159.1 448 168 448L304.7 448C304.3 442.7 304 437.4 304 432C304 378.8 325.6 330.7 360.5 296L348.7 275.9zM192 256C209.7 256 224 241.7 224 224C224 206.3 209.7 192 192 192C174.3 192 160 206.3 160 224C160 241.7 174.3 256 192 256zM496 576C575.5 576 640 511.5 640 432C640 352.5 575.5 288 496 288C416.5 288 352 352.5 352 432C352 511.5 416.5 576 496 576zM512 368L512 416L560 416C568.8 416 576 423.2 576 432C576 440.8 568.8 448 560 448L512 448L512 496C512 504.8 504.8 512 496 512C487.2 512 480 504.8 480 496L480 448L432 448C423.2 448 416 440.8 416 432C416 423.2 423.2 416 432 416L480 416L480 368C480 359.2 487.2 352 496 352C504.8 352 512 359.2 512 368z"></path></svg>
+            <span class="text-[11px] text-base-content/35">Add images</span>
+          </label>
+        </div>
+        <p id="upload-hint" class="text-[11px] text-base-content/65" role="status" aria-live="polite">Tip: on iPhone/iPad use ▲ and ▼ to reorder images.</p>
+      </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="card border border-base-content/5 bg-base-100 overflow-hidden xl:flex-1">
+      <div class="card-body p-5 xl:h-full">
+        <input id="logo-upload" type="file" class="hidden" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
+          <div class="form-control">
+            <div class="relative mb-3 pr-20">
+              <span class="block text-sm font-semibold text-base-content">Logo</span>
+              <button id="logo-clear-btn" type="button" class="absolute right-0 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-md border border-base-content/10 bg-base-content/[0.02] px-2.5 py-1 text-[11px] font-medium text-base-content/55 transition-colors duration-150 hover:border-error/25 hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:border-base-content/8 disabled:bg-transparent disabled:text-base-content/25 invisible pointer-events-none" aria-label="Remove logo" title="Remove logo" aria-hidden="true" disabled="">
+                <svg class="h-3 w-3" viewBox="0 0 640 640" fill="currentColor" aria-hidden="true"><path opacity=".4" d="M172.9 208L195.5 513.2C196.1 521.6 203.1 528 211.5 528L428.6 528C437 528 443.9 521.5 444.6 513.2L467.1 208L172.9 208z"></path><path d="M232.2 68.8C236.9 56.3 248.8 48 262.2 48L377.8 48C391.1 48 403.1 56.3 407.8 68.8L424 112L520 112C533.3 112 544 122.7 544 136C544 149.3 533.3 160 520 160L120 160C106.7 160 96 149.3 96 136C96 122.7 106.7 112 120 112L216 112L232.2 68.8zM147.6 516.8L124.7 208L172.9 208L195.5 513.2C196.1 521.6 203.1 528 211.5 528L428.6 528C437 528 443.9 521.5 444.6 513.2L467.2 208L515.3 208L492.4 516.7C489.9 550.1 462.1 576 428.6 576L211.5 576C178 576 150.2 550.1 147.7 516.7z"></path></svg>
+                Remove
+              </button>
+            </div>
+            <label id="logo-dropzone" for="logo-upload" class="group relative flex aspect-[4/3] cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-base-content/10 bg-base-content/[0.02] transition-colors duration-150 hover:border-base-content/20 hover:bg-base-content/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-base-100" tabindex="0" role="button" aria-label="Upload logo image" aria-disabled="false">
+              <img id="logo-preview" src="https://www.rankhero.com/tools/etsy/video-generator" alt="Logo preview" class="hidden h-full w-full object-contain p-4">
+              <div id="logo-placeholder" class="pointer-events-none flex flex-col items-center justify-center gap-2 text-center">
+                <svg class="h-7 w-7 text-base-content/28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <path d="m21 15-5-5L5 21"></path>
+                </svg>
+                <div>
+                  <span class="block text-xs font-medium text-base-content/65">Upload logo</span>
+                  <span class="mt-0.5 block text-[11px] text-base-content/45">PNG, SVG, WebP, JPG</span>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-control">
+            <span class="mb-3 block text-sm font-semibold text-base-content">Position</span>
+            <select id="logo-position" class="hidden">
+              <option value="top-left">Top left</option>
+              <option value="top-center">Top center</option>
+              <option value="top-right">Top right</option>
+              <option value="middle-left">Middle left</option>
+              <option value="center">Center</option>
+              <option value="middle-right">Middle right</option>
+              <option value="bottom-left">Bottom left</option>
+              <option value="bottom-center">Bottom center</option>
+              <option value="bottom-right" selected="">Bottom right</option>
+            </select>
+            <div id="logo-position-grid" class="grid aspect-[4/3] grid-cols-3 grid-rows-3 gap-1 rounded-xl border border-base-content/10 bg-base-content/[0.02] p-1" title="Logo position" role="radiogroup" aria-label="Logo position">
+              <button type="button" role="radio" aria-checked="false" data-pos="top-left" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Top left" aria-label="Top left">TL</button>
+              <button type="button" role="radio" aria-checked="false" data-pos="top-center" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Top center" aria-label="Top center">TC</button>
+              <button type="button" role="radio" aria-checked="false" data-pos="top-right" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Top right" aria-label="Top right">TR</button>
+              <button type="button" role="radio" aria-checked="false" data-pos="middle-left" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Middle left" aria-label="Middle left">ML</button>
+              <button type="button" role="radio" aria-checked="false" data-pos="center" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Center" aria-label="Center">C</button>
+              <button type="button" role="radio" aria-checked="false" data-pos="middle-right" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Middle right" aria-label="Middle right">MR</button>
+              <button type="button" role="radio" aria-checked="false" data-pos="bottom-left" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Bottom left" aria-label="Bottom left">BL</button>
+              <button type="button" role="radio" aria-checked="false" data-pos="bottom-center" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border border-transparent text-[10px] font-medium tracking-wide text-base-content/45 transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-transparent" title="Bottom center" aria-label="Bottom center">BC</button>
+              <button type="button" role="radio" aria-checked="true" data-pos="bottom-right" class="logo-pos-btn flex h-full w-full items-center justify-center rounded-md border text-[10px] font-medium tracking-wide transition-colors duration-150 hover:bg-base-content/6 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 bg-base-content/8 text-base-content/80 border-base-content/10" title="Bottom right" aria-label="Bottom right">BR</button>
+            </div>
+          </div>
+        </div>
+
+        <label class="mt-4 form-control">
+          <div class="mb-3 flex items-center justify-between">
+            <span class="text-sm font-semibold text-base-content">Opacity</span>
+            <span id="logo-opacity-value" class="min-w-8 text-right text-xs font-medium tabular-nums text-base-content/60">70%</span>
+          </div>
+          <input id="logo-opacity" type="range" min="0" max="100" value="70" class="range range-neutral range-sm w-full">
+        </label>
+
+        <p id="logo-upload-hint" class="hidden text-[11px]" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="grid grid-cols-2 gap-5">
+      <div class="card border border-base-content/5 bg-base-100 overflow-hidden">
+        <div class="card-body p-5">
+          <h2 class="text-sm font-semibold text-base-content mb-2">Style</h2>
+          <select id="style-preset" class="select select-sm w-full appearance-none bg-base-200/30">
+            <option value="" disabled="">Choose a style…</option>
+            <option value="custom" disabled="">Custom</option>
+            <option value="classic" selected="">Classic</option>
+            <option value="etsy_hover">Scroll Stopper</option>
+            <option value="snappy">Short &amp; Snappy</option>
+            <option value="cinematic">Smooth &amp; Cinematic</option>
+            <option value="dynamic">Dynamic</option>
+            <option value="minimal">Clean &amp; Minimal</option>
+            <option value="dreamy">Slow &amp; Dreamy</option>
+          </select>
+        </div>
+      </div>
+      <div class="card border border-base-content/5 bg-base-100 overflow-hidden">
+        <div class="card-body p-5">
+          <h2 class="text-sm font-semibold text-base-content mb-2">Aspect Ratio</h2>
+          <select id="aspect-ratio" class="select select-sm w-full appearance-none bg-base-200/30">
+            <option value="16:9">16:9 (widescreen)</option>
+            <option value="1:1" selected="">1:1 (square, recommended)</option>
+            <option value="9:16">9:16 (vertical)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+
+  </div>
+
+</div>
+
+<!-- Marketing -->
+<section class="max-w-7xl mx-auto mt-16 mb-16 space-y-16">
+  <!-- Overview -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Overview</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content max-w-2xl">Listing videos shoppers actually watch.</h2>
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-lg font-bold">What it does</h3>
+        <p class="mt-3 text-base-content/65 leading-relaxed">
+          Video Generator turns your product photos into a polished slideshow video — reorder slides, tune transitions and zoom, preview live, then export at the aspect ratio you need.
+        </p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-lg font-bold">Why it matters</h3>
+        <p class="mt-3 text-base-content/65 leading-relaxed">
+          Etsy listings with video earn noticeably more attention from shoppers than photo-only listings. A short, professional clip lifts perceived quality and gives buyers more confidence at the moment they're deciding.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Features</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">Built to ship a listing video in minutes.</h2>
+
+    <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Live canvas preview</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Every change is reflected instantly in the preview — no waiting on renders to see what your video looks like.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Drag-to-reorder slides</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Drop in your product photos and drag them into the right order — the slide list updates the timeline as you move things around.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Style presets</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Pick a starting style and you're 80% of the way there — every preset is tuned for Etsy listings, not generic stock-video looks.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Logo &amp; positioning</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Upload your shop logo, place it in any of nine positions, and tune opacity. Reinforce your brand on every frame without distracting from the product.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Multiple aspect ratios</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Export square (1:1), landscape (16:9), or vertical (9:16) — match Etsy's listing video requirements or repurpose for Instagram and TikTok in one click.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Transitions &amp; zoom</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Subtle Ken Burns-style zoom and configurable transitions add motion without feeling gimmicky — Etsy buyers see polish, not a slideshow circa 2009.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Etsy-ready export</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Output is encoded to match Etsy's listing video specs out of the box — duration, format, and resolution all hit the marks without manual tweaking.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Smart export checks</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Before you download, we flag anything Etsy might reject — wrong aspect, video too long — and give you a one-click fix.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Free, no signup needed</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Build and export videos within the daily free limit. Create an account or upgrade for higher daily limits.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- How to use -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Getting started</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">How to use it.</h2>
+
+    <ol class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">01</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Upload your photos</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Drop in product images — JPG, PNG, or WebP. Reorder them by dragging until the sequence tells the right story.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">02</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Add a logo &amp; pick a style</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Optionally upload your shop logo, position it, then choose a style preset and aspect ratio that fits where the video will run.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">03</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Preview live</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Hit play to scrub through the video. Tweak transitions, zoom, and timing until everything feels right — every change updates instantly.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">04</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Export &amp; upload</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Click Download Video, wait a few seconds, and upload the file straight to your Etsy listing.</p>
+        </div>
+      </li>
+
+    </ol>
+  </div>
+
+  <!-- FAQ -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">FAQ</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">Frequently asked questions.</h2>
+    <div class="mt-8 rounded-lg border border-base-content/10 bg-base-100 divide-y divide-base-content/10 px-6">
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Is this tool free to use without an account?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Yes — fully free, no account or credit card required. There's a daily limit on free use; create an account or upgrade for higher daily limits.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">What aspect ratio should I export for Etsy?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">For Etsy listing videos, square (1:1) is the safest choice — it displays consistently across the gallery and on mobile. Use 9:16 if you also plan to repurpose the video for Reels or TikTok, and 16:9 for landscape banners.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">How long should an Etsy listing video be?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Etsy allows listing videos between 5 and 15 seconds. Around 8 seconds is a sweet spot — long enough to show the product from a few angles, short enough to keep buyers engaged. Our default duration is set there.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">How many photos should I include?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">3 to 6 photos works best. Lead with your hero shot, follow with detail and scale shots, and end on something that conveys use or context. More photos than that and each slide gets too short to register.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Will Etsy accept the file format I export?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Yes. We export in MP4 (H.264) at 1080p — the format and resolution Etsy expects. Before download, the export checks flag anything Etsy might reject and offer a one-click fix.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Do my images leave my browser?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">No. Video Generator runs entirely in your browser — your photos are processed locally and the video is rendered on your machine. Nothing is uploaded to our servers.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+
+
+        </div>
+      </main>
+      
+    </div>
+  </div>
+
+  
+
+  
+  
+  <!-- Analytics -->
+
+
+  
+
+
+  
+  
+<div height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;" data-original-tag="iframe"></div>
+
+
+</body></html>

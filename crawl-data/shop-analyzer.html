@@ -1,0 +1,905 @@
+<!-- Source: https://www.rankhero.com/tools/etsy/shop-analyzer -->
+<!-- Scraped: 2026-06-12T06:54:59.492Z -->
+<!DOCTYPE html><html lang="en" class="h-full" data-theme="light">
+
+<body class="bg-base-200 antialiased h-full">
+  <el-dialog>
+    
+  </el-dialog>
+
+  <div class="flex min-h-screen flex-col pt-16">
+    <div class="fixed top-0 z-40 flex h-16 w-full shrink-0 items-center gap-x-4 border-b border-base-content bg-[#222f3e] dark:border-base-content/5 dark:bg-base-100 px-4  sm:gap-x-6 sm:px-6 lg:px-8">
+      <button type="button" command="show-modal" commandfor="sidebar" class="-m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer lg:hidden" aria-expanded="false">
+        <span class="sr-only">Open sidebar</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" data-slot="icon" aria-hidden="true" class="size-6">
+          <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+
+      <!-- Separator -->
+      <div aria-hidden="true" class="h-6 w-px bg-white lg:hidden"></div>
+
+      <div class="flex flex-1 items-center gap-x-4 self-stretch lg:gap-x-6">
+        <a href="https://www.rankhero.com/" class="flex items-center shrink-0">
+          <img src="https://www.rankhero.com/static/images/logo/rankhero-logo.svg" alt="RankHero" class="h-8 w-auto" width="300" height="150">
+          <span class="ml-2 text-xl md:text-xl text-white dark:text-base-content">RankHero</span>
+        </a>
+
+        <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto">
+          
+          
+          <a href="https://www.rankhero.com/pricing" class="hidden lg:inline-flex items-center gap-1.5 text-sm font-medium text-white dark:text-base-content hover:text-secondary dark:hover:text-secondary transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" class="size-4">
+              <path d="M423.5 117.2C419 118.9 416 123.2 416 128C416 132.8 419 137.1 423.5 138.8L480 160L501.2 216.5C502.9 221 507.2 224 512 224C516.8 224 521.1 221 522.8 216.5L544 160L600.5 138.8C605 137.1 608 132.8 608 128C608 123.2 605 118.9 600.5 117.2L544 96L522.8 39.5C521.1 35 516.8 32 512 32C507.2 32 502.9 35 501.2 39.5L480 96L423.5 117.2zM199.9 272.5L224 220.4L248.1 272.5C252.9 282.9 261.2 291.2 271.6 296L323.7 320.1L271.6 344.2C261.2 349 252.9 357.3 248.1 367.7L224 419.8L199.9 367.7C195.1 357.3 186.8 349 176.4 344.2L124.3 320L176.5 295.9C186.9 291.1 195.2 282.8 200 272.4zM197.6 163.1L156.4 252.4L67.1 293.6L66.5 293.9C62.6 295.7 54.2 299.6 41.3 305.5C35.6 308.1 32 313.8 32 320C32 326.2 35.6 331.9 41.3 334.5C54.2 340.4 62.5 344.3 66.5 346.1L67.1 346.4L156.4 387.6L197.6 476.9L197.9 477.5C199.7 481.4 203.6 489.8 209.5 502.7C212.1 508.4 217.8 512 224 512C230.2 512 235.9 508.4 238.5 502.7C252.9 471.6 253.6 470 291.6 387.7L380.9 346.5L381.5 346.2C385.4 344.4 393.8 340.5 406.7 334.6C412.4 332 416 326.3 416 320.1C416 313.9 412.4 308.2 406.7 305.6C375.6 291.2 374 290.5 291.7 252.5L250.5 163.2L250.2 162.6C248.4 158.7 244.5 150.3 238.6 137.4C236 131.7 230.3 128.1 224.1 128.1C217.9 128.1 212.2 131.7 209.6 137.4C195.8 167.2 198.1 162.4 197.7 163.2zM448 480L391.5 501.2C387 502.9 384 507.2 384 512C384 516.8 387 521.1 391.5 522.8L448 544L469.2 600.5C470.9 605 475.2 608 480 608C484.8 608 489.1 605 490.8 600.5L512 544L568.5 522.8C573 521.1 576 516.8 576 512C576 507.2 573 502.9 568.5 501.2L512 480L490.8 423.5C489.1 419 484.8 416 480 416C475.2 416 470.9 419 469.2 423.5L448 480z"></path>
+            </svg>
+            Upgrade
+          </a>
+          
+          <label class="swap swap-rotate -m-2.5 p-2.5 text-white dark:text-base-content dark:hover:text-secondary hover:text-secondary hover:cursor-pointer">
+            <!-- this hidden checkbox controls the state -->
+            <input id="theme-toggle" type="checkbox" class="theme-controller" value="dark">
+
+            <!-- sun icon -->
+            <svg class="swap-off size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"></path>
+            </svg>
+
+            <!-- moon icon -->
+            <svg class="swap-on size-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"></path>
+            </svg>
+          </label>
+          <!-- Separator -->
+          <div aria-hidden="true" class="hidden lg:block lg:h-6 lg:w-px bg-white lg:bg-white"></div>
+
+          
+          <a href="https://www.rankhero.com/auth/login" class="btn btn-accent btn-sm">Login</a>
+
+          
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Static sidebar for desktop -->
+    <div class="hidden bg-base-100 lg:fixed lg:top-16 lg:bottom-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
+      <!-- Sidebar component, swap this element with another sidebar if you like -->
+      <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-base-content/5 bg-base-100 px-6 pb-4 pt-0">
+        
+      </div>
+    </div>
+
+    <div class="flex flex-col flex-1 lg:pl-72">
+      <main class="py-4 sm:py-6 lg:py-8 bg-base-200 flex-1">
+        <div class="px-4 sm:px-6 lg:px-12 xl:px-16 container mx-auto">
+          <!--Alerts-->
+          <div class="">
+            
+            
+
+            
+            
+
+            
+          </div>
+
+          <!-- Toast container for auto-dismissing messages -->
+          <div id="flash-toast-container" class="toast toast-end toast-top top-20 z-50"></div>
+          
+          
+          
+          <!-- Your content -->
+          
+
+
+
+<!-- Hero -->
+<div class="mb-10">
+  <div class="max-w-7xl mx-auto">
+    
+
+    <div class="mt-6 flex items-start justify-between gap-8">
+      <div>
+        <h1 class="font-cabinet-grotesk text-5xl sm:text-6xl font-black tracking-tight leading-[1.02] text-base-content">
+          Etsy<br>
+          <span class="text-primary">Shop Analyzer.</span>
+        </h1>
+
+        <p class="mt-4 text-lg sm:text-xl text-base-content/70 leading-relaxed max-w-2xl">
+          See what's working, what's not, and how to improve any Etsy shop. Enter a shop name to get a full audit of sales, listings, reviews, and more.
+        </p>
+      </div>
+
+      <svg class="hidden sm:block shrink-0 h-40 w-40 lg:h-48 lg:w-48 text-primary opacity-15" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+        <path d="M93.9 145.9C104.4 116 132.6 96 164.3 96L476.5 96C508.2 96 536.4 116 546.9 145.9L565.3 198.5C576.3 230 566.3 262.4 544.4 282.9L544.4 472.1C544.4 511.9 512.2 544.1 472.4 544.1L168.4 544.1C128.6 544.1 96.4 511.9 96.4 472.1L96.4 282.9C74.5 262.4 64.5 230 75.5 198.5L93.9 145.9zM144.4 303.8L144.4 384L496.4 384L496.4 303.8C494.4 303.9 492.5 304 490.5 304C468.7 304 448.7 295.1 434.3 280.7C419.7 295.1 399.7 304 377.4 304C355.2 304 335 295 320.4 280.5C305.8 295 285.6 304 263.4 304C241.1 304 221.1 295.1 206.5 280.7C192.1 295.2 172.2 304 150.3 304C148.3 304 146.3 303.9 144.3 303.8zM238.1 144L230.5 219.7C228.6 239.1 243.8 256 263.3 256C281.5 256 296.3 241.2 296.3 223L296.3 144L238 144zM344.4 223C344.4 241.2 359.2 256 377.4 256C396.9 256 412.2 239.1 410.2 219.7L402.6 144L344.3 144L344.3 223zM459.3 227.8C460.9 243.8 474.4 256 490.4 256C512 256 527.1 234.7 519.9 214.4L501.6 161.8C497.9 151.1 487.8 144 476.5 144L450.9 144L459.3 227.8zM150.4 256C166.5 256 179.9 243.8 181.5 227.8L189.9 144L164.3 144C153 144 143 151.1 139.2 161.8L120.8 214.4C113.7 234.8 128.8 256 150.3 256zM144.4 472C144.4 485.3 155.1 496 168.4 496L472.4 496C485.7 496 496.4 485.3 496.4 472L496.4 432L144.4 432L144.4 472z"></path>
+      </svg>
+    </div>
+
+    <form id="form" class="mt-10 flex flex-col sm:flex-row items-stretch sm:items-end gap-3" aria-label="Shop Analyzer Form" method="post">
+
+      <!-- Shop name -->
+      <div class="flex-1">
+        <label for="shop-name-input" class="block text-xs font-bold uppercase tracking-wider text-base-content/55 mb-1.5">
+          Shop name or URL<span class="text-error ml-1 normal-case tracking-normal">(required)</span>
+        </label>
+        <div class="relative">
+          <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-base-content/45">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="currentColor">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </g>
+            </svg>
+          </span>
+          <input id="shop-name-input" name="shop_name" type="text" required="" autocomplete="on" spellcheck="false" list="shop-names" placeholder="example: 'ShopName' or 'ShopName.etsy.com'" class="w-full rounded-lg bg-base-100 border border-base-content/15 pl-12 pr-5 py-4 text-base placeholder:text-base-content/45 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition shadow-xs">
+          <datalist id="shop-names"></datalist>
+        </div>
+      </div>
+
+      <button type="submit" id="submit-btn" class="rounded-lg bg-primary px-7 py-4 text-base font-bold text-primary-content cursor-pointer hover:bg-primary/90 focus:outline-none focus:ring-4 focus:ring-primary/25 transition shadow-xs disabled:cursor-not-allowed disabled:opacity-70">
+        Search
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Error Alert -->
+<div id="error" role="alert" class="hidden max-w-7xl mx-auto mb-8">
+  <div class="rounded-lg border border-error/20 bg-error/5 px-4 py-3 flex items-start gap-3">
+    <svg class="h-4 w-4 text-error mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <span id="error-content" class="flex-1 text-sm text-error"></span>
+    <button type="button" class="text-error/60 hover:text-error transition-colors shrink-0" aria-label="Close" data-dismiss-parent="#error">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Marketing -->
+<section id="marketing-section" class="max-w-7xl mx-auto mt-16 mb-16 space-y-16">
+  <!-- Overview -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Overview</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content max-w-2xl">A full Etsy shop audit in seconds.</h2>
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-lg font-bold">What it does</h3>
+        <p class="mt-3 text-base-content/65 leading-relaxed">
+          Shop Analyzer pulls a complete performance breakdown for any Etsy shop — sales estimates, listings, reviews, tags, categories, policies — so you can see exactly what's working and where the gaps are.
+        </p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-lg font-bold">Why it matters</h3>
+        <p class="mt-3 text-base-content/65 leading-relaxed">
+          Audit your own shop to spot quick wins. Audit competitors to learn what's driving their sales. Either way, you stop guessing and start making decisions based on the same data top sellers already have.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Features</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">Every signal a shop sends.</h2>
+
+    <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Sales &amp; revenue estimates</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Monthly sales, monthly revenue, total sales, average price — and a percentile ranking against the rest of Etsy.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Tag &amp; category insights</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">The exact tags and categories the shop uses most, ranked by frequency — see the patterns behind their listings.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Listings breakdown</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Every active listing, sorted by score, sales, revenue, views, faves, or date — with thumbnails, pricing, and quick links to the analyzer.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Review distribution</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Visual 1–5 star breakdown plus a feed of recent reviews, filterable by sentiment so you can find positive/neutral/negative quickly.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Review summary</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">A condensed summary of recent reviews so you understand the overall buyer experience without reading hundreds of comments.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Shop policies &amp; messaging</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Announcement, vacation message, sale message, payment / shipping / refund policies — all the customer-facing copy in one view.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Shop performance metrics</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Active listings, sales per listing, faves, total reviews, review rate — all the operational stats to gauge a shop's health.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Share results</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">One click to copy a shareable link to the analysis — perfect for handing off to a co-founder, VA, or client.</p>
+      </div>
+
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <h3 class="font-cabinet-grotesk text-base font-bold">Free, no signup needed</h3>
+        <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Run audits without an account. Upgrade for higher daily limits and unrestricted use.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- How to use -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">Getting started</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">How to use it.</h2>
+
+    <ol class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">01</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Enter a shop name</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Paste any Etsy shop name or URL — your own shop or a competitor's.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">02</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Read the overview</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Start with the headline stats — monthly sales, revenue, percentile rank — then look at the most-used tags and categories to see how they position themselves.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">03</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Inspect listings &amp; reviews</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">Switch to the Reviews tab for the rating distribution and recent feedback. Click any listing to drill into the Listing Analyzer.</p>
+        </div>
+      </li>
+
+      <li class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <span class="font-cabinet-grotesk text-3xl font-black tabular-nums text-primary leading-none">04</span>
+        <div>
+          <h3 class="font-cabinet-grotesk mt-4 text-base font-bold">Apply what you learn</h3>
+          <p class="mt-2 text-sm text-base-content/60 leading-relaxed">For your own shop: address the gaps. For competitors: borrow the strategies that are working — pricing, tags, photo style, listing structure. Don't copy; adapt.</p>
+        </div>
+      </li>
+
+    </ol>
+  </div>
+
+  <!-- FAQ -->
+  <div>
+    <p class="rh-eyebrow"><span class="rh-eyebrow-text">FAQ</span></p>
+    <h2 class="font-cabinet-grotesk mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-base-content">Frequently asked questions.</h2>
+    <div class="mt-8 rounded-lg border border-base-content/10 bg-base-100 divide-y divide-base-content/10 px-6">
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Are the sales numbers exact?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">They're estimates derived from publicly available signals (reviews, favorites, Etsy's API). Treat them as directional — great for relative comparison and trend-spotting, not exact financials.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Can I analyze any shop, including competitors?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Yes. The data we use is all publicly visible on Etsy. Use it to audit your own shop, study competitors, validate niches, or just get inspired by what successful shops look like under the hood.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">What does the percentile ranking mean?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">"More sales than X%" tells you where the shop sits in Etsy's overall sales distribution. 90% means it sells more than 90% of shops on the platform — useful for benchmarking quickly.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Why are tags and categories useful?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">They reveal how a shop positions itself in Etsy search. Patterns in the most-used tags tell you which keywords are driving discoverability — apply the same approach (with your own products) to compete in the same niches.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">How do I read the review distribution?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Each row shows what % of reviews fell at that star level. A heavy concentration in 5-star with very few low-star reviews signals consistent quality. If you're seeing meaningful 1–3 star activity, scan those reviews to find the recurring pain points.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">Can I use this for keyword research?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Indirectly — yes. The most-used tags surface the language a successful shop uses. For dedicated keyword research with search volume + competition data, jump over to the Tag Generator or Keyword Generator.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">How fresh is the data?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">Listings, reviews, and basic shop info come from live Etsy APIs. Sales estimates are recomputed regularly. Treat the snapshot as recent (within the last day) rather than literal real-time.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer">
+          <span class="text-base font-medium">What if a shop is on vacation?</span>
+          <svg class="faq-icon h-4 w-4 text-base-content/40 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+        </button>
+        <div class="faq-content max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out">
+          <p class="pb-5 text-sm text-base-content/70 leading-relaxed">A vacation badge appears next to the shop name and the listings won't be available to buyers. Historical sales/review data is still shown, but recent activity will look paused.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- Loading section -->
+<section id="loading-section" class="hidden max-w-7xl mx-auto mb-4" data-tool="default">
+  <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden mb-4">
+    <div class="p-6 flex flex-row items-center gap-6">
+      <div class="flex items-center pr-6 border-r border-base-content/5">
+        <svg class="w-12 h-12 text-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+          <path class="currentColor" fill="currentColor" opacity=".8" d="M128 256C128 307.2 148 353.7 180.7 388.1C204.3 413 224 443.4 224 477.7L224 480L416 480L416 477.7C416 443.4 435.7 413 459.3 388.1C492 353.7 512 307.2 512 256C512 150 426 64 320 64C214 64 128 150 128 256zM192 248C192 181.7 245.7 128 312 128C325.3 128 336 138.7 336 152C336 165.3 325.3 176 312 176C272.2 176 240 208.2 240 248C240 261.3 229.3 272 216 272C202.7 272 192 261.3 192 248z"></path>
+          <path fill="currentColor" opacity=".8" d="M58.7 90.5C46.8 84.6 32.4 89.4 26.5 101.2C20.6 113 25.4 127.5 37.3 133.5L69.3 149.5C81.2 155.4 95.6 150.6 101.5 138.8C107.4 127 102.6 112.5 90.8 106.6L58.8 90.6zM602.7 133.4C614.6 127.5 619.4 113.1 613.4 101.2C607.4 89.3 593.1 84.5 581.2 90.5L549.2 106.5C537.3 112.4 532.5 126.8 538.5 138.7C544.5 150.6 558.8 155.4 570.7 149.4L602.7 133.4zM24 232C10.7 232 0 242.7 0 256C0 269.3 10.7 280 24 280L56 280C69.3 280 80 269.3 80 256C80 242.7 69.3 232 56 232L24 232zM584 232C570.7 232 560 242.7 560 256C560 269.3 570.7 280 584 280L616 280C629.3 280 640 269.3 640 256C640 242.7 629.3 232 616 232L584 232zM90.7 405.5C102.6 399.6 107.4 385.2 101.4 373.3C95.4 361.4 81.1 356.6 69.2 362.6L37.2 378.6C25.3 384.5 20.5 398.9 26.5 410.8C32.5 422.7 46.8 427.5 58.7 421.5L90.7 405.5zM570.7 362.6C558.8 356.7 544.4 361.5 538.5 373.3C532.6 385.1 537.4 399.6 549.2 405.5L581.2 421.5C593.1 427.4 607.5 422.6 613.4 410.8C619.3 399 614.5 384.5 602.7 378.6L570.7 362.6zM416 480L224 480L224 512C224 556.2 259.8 592 304 592L336 592C380.2 592 416 556.2 416 512L416 480z"></path>
+        </svg>
+      </div>
+      <div>
+        <h5 class="mb-2 text-2xl font-bold text-base-content">Pro Tip</h5>
+        <p data-loading-tip="" class="text-base-content/80">
+          Hang tight—we're gathering fresh insights for you.
+        </p>
+      </div>
+    </div>
+    <progress class="progress progress-primary h-1 w-full block"></progress>
+  </div>
+  <div class="rounded-lg border border-base-content/10 bg-base-100 h-full mb-4">
+    <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-20 items-stretch">
+      <div class="flex flex-col gap-4 col-span-3">
+        <div class="skeleton h-32 w-full"></div>
+        <div class="skeleton h-4 w-28"></div>
+        <div class="skeleton h-4 w-full"></div>
+        <div class="skeleton h-4 w-full"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Results -->
+<div id="results-section" class="hidden max-w-7xl mx-auto mb-16">
+
+  <!-- Shop banner card -->
+  <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden mb-6">
+    <!-- Banner image -->
+    <div class="relative h-32 lg:h-48">
+      <img id="shop-image" src="https://www.rankhero.com/tools/etsy/shop-analyzer" alt="Shop banner" class="w-full h-full object-cover object-center">
+      <div class="pointer-events-none absolute inset-0 bg-black/60 z-10"></div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 pb-6">
+      <div class="sm:flex sm:space-x-5">
+        <!-- Avatar -->
+        <div class="-mt-12 sm:-mt-16 self-start relative z-20">
+          <img id="shop-owner-image" src="https://www.rankhero.com/tools/etsy/shop-analyzer" alt="Shop owner" class="size-24 rounded-full ring-4 ring-base-100 sm:size-50 object-cover object-center">
+        </div>
+
+        <!-- Right section -->
+        <div class="mt-6 sm:mt-0 flex-1">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+            <!-- Title and ratings -->
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mt-0 md:mt-4">
+                <h2 id="shop-name" class="font-cabinet-grotesk truncate text-3xl font-bold text-base-content">Shop Name</h2>
+                <span id="vacation-badge" class="hidden">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-warning/10 text-warning">On Vacation</span>
+                </span>
+              </div>
+              <p id="shop-title" class="truncate text-sm text-base-content/60 mt-0.5">Shop Title</p>
+
+              <div class="mt-3 space-y-2">
+                <!-- Stars + counts -->
+                <div class="flex items-center gap-1">
+                  <div class="rating rating-sm rating-half flex items-center" aria-label="Shop rating" id="shop-rating">
+                    <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="0.5" aria-label=".5 star"></div>
+                    <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="1" aria-label="1 star"></div>
+                    <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="1.5" aria-label="1.5 star"></div>
+                    <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="2" aria-label="2 star"></div>
+                    <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="2.5" aria-label="2.5 star"></div>
+                    <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="3" aria-label="3 star"></div>
+                    <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="3.5" aria-label="3.5 star"></div>
+                    <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="4" aria-label="4 star"></div>
+                    <div class="mask mask-star-2 mask-half-1 bg-warning" data-rating-value="4.5" aria-label="4.5 star"></div>
+                    <div class="mask mask-star-2 mask-half-2 bg-warning" data-rating-value="5" aria-label="5 star"></div>
+                  </div>
+                  <span class="ml-1 text-base font-bold tabular-nums" id="review-average">Shop Rating</span>
+                  <span class="text-sm text-base-content/55 tabular-nums" id="review-count">(Num Ratings)</span>
+                </div>
+
+                <!-- Date + Location -->
+                <div class="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-base-content/65">
+                  <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+                      <path d="M216 64C229.3 64 240 74.7 240 88L240 128L400 128L400 88C400 74.7 410.7 64 424 64C437.3 64 448 74.7 448 88L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 88C192 74.7 202.7 64 216 64zM216 176L160 176C151.2 176 144 183.2 144 192L144 240L496 240L496 192C496 183.2 488.8 176 480 176L216 176zM144 288L144 480C144 488.8 151.2 496 160 496L480 496C488.8 496 496 488.8 496 480L496 288L144 288z"></path>
+                    </svg>
+                    <span id="date-created">Shop Creation Date</span>
+                  </div>
+
+                  <div class="flex items-center gap-1.5" id="shop-location">
+                    <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+                      <path d="M176 252.6C176 175.7 239.7 112 320 112C400.3 112 464 175.7 464 252.6C464 298.2 440.2 354.1 405.1 409.7C376.8 454.5 344.1 494.5 320 521.8C295.9 494.5 263.3 454.6 234.9 409.7C199.8 354.2 176 298.2 176 252.6zM320 64C214 64 128 148.4 128 252.6C128 371.9 248.2 514.9 298.4 569.4C310.2 582.2 329.8 582.2 341.6 569.4C391.8 514.9 512 371.9 512 252.6C512 148.4 426 64 320 64zM288 256C288 238.3 302.3 224 320 224C337.7 224 352 238.3 352 256C352 273.7 337.7 288 320 288C302.3 288 288 273.7 288 256zM400 256C400 211.8 364.2 176 320 176C275.8 176 240 211.8 240 256C240 300.2 275.8 336 320 336C364.2 336 400 300.2 400 256z"></path>
+                    </svg>
+                    <span id="location">Shop Location</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex gap-2 mt-4 sm:mt-4 sm:self-start">
+              <a id="shop-url" href="https://www.rankhero.com/tools/etsy/shop-analyzer" target="_blank" rel="noopener noreferrer" aria-label="View this shop on Etsy" class="inline-flex items-center gap-1.5 rounded-lg border border-base-content/15 bg-base-100 px-4 py-2 text-sm font-bold text-base-content/75 hover:border-base-content/30 hover:text-base-content cursor-pointer transition shadow-xs">
+                <svg class="size-4" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true">
+                  <path d="M354.4 83.8C359.4 71.8 371.1 64 384 64L544 64C561.7 64 576 78.3 576 96L576 256C576 268.9 568.2 280.6 556.2 285.6C544.2 290.6 530.5 287.8 521.3 278.7L464 221.3L310.6 374.6C298.1 387.1 277.8 387.1 265.3 374.6C252.8 362.1 252.8 341.8 265.3 329.3L418.7 176L361.4 118.6C352.2 109.4 349.5 95.7 354.5 83.7zM64 240C64 195.8 99.8 160 144 160L224 160C241.7 160 256 174.3 256 192C256 209.7 241.7 224 224 224L144 224C135.2 224 128 231.2 128 240L128 496C128 504.8 135.2 512 144 512L400 512C408.8 512 416 504.8 416 496L416 416C416 398.3 430.3 384 448 384C465.7 384 480 398.3 480 416L480 496C480 540.2 444.2 576 400 576L144 576C99.8 576 64 540.2 64 496L64 240z"></path>
+                </svg>
+                <span>View on Etsy</span>
+              </a>
+
+              <button id="share-results-btn" aria-label="Share results" class="inline-flex items-center gap-1.5 rounded-lg border border-base-content/15 bg-base-100 px-4 py-2 text-sm font-bold text-base-content/75 hover:border-base-content/30 hover:text-base-content cursor-pointer transition shadow-xs">
+                <svg id="share-icon" class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 1 1 0-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 1 0 5.368-2.684 3 3 0 0 0-5.368 2.684Zm0 9.316a3 3 0 1 0 5.368 2.684 3 3 0 0 0-5.368-2.684Z"></path>
+                </svg>
+                <svg id="share-check-icon" class="hidden size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+                </svg>
+                <span id="share-btn-text">Share</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs (Overview / Reviews / About) -->
+      <div class="mt-6">
+        <div class="inline-flex rounded-lg bg-base-200 border border-base-content/10 p-1" role="tablist">
+          <input type="radio" name="my_tabs_1" id="tab-overview" class="peer/overview sr-only" aria-label="Overview" aria-controls="overview-section" data-section-target="overview" checked="">
+          <label for="tab-overview" class="cursor-pointer px-4 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/overview:bg-base-100 peer-checked/overview:text-primary peer-checked/overview:shadow-xs transition-colors">Overview</label>
+
+          <input type="radio" name="my_tabs_1" id="tab-reviews" class="peer/reviews sr-only" aria-label="Reviews" aria-controls="reviews-section" data-section-target="reviews">
+          <label for="tab-reviews" class="cursor-pointer px-4 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/reviews:bg-base-100 peer-checked/reviews:text-primary peer-checked/reviews:shadow-xs transition-colors">Reviews</label>
+
+          <input type="radio" name="my_tabs_1" id="tab-about" class="peer/about sr-only" aria-label="About" aria-controls="about-section" data-section-target="about">
+          <label for="tab-about" class="cursor-pointer px-4 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/about:bg-base-100 peer-checked/about:text-primary peer-checked/about:shadow-xs transition-colors">About</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview Tab -->
+  <div id="overview-section" class="mb-4" aria-hidden="false">
+
+    <!-- Headline stat cards -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-base-content/55">Monthly Sales</p>
+        <p id="stat-monthly-sales" class="font-cabinet-grotesk mt-3 text-2xl font-bold tabular-nums leading-tight">89,400</p>
+        <p id="stat-monthly-sales-desc" class="mt-1 text-xs text-base-content/55">— per day</p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-base-content/55">Monthly Revenue</p>
+        <p id="stat-monthly-revenue" class="font-cabinet-grotesk mt-3 text-2xl font-bold tabular-nums leading-tight">89,400</p>
+        <p id="stat-monthly-revenue-desc" class="mt-1 text-xs text-base-content/55">— per day</p>
+      </div>
+      <div class="rounded-lg border border-base-content/10 bg-base-100 p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-base-content/55">More sales than</p>
+        <p class="font-cabinet-grotesk mt-3 text-2xl font-bold tabular-nums leading-tight">
+          <span id="stat-shop-percentile">100</span><span id="stat-shop-percentile-symbol">%</span>
+        </p>
+        <p class="mt-1 text-xs text-base-content/55">of Shops</p>
+      </div>
+    </div>
+
+    <!-- Insights chart + Shop Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+      <div class="md:col-span-8 flex flex-col gap-4">
+        <div class="rounded-lg border border-base-content/10 bg-base-100 h-full flex flex-col overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <h3 class="font-cabinet-grotesk text-lg font-bold" id="insights-chart-heading">Most Used Tags</h3>
+              <div class="inline-flex rounded-lg bg-base-200 border border-base-content/10 p-1" role="tablist" aria-label="Tag and category toggles">
+                <input type="radio" name="insights_metric_tab" id="insights-metric-tags" class="peer/itags sr-only" aria-label="Tags" data-metric="tags" checked="" disabled="">
+                <label for="insights-metric-tags" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/itags:bg-base-100 peer-checked/itags:text-primary peer-checked/itags:shadow-xs transition-colors">Tags</label>
+
+                <input type="radio" name="insights_metric_tab" id="insights-metric-categories" class="peer/icats sr-only" aria-label="Categories" data-metric="categories" disabled="">
+                <label for="insights-metric-categories" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/icats:bg-base-100 peer-checked/icats:text-primary peer-checked/icats:shadow-xs transition-colors">Categories</label>
+              </div>
+            </div>
+          </div>
+          <div class="flex-1 min-h-0 flex flex-col gap-4 p-4">
+            <div id="insights-list" class="hidden flex-1 min-h-0 flex-col" aria-live="polite" aria-describedby="insights-chart-heading">
+              <div id="insights-chart-rows" role="list" class="flex flex-col gap-3"></div>
+            </div>
+            <div id="insights-empty" class="hidden mt-2 text-sm text-base-content/65 min-h-52 items-center justify-center text-center">
+              <div class="rounded-lg border border-base-content/10 bg-base-200/40 px-4 py-3 inline-flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-5 w-5 shrink-0 text-base-content/55" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="insights-empty-message" class="text-sm">Tag and category insights are not available for this shop right now.</span>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-base-content/10">
+            
+          </div>
+        </div>
+      </div>
+
+      <div class="md:col-span-4">
+        <div class="rounded-lg border border-base-content/10 bg-base-100 h-full flex flex-col overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Shop Stats</h3>
+          </div>
+          <div class="flex-1 px-6 py-2">
+            <ul role="list" class="divide-y divide-base-content/10">
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Total Sales</span>
+                <span id="total-sales" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">17</span>
+              </li>
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Total Revenue</span>
+                <span id="total-revenue" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">$256</span>
+              </li>
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Active Listings</span>
+                <span id="total-listings" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">136</span>
+              </li>
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Sales per Listing</span>
+                <span id="sales-per-listing" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">0.4</span>
+              </li>
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Average Price</span>
+                <span id="average-price" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">$17.99</span>
+              </li>
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Total Faves</span>
+                <span id="total-faves" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">112</span>
+              </li>
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Total Reviews</span>
+                <span id="total-reviews" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">42</span>
+              </li>
+              <li class="py-3 flex justify-between items-center">
+                <span class="text-sm text-base-content/65">Review Rate</span>
+                <span id="review-rate" class="font-cabinet-grotesk text-sm font-bold tabular-nums text-base-content">24.4%</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Listings -->
+    <div id="listings-section" class="mt-4">
+      <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden mb-4">
+        <div class="border-b border-base-content/10 px-6 py-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Listings</h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="listing-sort-key" aria-label="Sort listings by" class="rounded-md border border-base-content/15 bg-base-100 px-3 py-1.5 text-sm font-medium text-base-content/75 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition cursor-pointer min-w-36">
+                <option value="score">Score</option>
+                <option value="sales">Sales</option>
+                <option value="revenue">Revenue</option>
+                <option value="views">Views</option>
+                <option value="faves">Faves</option>
+                <option value="created" selected="">Created</option>
+                <option value="updated">Updated</option>
+              </select>
+              <select id="listing-sort-direction" aria-label="Sort direction" class="rounded-md border border-base-content/15 bg-base-100 px-3 py-1.5 text-sm font-medium text-base-content/75 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition cursor-pointer whitespace-nowrap min-w-36">
+                <option value="desc">High to low</option>
+                <option value="asc">Low to high</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 md:p-6">
+          <div id="top-listings" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+          <div id="load-more-listings-wrap" class="mt-6 hidden flex-col items-center gap-2">
+            <button id="load-more-listings" type="button" class="inline-flex items-center justify-center gap-2 rounded-md border border-base-content/15 bg-base-100 px-5 py-2.5 text-sm font-bold text-base-content/75 hover:border-base-content/30 hover:text-base-content cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition">
+              Load more listings
+            </button>
+            <p id="load-more-listings-status" class="text-xs text-base-content/55 tabular-nums" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- Reviews Tab -->
+  <div id="reviews-section" class="mb-4 hidden" aria-hidden="true">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+
+      <!-- Left column -->
+      <div class="md:col-span-4 space-y-4">
+
+        <!-- Review distribution -->
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Review Distribution</h3>
+          </div>
+          <div class="px-6 py-5">
+            <div class="text-center">
+              <p id="reviews-section-review-score" class="font-cabinet-grotesk text-5xl font-black tracking-tight text-base-content">No reviews</p>
+              <div id="review-summary-stars" class="mt-2 flex justify-center gap-1" role="img" aria-label="No reviews yet"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" class="size-5 shrink-0"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" fill="#d1d5db"></path></svg></div>
+              <p class="mt-1 text-sm text-base-content/60">based on the most recent <span id="review-section-num-reviews" class="text-base-content tabular-nums">0 reviews</span></p>
+            </div>
+
+            <div class="mt-6 space-y-3">
+              <div class="flex items-center gap-3" data-review-distribution-row="5">
+                <span class="w-14 text-sm text-base-content/65">5 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="4">
+                <span class="w-14 text-sm text-base-content/65">4 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="3">
+                <span class="w-14 text-sm text-base-content/65">3 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="2">
+                <span class="w-14 text-sm text-base-content/65">2 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+              <div class="flex items-center gap-3" data-review-distribution-row="1">
+                <span class="w-14 text-sm text-base-content/65">1 star</span>
+                <div class="relative h-3 flex-1 rounded-full bg-base-200">
+                  <div class="absolute inset-y-0 left-0 rounded-full bg-warning" data-distribution-bar="" style="width: 0%;"></div>
+                </div>
+                <span class="w-12 text-right text-sm text-base-content tabular-nums" data-distribution-percent="">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Review summary -->
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Review Summary</h3>
+          </div>
+          <div class="px-6 py-5">
+            <span id="review-summary-text" class="text-sm text-base-content/70">No summary available.</span>
+            <div id="review-summary-upgrade" class="hidden flex flex-col items-center text-center py-2">
+              <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 672 672" fill="currentColor" aria-hidden="true">
+                  <path d="M370.8 436C366.9 439.1 364.1 443.6 364.1 448.6L364.1 476C364.1 491.5 351.6 504 336.1 504C320.6 504 308.1 491.5 308.1 476L308.1 448.6C308.1 443.6 305.3 439.1 301.4 436C288.4 425.7 280.1 409.9 280.1 392C280.1 361.1 305.2 336 336.1 336C367 336 392.1 361.1 392.1 392C392.1 409.8 383.8 425.7 370.8 436zM196.2 196L196.2 236.9C179.3 242.8 164.3 251.3 151.9 263.7C134.6 281 124.9 303.2 119.4 328.8C109.6 374.2 109.6 465.8 119.4 511.2C124.9 536.8 134.6 559 151.9 576.3C169.2 593.6 191.4 603.3 217 608.8C242.3 614.3 272.7 616 308.2 616L364.2 616C399.8 616 430.1 614.3 455.4 608.8C481 603.3 503.2 593.6 520.5 576.3C537.8 559 547.5 536.8 553 511.2C562.8 465.8 562.8 374.2 553 328.8C547.5 303.2 537.8 281 520.5 263.7C508.1 251.3 493.1 242.8 476.2 236.9L476.2 196C476.2 155.7 463.3 120.1 437.7 94.5C412.1 68.9 376.4 56 336.2 56C296 56 260.3 68.9 234.7 94.5C209.1 120.1 196.2 155.7 196.2 196zM274.3 134.1C287.6 120.8 308 112 336.2 112C364.4 112 384.8 120.8 398.1 134.1C411.4 147.4 420.2 167.8 420.2 196L420.2 226.1C403.2 224.6 384.6 224 364.2 224L308.2 224C287.8 224 269.2 224.6 252.2 226.1L252.2 196C252.2 167.8 261 147.4 274.3 134.1zM174.1 340.6C178.2 321.6 184.2 310.5 191.5 303.3C198.8 296.1 209.8 290 228.8 285.9C248.1 281.7 273.8 280 308.2 280L364.2 280C398.6 280 424.3 281.8 443.6 285.9C462.6 290 473.7 296 480.9 303.3C488.1 310.6 494.2 321.6 498.3 340.6C502.5 359.9 504.2 385.6 504.2 420C504.2 454.4 502.4 480.1 498.3 499.4C494.2 518.4 488.2 529.5 480.9 536.7C473.6 543.9 462.6 550 443.6 554.1C424.3 558.3 398.6 560 364.2 560L308.2 560C273.8 560 248.1 558.2 228.8 554.1C209.8 550 198.7 544 191.5 536.7C184.3 529.4 178.2 518.4 174.1 499.4C169.9 480.1 168.2 454.4 168.2 420C168.2 385.6 170 359.9 174.1 340.6z"></path>
+                </svg>
+              </div>
+              <h4 class="font-cabinet-grotesk text-base font-bold text-base-content mb-1">Review summary</h4>
+              <p class="text-sm text-base-content/65 mb-4">Upgrade to Business or Enterprise to unlock summarized review insights.</p>
+              <a href="https://www.rankhero.com/pricing" class="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2 text-sm font-bold text-primary-content hover:bg-primary/90 transition shadow-xs">View Plans</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right column -->
+      <div class="md:col-span-8">
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 class="font-cabinet-grotesk text-lg font-bold">Reviews</h3>
+              <div class="inline-flex rounded-lg bg-base-200 border border-base-content/10 p-1" role="tablist" aria-label="Filter reviews">
+                <input type="radio" name="shop_reviews_filter_tabs" id="rev-filter-all" class="peer/rall sr-only tab-active" data-review-filter="all" aria-label="All" checked="" aria-checked="true">
+                <label for="rev-filter-all" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/rall:bg-base-100 peer-checked/rall:text-primary peer-checked/rall:shadow-xs transition-colors">All</label>
+
+                <input type="radio" name="shop_reviews_filter_tabs" id="rev-filter-positive" class="peer/rpos sr-only" data-review-filter="positive" aria-label="Positive" aria-checked="false">
+                <label for="rev-filter-positive" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/rpos:bg-base-100 peer-checked/rpos:text-primary peer-checked/rpos:shadow-xs transition-colors">Positive</label>
+
+                <input type="radio" name="shop_reviews_filter_tabs" id="rev-filter-neutral" class="peer/rneut sr-only" data-review-filter="neutral" aria-label="Neutral" aria-checked="false">
+                <label for="rev-filter-neutral" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/rneut:bg-base-100 peer-checked/rneut:text-primary peer-checked/rneut:shadow-xs transition-colors">Neutral</label>
+
+                <input type="radio" name="shop_reviews_filter_tabs" id="rev-filter-negative" class="peer/rneg sr-only" data-review-filter="negative" aria-label="Negative" aria-checked="false">
+                <label for="rev-filter-negative" class="cursor-pointer px-3 py-1.5 text-xs font-bold rounded-md text-base-content/55 hover:text-base-content peer-checked/rneg:bg-base-100 peer-checked/rneg:text-primary peer-checked/rneg:shadow-xs transition-colors">Negative</label>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-5">
+            <div id="reviews-list" class="space-y-6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- About Tab -->
+  <div id="about-section" class="mb-4 hidden" aria-hidden="true">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+
+      <!-- Left column: Shop Details -->
+      <div class="md:col-span-4">
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Shop Details</h3>
+          </div>
+          <div class="px-6 py-2">
+            <ul role="list" class="divide-y divide-base-content/10">
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Shop Location</span><span id="about-shop-location" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Ships From</span><span id="about-ships-from" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Currency</span><span id="about-currency" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">On Vacation</span><span id="about-on-vacation" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Total Faves</span><span id="about-total-faves" class="text-sm font-medium tabular-nums text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Accepts Custom Requests</span><span id="about-accepts-custom" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Languages</span><span id="about-languages" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Created</span><span id="about-created" class="text-sm font-medium text-base-content">—</span></li>
+              <li class="py-3 flex justify-between items-center"><span class="text-sm text-base-content/65">Age</span><span id="about-days-old" class="text-sm font-medium tabular-nums text-base-content">—</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: Communication + Policies -->
+      <div class="md:col-span-8 space-y-4">
+
+        <!-- Communication -->
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Communication</h3>
+          </div>
+          <div class="px-6 py-4 flex flex-col gap-3">
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="communication-accordion">
+              <div class="collapse-title text-sm font-medium">Shop Announcement</div>
+              <div id="communication-announcement" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No announcement available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="policies-accordion">
+              <div class="collapse-title text-sm font-medium">Welcome Message</div>
+              <div id="policy-welcome" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No welcome message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="communication-accordion">
+              <div class="collapse-title text-sm font-medium">Vacation Message</div>
+              <div id="communication-vacation-message" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No vacation message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="communication-accordion">
+              <div class="collapse-title text-sm font-medium">Vacation Autoreply</div>
+              <div id="communication-vacation-autoreply" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No vacation autoreply message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="communication-accordion">
+              <div class="collapse-title text-sm font-medium">Sale Message</div>
+              <div id="communication-sale-message" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No sale message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="communication-accordion">
+              <div class="collapse-title text-sm font-medium">Sale Message <span class="text-base-content/55">(digital)</span></div>
+              <div id="communication-digital-sale-message" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No digital sale message available.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Policies -->
+        <div class="rounded-lg border border-base-content/10 bg-base-100 overflow-hidden">
+          <div class="border-b border-base-content/10 px-6 py-4">
+            <h3 class="font-cabinet-grotesk text-lg font-bold">Policies</h3>
+          </div>
+          <div class="px-6 py-4 flex flex-col gap-3">
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="policies-accordion">
+              <div class="collapse-title text-sm font-medium">Payment Policy</div>
+              <div id="policy-payment" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No policy payment message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="policies-accordion">
+              <div class="collapse-title text-sm font-medium">Shipping Policy</div>
+              <div id="policy-shipping" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No policy shipping message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="policies-accordion">
+              <div class="collapse-title text-sm font-medium">Refund Policy</div>
+              <div id="policy-refunds" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No policy refunds message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="policies-accordion">
+              <div class="collapse-title text-sm font-medium">Additional Policies</div>
+              <div id="policy-additional" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No policy additional message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="policies-accordion">
+              <div class="collapse-title text-sm font-medium">Seller Info</div>
+              <div id="policy-seller-info" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No policy seller info message available.</div>
+            </div>
+            <div class="collapse collapse-plus bg-base-100 border border-base-content/10 rounded-lg">
+              <input type="radio" name="policies-accordion">
+              <div class="collapse-title text-sm font-medium">Privacy Policy</div>
+              <div id="policy-privacy" class="collapse-content text-sm text-base-content/70 whitespace-pre-line">No policy privacy message available.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+        </div>
+      </main>
+      
+    </div>
+  </div>
+
+  
+
+  
+  
+  <!-- Analytics -->
+
+
+  
+<!-- Signup/Login Modal -->
+
+
+<!-- Pricing/Upgrade Modal -->
+
+
+
+
+
+
+
+
+  
+  
+
+<div height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;" data-original-tag="iframe"></div>
+
+</body></html>
