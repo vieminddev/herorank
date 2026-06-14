@@ -1,0 +1,35 @@
+{
+  "count": 12847,
+  "results": [
+    {
+      "listing_id": 4511075902,
+      "title": "Personalized Name Necklace - Custom Name Jewelry - Gift for Her",
+      "price": { "amount": 1299, "divisor": 100, "currency_code": "USD" },
+      "tags": ["personalized gift", "name necklace"],
+      "num_favorers": 98400,
+      "shop_id": 12345678,
+      "taxonomy_id": 1199,
+      "created_timestamp": 1714000000
+    },
+    {
+      "listing_id": 4511075903,
+      "title": "Custom Birth Flower Necklace - Dainty Floral Pendant",
+      "price": { "amount": 1499, "divisor": 100, "currency_code": "USD" },
+      "tags": ["birth flower", "floral necklace"],
+      "num_favorers": 67200,
+      "shop_id": 12345678,
+      "taxonomy_id": 1199,
+      "created_timestamp": 1715000000
+    },
+    {
+      "listing_id": 4511075904,
+      "title": "Engraved Bar Necklace - Personalized Gift for Mom",
+      "price": { "amount": 1199, "divisor": 100, "currency_code": "USD" },
+      "tags": ["bar necklace", "engraved"],
+      "num_favorers": 34100,
+      "shop_id": 22222222,
+      "taxonomy_id": 1199,
+      "created_timestamp": 1716000000
+    }
+  ]
+}

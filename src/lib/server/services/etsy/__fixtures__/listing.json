@@ -1,0 +1,26 @@
+{
+  "listing_id": 4511075902,
+  "title": "Personalized Name Necklace - Custom Name Jewelry - Gift for Her | Dainty Gold Necklace",
+  "description": "Handmade personalized name necklace.\n\n- Material: 18k gold plated\n- Custom name up to 12 characters\n- Ships in 1-2 business days\n\nPerfect gift for birthdays, anniversaries, and bridesmaids.",
+  "price": { "amount": 1299, "divisor": 100, "currency_code": "USD" },
+  "tags": [
+    "personalized gift", "custom necklace", "name necklace", "dainty jewelry",
+    "gold necklace", "gift for her", "bridesmaid gift", "minimalist", "birthday gift",
+    "mothers day", "custom jewelry", "layering necklace", "everyday necklace"
+  ],
+  "num_favorers": 98400,
+  "quantity": 999,
+  "created_timestamp": 1714000000,
+  "shop_id": 12345678,
+  "url": "https://www.etsy.com/listing/4511075902/personalized-name-necklace",
+  "state": "active",
+  "taxonomy_id": 1199,
+  "images": [
+    { "listing_image_id": 1, "url_570xN": "https://example/1.jpg", "full_height": 1500, "full_width": 1500, "rank": 1 },
+    { "listing_image_id": 2, "url_570xN": "https://example/2.jpg", "full_height": 1500, "full_width": 1500, "rank": 2 },
+    { "listing_image_id": 3, "url_570xN": "https://example/3.jpg", "full_height": 1500, "full_width": 1500, "rank": 3 },
+    { "listing_image_id": 4, "url_570xN": "https://example/4.jpg", "full_height": 1500, "full_width": 1500, "rank": 4 },
+    { "listing_image_id": 5, "url_570xN": "https://example/5.jpg", "full_height": 1500, "full_width": 1500, "rank": 5 }
+  ],
+  "videos": []
+}

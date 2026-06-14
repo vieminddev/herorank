@@ -1,50 +1,69 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import type { Snippet, Component, ComponentType, SvelteComponent } from "svelte";
+  import { page } from "$app/stores";
 
-  interface ToolPageLayoutProps {
-    prefix?: string;
+  // Accept both Svelte 5 `Component` and lucide-svelte's legacy `ComponentType`.
+  type IconComponent = Component<any> | ComponentType<SvelteComponent<any>>;
+
+  let { title, prefix, description, icon, credits, controls, children }: {
     title: string;
+    /** Optional small eyebrow above the title. */
+    prefix?: string;
     description: string;
+    icon?: IconComponent;
+    credits?: number;
+    /** Left control panel (input + options). When present → two-pane workspace.
+        When omitted → single column (chat, coming-soon). */
+    controls?: Snippet;
     children: Snippet;
-  }
+  } = $props();
 
-  let { prefix = "Etsy", title, description, children }: ToolPageLayoutProps =
-    $props();
+  const Icon = $derived(icon);
+  const twoPane = $derived(!!controls);
+
+  // Breadcrumb group derived from the route — no per-page prop needed.
+  const group = $derived.by(() => {
+    const p = $page.url.pathname;
+    if (/listing-analyzer|rank-check|profit-calculator/.test(p)) return "Optimize";
+    if (/shop-analyzer|niche-finder|best-sellers|etsy-trends|buyer-check/.test(p)) return "Research";
+    return "Create";
+  });
 </script>
 
-<div class="max-w-6xl mx-auto animate-fade-in">
-  <!-- Hero Section -->
-  <div class="relative mb-8">
-    <!-- Decorative background icon (faded) -->
-    <div class="absolute right-0 top-0 opacity-[0.06] pointer-events-none select-none">
-      <svg
-        width="160"
-        height="160"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="0.5"
-        class="text-navy"
-      >
-        <circle cx="12" cy="12" r="3" />
-        <circle cx="12" cy="4" r="1.5" />
-        <circle cx="12" cy="20" r="1.5" />
-        <circle cx="4" cy="12" r="1.5" />
-        <circle cx="20" cy="12" r="1.5" />
-        <line x1="12" y1="7" x2="12" y2="9" />
-        <line x1="12" y1="15" x2="12" y2="17" />
-        <line x1="7" y1="12" x2="9" y2="12" />
-        <line x1="15" y1="12" x2="17" y2="12" />
-      </svg>
-    </div>
-
-    <h1 class="tool-heading-prefix">{prefix}</h1>
-    <h2 class="tool-heading-title">{title}.</h2>
-    <p class="text-base mt-3 max-w-xl" style="color: var(--text-secondary)">
-      {description}
+<div class="max-w-5xl mx-auto">
+  <!-- Workshop header — type-led, restrained -->
+  <header class="pt-2 pb-7">
+    <p class="text-[0.8125rem] text-text-muted mb-3">
+      <a href="/dashboard" class="hover:text-text-primary transition-colors">My Shop</a>
+      <span class="mx-1.5 text-border">/</span>{group}
     </p>
-  </div>
+    {#if prefix}<p class="section-kicker mb-1">{prefix}</p>{/if}
+    <div class="flex items-center gap-2.5">
+      {#if Icon}<Icon size={22} class="text-teal shrink-0" />{/if}
+      <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary leading-tight">{title}</h1>
+    </div>
+    <p class="lead mt-2 max-w-2xl">{description}</p>
+  </header>
+  <hr class="rule mb-8" />
 
-  <!-- Content -->
-  {@render children()}
+  {#if twoPane}
+    <!-- Two-pane workshop: controls (sticky) | work surface -->
+    <div class="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-10 items-start">
+      <aside class="lg:sticky lg:top-6">
+        {@render controls!()}
+        {#if credits !== undefined}
+          <p class="text-[0.8125rem] text-text-muted mt-5 pt-4 border-t border-border-light">
+            Uses {credits} credit{credits !== 1 ? 's' : ''} per run
+          </p>
+        {/if}
+      </aside>
+      <div class="min-w-0">
+        {@render children()}
+      </div>
+    </div>
+  {:else}
+    <div class="max-w-3xl">
+      {@render children()}
+    </div>
+  {/if}
 </div>

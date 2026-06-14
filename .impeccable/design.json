@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-13T00:00:00Z",
+  "title": "Design System: VieRank",
+  "extensions": {
+    "colorMeta": {
+      "starbucks-green": { "role": "primary", "displayName": "Storefront Green", "canonical": "#006241", "tonalRamp": ["#04130d", "#062a1d", "#08402c", "#006241", "#0a7d52", "#3ba07a", "#79c4a4", "#cfe9dd"] },
+      "green-accent": { "role": "primary", "displayName": "Apron Green", "canonical": "#00754A", "tonalRamp": ["#03150e", "#052e1f", "#064a31", "#00754A", "#0a9663", "#3fb98a", "#84d6b5", "#d4f0e4"] },
+      "green-ink": { "role": "secondary", "displayName": "Ink Green", "canonical": "#33433d", "tonalRamp": ["#0f1411", "#1a221e", "#26312b", "#33433d", "#4f635b", "#7a8e85", "#aab9b2", "#dde4e1"] },
+      "gold-ceremony": { "role": "tertiary", "displayName": "Ceremony Gold", "canonical": "#cba258", "tonalRamp": ["#2c2110", "#4a3818", "#735628", "#9c7838", "#cba258", "#dcbb82", "#ead3ad", "#f6ecd9"] },
+      "off-white": { "role": "neutral", "displayName": "Off-White Canvas", "canonical": "#f7f9f8", "tonalRamp": ["#1e2a26", "#3a4742", "#5b6b65", "#869189", "#aeb8b3", "#d2d9d6", "#e9efec", "#f7f9f8"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1e2a26", "tonalRamp": ["#0c110f", "#141d19", "#1e2a26", "#2f413a", "#475b53", "#6f817a", "#a3b1ab", "#dfe6e3"] },
+      "muted": { "role": "neutral", "displayName": "Muted Ink", "canonical": "#5b6b65" },
+      "border": { "role": "neutral", "displayName": "Hairline", "canonical": "#e3e8e6" },
+      "success": { "role": "status", "displayName": "Success", "canonical": "#1e8e5a" },
+      "warning": { "role": "status", "displayName": "Warning", "canonical": "#b07a00" },
+      "danger": { "role": "status", "displayName": "Danger", "canonical": "#c0392b" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero / landing headlines only; ceiling 5rem." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles, primary section headers; h1 pairs with Storefront Green." },
+      "title": { "displayName": "Title", "purpose": "Card titles, tool headers." },
+      "body": { "displayName": "Body", "purpose": "Default reading text; measure 65-75ch." },
+      "label": { "displayName": "Label", "purpose": "Pill-button labels, badges, table headers." }
+    },
+    "shadows": [
+      { "name": "card-rest", "value": "0 1px 3px rgba(30,42,38,0.06), 0 1px 2px rgba(30,42,38,0.04)", "purpose": "Default whisper under content cards." },
+      { "name": "card-hover", "value": "0 6px 16px rgba(30,42,38,0.10)", "purpose": "Gentle lift on interactive listing/shop tiles." },
+      { "name": "floating-action", "value": "0 0 6px rgba(0,0,0,0.24), 0 8px 12px rgba(0,0,0,0.14)", "purpose": "Layered stack under the signature floating CTA." }
+    ],
+    "motion": [
+      { "name": "ease-out-quint", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default easing for state transitions and reveals; no bounce." },
+      { "name": "press", "value": "scale(0.95)", "purpose": "Signature active-press micro-interaction on pill buttons and the floating CTA." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The primary filled call-to-action; Apron Green pill with the scale(0.95) press.",
+      "html": "<button class=\"ds-btn-primary\">Analyze listing</button>",
+      "css": ".ds-btn-primary { background: #00754A; color: #fff; font-family: Inter, 'Helvetica Neue', Arial, sans-serif; font-size: 0.875rem; font-weight: 600; letter-spacing: -0.005em; border: none; border-radius: 9999px; padding: 12px 28px; cursor: pointer; transition: background 0.18s cubic-bezier(0.22,1,0.36,1), transform 0.12s cubic-bezier(0.22,1,0.36,1); } .ds-btn-primary:hover { background: #006241; } .ds-btn-primary:focus-visible { outline: 2px solid rgba(0,117,74,0.4); outline-offset: 2px; } .ds-btn-primary:active { transform: scale(0.95); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "White pill with Apron Green label + 1px border; lower-emphasis action.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { background: #fff; color: #00754A; font-family: Inter, 'Helvetica Neue', Arial, sans-serif; font-size: 0.875rem; font-weight: 600; letter-spacing: -0.005em; border: 1px solid #00754A; border-radius: 9999px; padding: 12px 28px; cursor: pointer; transition: background 0.18s cubic-bezier(0.22,1,0.36,1), transform 0.12s; } .ds-btn-secondary:hover { background: #f7f9f8; } .ds-btn-secondary:focus-visible { outline: 2px solid rgba(0,117,74,0.4); outline-offset: 2px; } .ds-btn-secondary:active { transform: scale(0.95); }"
+    },
+    {
+      "name": "Estimated Badge",
+      "kind": "chip",
+      "refersTo": "badge-estimated",
+      "description": "The honesty marker beside every estimated number — quiet off-white pill, Ink Green text.",
+      "html": "<span class=\"ds-badge-estimated\">Estimated</span>",
+      "css": ".ds-badge-estimated { display: inline-flex; align-items: center; background: #f7f9f8; color: #33433d; font-family: Inter, 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 600; letter-spacing: -0.005em; border: 1px solid #e3e8e6; border-radius: 9999px; padding: 2px 8px; }"
+    },
+    {
+      "name": "Content Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Surface-white card on the off-white canvas; flat at rest, gentle lift on hover for interactive tiles.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Shop overview</h3><p class=\"ds-card-body\">2,077,508 sales <span class=\"ds-card-est\">Estimated</span></p></div>",
+      "css": ".ds-card { background: #fff; border: 1px solid #e3e8e6; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(30,42,38,0.06), 0 1px 2px rgba(30,42,38,0.04); transition: box-shadow 0.18s cubic-bezier(0.22,1,0.36,1); } .ds-card:hover { box-shadow: 0 6px 16px rgba(30,42,38,0.10); } .ds-card-title { font-family: Inter, sans-serif; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.005em; color: #1e2a26; margin: 0 0 8px; } .ds-card-body { font-family: Inter, sans-serif; font-size: 1rem; color: #1e2a26; margin: 0; } .ds-card-est { background: #f7f9f8; color: #33433d; font-size: 0.6875rem; font-weight: 600; border: 1px solid #e3e8e6; border-radius: 9999px; padding: 2px 8px; margin-left: 6px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Surface-white field, hairline border, Apron-Green focus glow with no layout shift.",
+      "html": "<input class=\"ds-input\" placeholder=\"Etsy shop name or listing URL\" />",
+      "css": ".ds-input { background: #fff; color: #1e2a26; font-family: Inter, sans-serif; font-size: 1rem; border: 1px solid #e3e8e6; border-radius: 8px; padding: 10px 14px; outline: none; transition: border-color 0.18s, box-shadow 0.18s; } .ds-input::placeholder { color: #5b6b65; } .ds-input:focus { border-color: #00754A; box-shadow: 0 0 0 3px rgba(0,117,74,0.15); }"
+    },
+    {
+      "name": "Floating Action",
+      "kind": "custom",
+      "refersTo": "floating-action",
+      "description": "Signature 56px circular CTA, Apron Green, layered shadow, scale(0.95) press. One per screen.",
+      "html": "<button class=\"ds-fab\" aria-label=\"Analyze\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m21 21-4.3-4.3\"/></svg></button>",
+      "css": ".ds-fab { width: 56px; height: 56px; border-radius: 9999px; background: #00754A; border: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 6px rgba(0,0,0,0.24), 0 8px 12px rgba(0,0,0,0.14); transition: background 0.18s, transform 0.12s cubic-bezier(0.22,1,0.36,1); } .ds-fab:hover { background: #006241; } .ds-fab:active { transform: scale(0.95); } .ds-fab:focus-visible { outline: 2px solid rgba(0,117,74,0.5); outline-offset: 3px; }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Inter label; active item carries an Apron Green indicator + Ink text, inactive is Muted Ink.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><span class=\"ds-nav-ind\"></span>Shop Analyzer</a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 10px; font-family: Inter, sans-serif; font-size: 0.9375rem; font-weight: 500; color: #5b6b65; text-decoration: none; padding: 9px 14px; border-radius: 8px; transition: background 0.15s, color 0.15s; } .ds-nav-item:hover { background: #f7f9f8; color: #1e2a26; } .ds-nav-item--active { color: #1e2a26; font-weight: 600; background: #f7f9f8; } .ds-nav-ind { width: 4px; height: 18px; border-radius: 9999px; background: #00754A; } .ds-nav-item:not(.ds-nav-item--active) .ds-nav-ind { background: transparent; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Honest Storefront",
+    "overview": "VieRank wears the green apron — the calibrated green system, rounded café-signage geometry, and legible-warm voice of a flagship storefront — pointed at one job: helping an Etsy seller trust what the tool tells them. The defining gesture is honesty made visible: every estimated number wears an 'Estimated' badge; nothing pretends to be ground truth. It is a product surface where design serves the task, calm and well-spaced, distinct from the cluttered number-dense tools sellers tolerate, without tipping into anything playful enough to undermine trust. Warmth comes from green and type, never a beige canvas.",
+    "keyCharacteristics": [
+      "Starbucks-green identity via color + type on a clean off-white (#f7f9f8) — never cream/beige",
+      "Honesty as a visual system: estimates always badged, never disguised as fact",
+      "Full-pill buttons (9999px), 12px cards, whisper-soft elevation",
+      "One family (Inter) in calibrated weights with tight -0.005em tracking",
+      "Strong hierarchy and white space over data density"
+    ],
+    "rules": [
+      { "name": "The Gold-Is-Ceremony Rule", "body": "Ceremony Gold (#cba258) appears only around premium / plan-status moments, never as a general accent.", "section": "colors" },
+      { "name": "The No-Cream Rule", "body": "The canvas is off-white (#f7f9f8) or pure white. The warm-neutral cream/sand/paper band is forbidden; warmth lives in green + type.", "section": "colors" },
+      { "name": "The One-Voice Rule", "body": "Inter carries the system; change weight and size for hierarchy, never add a second similar sans.", "section": "typography" },
+      { "name": "The Tracking-Floor Rule", "body": "Tighten to -0.005em/-0.01em, never below -0.04em.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest; shadow is a response to state, not decoration.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do carry the brand with Storefront/Apron Green and Inter on a clean off-white or white canvas.",
+      "Do badge every estimated number with the 'Estimated' chip — honesty is the system.",
+      "Do use full-pill buttons (9999px) with the scale(0.95) active press.",
+      "Do keep surfaces flat at rest; let shadow respond to state.",
+      "Do lead with hierarchy and white space — one primary action per screen.",
+      "Do pair status color with a label or icon; placeholders and body clear 4.5:1."
+    ],
+    "donts": [
+      "Don't use a cream / sand / beige / paper / parchment canvas — the warm-neutral AI-default is forbidden.",
+      "Don't ship SaaS / AI-slop: gradient text, the hero-metric template, identical card grids, tracked-uppercase eyebrows, 01/02/03 markers.",
+      "Don't use border-left/right greater than 1px as a colored accent stripe.",
+      "Don't build the overwhelming number-dense dashboard (eRank / Marmalead).",
+      "Don't tip into the over-playful: no candy colors or emoji-heavy UI.",
+      "Don't pair Inter with a second similar sans, or spend Ceremony Gold outside premium / plan-status moments."
+    ]
+  }
+}

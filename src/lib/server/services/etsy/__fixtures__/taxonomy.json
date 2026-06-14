@@ -1,0 +1,35 @@
+{
+  "count": 3,
+  "results": [
+    {
+      "id": 1199,
+      "name": "Jewelry",
+      "level": 1,
+      "parent_id": null,
+      "children": [
+        { "id": 1200, "name": "Necklaces", "level": 2, "parent_id": 1199 },
+        { "id": 1201, "name": "Earrings", "level": 2, "parent_id": 1199 },
+        { "id": 1202, "name": "Bracelets", "level": 2, "parent_id": 1199 }
+      ]
+    },
+    {
+      "id": 891,
+      "name": "Home & Living",
+      "level": 1,
+      "parent_id": null,
+      "children": [
+        { "id": 892, "name": "Home Decor", "level": 2, "parent_id": 891 },
+        { "id": 893, "name": "Candles", "level": 2, "parent_id": 891 }
+      ]
+    },
+    {
+      "id": 66,
+      "name": "Craft Supplies & Tools",
+      "level": 1,
+      "parent_id": null,
+      "children": [
+        { "id": 67, "name": "Patterns", "level": 2, "parent_id": 66 }
+      ]
+    }
+  ]
+}

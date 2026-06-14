@@ -1,126 +1,97 @@
 <script lang="ts">
-  import { page } from "$app/state";
+  import { page } from "$app/stores";
   import {
-    House,
-    Crown,
-    TrendingUp,
-    Compass,
-    Store,
-    FileText,
-    UserCheck,
-    ChartColumn,
-    Calculator,
-    Tag,
-    Type,
-    AlignLeft,
-    Wand,
-    Video,
-    MessageSquare,
-    Search,
+    LayoutDashboard, Plug, Type, Tag, AlignLeft, Search, Sparkles,
+    FileText, TrendingUp, Store, Target, Crown, LineChart, ShieldCheck,
+    Calculator, Wand, Video, Sprout
   } from "lucide-svelte";
-  import type { ComponentType } from "svelte";
 
-  interface NavItem {
-    label: string;
-    href: string;
-    icon: ComponentType;
-  }
+  let { isOpen = false, onClose }: {
+    isOpen: boolean;
+    onClose: () => void;
+  } = $props();
 
-  interface NavGroup {
-    title: string;
-    items: NavItem[];
-  }
-
-  const navigation: NavGroup[] = [
+  // IA repositioned around the seller's OWN shop (My Shop / Create / Optimize first),
+  // with competitor work demoted to a lighter "Research" group. Route hrefs are unchanged;
+  // only labels + grouping are repositioned (Etsy-commercial-safe language).
+  const GROUPS = [
     {
-      title: "",
-      items: [{ label: "Dashboard", href: "/dashboard", icon: House }],
-    },
-    {
-      title: "BRAINSTORM",
+      heading: "My Shop",
       items: [
-        { label: "Best Sellers", href: "/tools/etsy/best-sellers", icon: Crown },
-        { label: "Etsy Trends", href: "/tools/etsy/etsy-trends", icon: TrendingUp },
-        { label: "Niche Finder", href: "/tools/etsy/niche-finder", icon: Compass },
+        { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { label: "Connect Shop", href: "/settings/connections", icon: Plug },
       ],
     },
     {
-      title: "ANALYZE",
+      heading: "Create",
       items: [
-        { label: "Shop Analyzer", href: "/tools/etsy/shop-analyzer", icon: Store },
-        { label: "Listing Analyzer", href: "/tools/etsy/listing-analyzer", icon: FileText },
-        { label: "Buyer Check", href: "/tools/etsy/buyer-check", icon: UserCheck },
-        { label: "Rank Check", href: "/tools/etsy/rank-check", icon: ChartColumn },
-        { label: "Calculator", href: "/tools/etsy/profit-calculator", icon: Calculator },
-      ],
-    },
-    {
-      title: "COMPOSE",
-      items: [
-        { label: "Tag Generator", href: "/tools/etsy/tag-generator", icon: Tag },
         { label: "Title Generator", href: "/tools/etsy/title-generator", icon: Type },
-        { label: "Description Generator", href: "/tools/etsy/description-generator", icon: AlignLeft },
-        { label: "Listing Studio", href: "/tools/etsy/listing-studio", icon: Wand },
-        { label: "Video Generator", href: "/tools/etsy/video-generator", icon: Video },
+        { label: "Tag Generator", href: "/tools/etsy/tag-generator", icon: Tag },
+        { label: "Description Writer", href: "/tools/etsy/description-generator", icon: AlignLeft },
+        { label: "Keyword Finder", href: "/tools/keyword-generator", icon: Search },
+        { label: "VieRank Assistant", href: "/tools/rankhero-ai", icon: Sparkles },
       ],
     },
     {
-      title: "OTHER TOOLS",
+      heading: "Optimize",
       items: [
-        { label: "Keyword Generator", href: "/tools/keyword-generator", icon: Search },
-        { label: "RankHero AI", href: "/tools/rankhero-ai", icon: MessageSquare },
+        { label: "Listing Optimizer", href: "/tools/etsy/listing-analyzer", icon: FileText },
+        { label: "Search Position", href: "/tools/etsy/rank-check", icon: TrendingUp },
+        { label: "Profit Calculator", href: "/tools/etsy/profit-calculator", icon: Calculator },
+      ],
+    },
+    {
+      heading: "Research",
+      items: [
+        { label: "Shop Research", href: "/tools/etsy/shop-analyzer", icon: Store },
+        { label: "Niche Finder", href: "/tools/etsy/niche-finder", icon: Target },
+        { label: "Best Sellers", href: "/tools/etsy/best-sellers", icon: Crown },
+        { label: "Etsy Trends", href: "/tools/etsy/etsy-trends", icon: LineChart },
+        { label: "Reputation Check", href: "/tools/etsy/buyer-check", icon: ShieldCheck },
+      ],
+    },
+    {
+      heading: "More",
+      items: [
+        { label: "Listing Studio", href: "/tools/etsy/listing-studio", icon: Wand },
+        { label: "Video Maker", href: "/tools/etsy/video-generator", icon: Video },
       ],
     },
   ];
-
-  const pathname = $derived(page.url.pathname);
 </script>
 
-<aside
-  class="fixed left-0 top-0 bottom-0 bg-white border-r border-border overflow-y-auto z-30"
-  style="width: var(--sidebar-width)"
->
-  <!-- Logo -->
-  <div class="flex items-center gap-2.5 px-5 h-14 border-b border-border-light">
-    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center">
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="white"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
-      </svg>
-    </div>
-    <span class="text-lg font-bold" style="color: var(--navy)">
-      HeroRank
-    </span>
-  </div>
+{#if isOpen}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="fixed inset-0 bg-black/40 z-30 md:hidden animate-fade-in"
+    onclick={onClose}
+    role="presentation"
+  ></div>
+{/if}
 
-  <!-- Navigation -->
-  <nav class="py-2 pb-8">
-    {#each navigation as group (group.title || "main")}
-      <div>
-        {#if group.title}
-          <div class="sidebar-group-label">{group.title}</div>
-        {/if}
-        {#each group.items as item (item.href)}
+<aside
+  class="fixed top-0 left-0 h-screen bg-white border-r border-border overflow-y-auto z-40 pb-8 w-[260px] transition-transform duration-300 ease-out md:translate-x-0 {isOpen ? 'translate-x-0' : '-translate-x-full'}"
+>
+  <div class="px-2 pt-4">
+    <a href="/" onclick={onClose} class="flex items-center gap-2.5 mb-4 px-3 py-1">
+      <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--teal)">
+        <Sprout size={17} class="text-white" />
+      </span>
+      <span class="text-lg font-semibold tracking-tight text-text-primary">VieRank</span>
+    </a>
+
+    <nav>
+      {#each GROUPS as group}
+        <p class="sidebar-group-label">{group.heading}</p>
+        {#each group.items as item}
           {@const Icon = item.icon}
-          <a
-            href={item.href}
-            class={`sidebar-link ${pathname === item.href ? "active" : ""}`}
-          >
+          {@const active = $page.url.pathname === item.href}
+          <a href={item.href} onclick={onClose} class="sidebar-link {active ? 'active' : ''}" aria-current={active ? 'page' : undefined}>
             <Icon size={18} />
             <span>{item.label}</span>
           </a>
         {/each}
-      </div>
-    {/each}
-  </nav>
+      {/each}
+    </nav>
+  </div>
 </aside>

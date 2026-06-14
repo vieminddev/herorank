@@ -1,0 +1,17 @@
+{
+  "count": 1,
+  "results": [
+    {
+      "shop_id": 12345678,
+      "shop_name": "CaitlynMinimalist",
+      "title": "Personalized Jewelry & Custom Gifts for Every Occasion",
+      "listing_active_count": 2744,
+      "num_favorers": 510256,
+      "review_count": 289432,
+      "review_average": 4.83,
+      "created_timestamp": 1414800000,
+      "shop_location_country": "United States",
+      "currency_code": "USD"
+    }
+  ]
+}

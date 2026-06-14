@@ -1,1 +1,2 @@
 - [SvelteKit Migration QA](project_sveltekit_migration.md) — migration Next.js→SvelteKit patterns, icon renames, PostCSS conflict, Svelte 4 syntax checks
+- [Phase 1 Auth+Billing QA](project_phase1_auth_billing.md) — better-call override, @opentelemetry/api Vite externalize fix, BETTER_AUTH_URL port mismatch on wrangler dev

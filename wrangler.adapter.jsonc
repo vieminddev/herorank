@@ -1,0 +1,33 @@
+{
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADAPTER-ONLY wrangler config (Engineer A, Phase 4).
+  //
+  // WHY THIS FILE EXISTS:
+  //   `@sveltejs/adapter-cloudflare` (v7, Workers Static-Assets mode) writes its
+  //   generated SSR worker to whatever `main` points at. If we set `main` in the
+  //   real `wrangler.jsonc` to OUR custom entry (`src/worker.ts`), the adapter
+  //   would OVERWRITE it on every build. To keep a hand-written worker entry
+  //   (needed for `scheduled` + `queue` handlers — Pages can't run those) WITHOUT
+  //   forking the adapter, we point the adapter at THIS config. The adapter
+  //   validation requires `main` whenever `assets.binding` is set, so here `main`
+  //   points at a SEPARATE generated path OUTSIDE the assets dir —
+  //   `.svelte-kit/server-worker/index.js` — NOT at `src/worker.ts` and NOT inside
+  //   `.svelte-kit/cloudflare` (so it is never served as a static asset). The
+  //   adapter emits its SSR worker there.
+  //
+  //   `src/worker.ts` (the REAL `wrangler.jsonc` `main`) imports that generated
+  //   worker, re-exports its `fetch`, and adds `scheduled` + `queue`.
+  //
+  // This file is ONLY read by the adapter at build time. Bindings here are not
+  // used at runtime — keep it minimal. Runtime bindings live in `wrangler.jsonc`.
+  // ─────────────────────────────────────────────────────────────────────────
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "herorank",
+  "compatibility_date": "2026-06-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".svelte-kit/server-worker/index.js",
+  "assets": {
+    "directory": ".svelte-kit/cloudflare",
+    "binding": "ASSETS"
+  }
+}

@@ -1,90 +1,134 @@
 <script lang="ts">
-  import { Send, Bot, User, Sparkles } from "lucide-svelte";
+  import { Send, Bot, User, CircleAlert } from "lucide-svelte";
+  import { renderBold } from "$lib/sanitize";
+  import { streamChat, type ChatMessage } from "$lib/tools-client";
+  import { invalidateAll } from "$app/navigation";
 
   interface Message {
     role: "user" | "assistant";
     content: string;
     timestamp: string;
+    /** Marks an error bubble (rendered with a distinct style, never charged). */
+    isError?: boolean;
+    /** When true, the assistant bubble shows an "Upgrade plan" CTA (402). */
+    needsUpgrade?: boolean;
   }
 
+  // Static UI greeting — client-only, never sent to the LLM (costs nothing).
   const INITIAL_MESSAGES: Message[] = [
     {
       role: "assistant",
-      content: "👋 Hi! I'm HeroRank AI — your Etsy selling assistant. I can help with:\n\n• **SEO optimization** — tags, titles, descriptions\n• **Shop strategy** — pricing, positioning, niche research\n• **Listing advice** — what to improve and how\n• **Market analysis** — trends, competition, demand\n\nWhat would you like help with today?",
+      content: "👋 Hi! I'm the VieRank Assistant — here to help with your shop. I can help with:\n\n• **SEO optimization** — tags, titles, descriptions\n• **Shop strategy** — pricing, positioning, niche research\n• **Listing advice** — what to improve and how\n• **Market analysis** — trends, competition, demand\n\nWhat would you like help with today?",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ];
 
-  const MOCK_RESPONSES: Record<string, string> = {
-    default: "That's a great question! Based on my analysis of top-performing Etsy shops, I'd recommend focusing on long-tail keywords with lower competition. Use the **Tag Generator** tool to find specific data-driven suggestions.\n\nWould you like me to elaborate on any specific aspect?",
-    tag: "For tag optimization, here are my top tips:\n\n1. **Use all 13 tags** — every empty slot is wasted visibility\n2. **Mix broad and specific** — 'necklace' + 'personalized gold name necklace'\n3. **Include long-tail keywords** — they convert better\n4. **Check competition** — green tags in our Tag Generator = lower competition\n5. **Update seasonally** — swap in holiday-relevant tags when appropriate\n\nWant me to analyze your current tags?",
-    price: "Pricing on Etsy is both art and science. Here's what the data shows:\n\n📊 **Price anchoring** — List your premium items first so mid-range ones feel like deals\n💰 **Free shipping math** — Build shipping into the price; 'free shipping' boosts search rank\n📈 **Psychological pricing** — $19.99 outperforms $20.00 consistently\n\nUse our **Profit Calculator** to make sure your margins work after Etsy fees (listing fee $0.20 + 6.5% transaction + 3% + $0.25 processing).",
-  };
-
   let messages = $state<Message[]>(INITIAL_MESSAGES);
   let input = $state("");
   let isTyping = $state(false);
+  let isStreaming = $state(false);
   let messagesEndRef = $state<HTMLDivElement>();
+
+  const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const scrollToBottom = () => messagesEndRef?.scrollIntoView({ behavior: "smooth" });
   $effect(() => {
-    // Track messages so the effect re-runs when a new message is appended.
+    // Re-run on every append/streamed delta: touch the reactive reads we depend on.
     messages;
+    isTyping;
     scrollToBottom();
   });
 
-  // Render only the controlled **bold** markdown from mock/typed content as <strong>.
-  // Note: user-typed text is echoed verbatim; the only HTML produced is <strong> wrappers.
-  const renderContent = (content: string) =>
-    content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  /**
+   * Render assistant/user content. XSS fix (tech-debt #5 / BR-P2-07): escape ALL HTML first,
+   * then turn `**bold**` into <strong>. The ONLY markup that reaches {@html} is <strong>.
+   */
+  const renderContent = (content: string) => renderBold(content);
 
-  const sendMessage = (e: SubmitEvent) => {
+  const sendMessage = async (e: SubmitEvent) => {
     e.preventDefault();
-    if (!input.trim() || isTyping) return;
+    if (!input.trim() || isStreaming) return;
 
-    const userMsg: Message = { role: "user", content: input, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+    const userMsg: Message = { role: "user", content: input, timestamp: now() };
     messages = [...messages, userMsg];
-    const sent = input;
     input = "";
     isTyping = true;
+    isStreaming = true;
 
-    setTimeout(() => {
-      const lowered = sent.toLowerCase();
-      let response = MOCK_RESPONSES.default;
-      if (lowered.includes("tag")) response = MOCK_RESPONSES.tag;
-      else if (lowered.includes("price") || lowered.includes("pricing")) response = MOCK_RESPONSES.price;
+    // History sent to the LLM: real turns only, excluding the static greeting and any
+    // error bubbles. The route prepends the system prompt server-side.
+    const history: ChatMessage[] = messages
+      .filter((m) => !m.isError && m !== INITIAL_MESSAGES[0])
+      .map((m) => ({ role: m.role, content: m.content }));
 
-      const aiMsg: Message = { role: "assistant", content: response, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
-      messages = [...messages, aiMsg];
-      isTyping = false;
-    }, 1500);
+    // Placeholder assistant message that we fill incrementally.
+    let assistantIdx = -1;
+
+    await streamChat(history, {
+      onChunk: (delta) => {
+        if (assistantIdx === -1) {
+          // First delta — replace typing dots with a streaming bubble.
+          isTyping = false;
+          messages = [...messages, { role: "assistant", content: delta, timestamp: now() }];
+          assistantIdx = messages.length - 1;
+        } else {
+          messages = messages.map((m, i) =>
+            i === assistantIdx ? { ...m, content: m.content + delta } : m
+          );
+        }
+      },
+      onDone: async (creditsRemaining) => {
+        isTyping = false;
+        isStreaming = false;
+        // Refresh Header credits badge (creditsRemaining confirms the deduct happened).
+        void creditsRemaining;
+        await invalidateAll();
+      },
+      onError: (err) => {
+        isTyping = false;
+        isStreaming = false;
+        // Mid-stream or pre-stream error → error bubble, never charged.
+        messages = [
+          ...messages,
+          {
+            role: "assistant",
+            content: err.message,
+            timestamp: now(),
+            isError: true,
+            needsUpgrade: err.status === 402,
+          },
+        ];
+      },
+    });
   };
 </script>
 
-<div class="max-w-4xl mx-auto animate-fade-in" style="height: calc(100vh - var(--header-height) - 48px)">
-  <!-- Header -->
-  <div class="flex items-center gap-3 mb-4">
-    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal to-navy flex items-center justify-center">
-      <Sparkles size={20} class="text-white" />
-    </div>
-    <div>
-      <h1 class="text-xl font-bold text-text-primary">HeroRank AI</h1>
-      <p class="text-xs text-text-muted">Your AI-powered Etsy selling assistant</p>
-    </div>
-  </div>
+<div class="max-w-3xl mx-auto animate-fade-in flex flex-col" style="height: calc(100vh - var(--header-height) - 48px)">
+  <!-- Header — editorial, no gradient chrome -->
+  <header class="mb-5">
+    <p class="section-kicker mb-1">VieRank Assistant</p>
+    <h1 class="text-[1.75rem] font-semibold tracking-tight text-text-primary">Ask about your shop</h1>
+    <p class="lead mt-1.5 text-sm max-w-xl">Tags, titles, pricing, what to fix — plain answers, no fluff.</p>
+  </header>
 
-  <!-- Chat Container -->
-  <div class="card flex flex-col" style="height: calc(100% - 60px)">
+  <!-- Chat container — a single quiet surface -->
+  <div class="card flex flex-col flex-1 min-h-0">
     <!-- Messages -->
-    <div class="flex-1 overflow-y-auto p-5 space-y-4">
+    <div class="flex-1 overflow-y-auto p-5 space-y-5">
       {#each messages as msg, i (i)}
         <div class="flex items-start gap-3 {msg.role === 'user' ? 'flex-row-reverse' : ''}">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 {msg.role === 'assistant' ? 'bg-gradient-to-br from-teal to-navy' : 'bg-orange'}">
-            {#if msg.role === "assistant"}<Bot size={16} class="text-white" />{:else}<User size={16} class="text-white" />{/if}
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 {msg.role === 'assistant' ? (msg.isError ? 'bg-danger/10 text-danger' : 'bg-bg-page text-teal') : 'bg-teal text-white'}">
+            {#if msg.role === "assistant"}
+              {#if msg.isError}<CircleAlert size={15} />{:else}<Bot size={15} />{/if}
+            {:else}<User size={15} />{/if}
           </div>
-          <div class="max-w-[75%] {msg.role === 'user' ? 'text-right' : ''}">
-            <div class="inline-block px-4 py-3 rounded-2xl text-sm leading-relaxed {msg.role === 'user' ? 'bg-navy text-white rounded-br-md' : 'bg-bg-page text-text-primary rounded-bl-md'}">
+          <div class="max-w-[78%] {msg.role === 'user' ? 'text-right' : ''}">
+            <div class="inline-block px-3.5 py-2.5 rounded-xl text-sm leading-relaxed text-left {msg.role === 'user' ? 'bg-teal text-white rounded-br-sm' : msg.isError ? 'bg-danger/5 border border-danger/20 text-text-primary rounded-bl-sm' : 'bg-bg-page text-text-primary rounded-bl-sm'}">
+              <!-- {@html} is safe: renderContent escapes HTML before applying **bold** (sanitize.ts). -->
               <div class="whitespace-pre-wrap">{@html renderContent(msg.content)}</div>
+              {#if msg.needsUpgrade}
+                <a href="/pricing" class="btn btn-primary mt-2" style="padding: 6px 16px; font-size: 0.75rem;">Upgrade plan</a>
+              {/if}
             </div>
             <div class="text-[10px] text-text-muted mt-1">{msg.timestamp}</div>
           </div>
@@ -92,9 +136,9 @@
       {/each}
       {#if isTyping}
         <div class="flex items-start gap-3">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal to-navy flex items-center justify-center"><Bot size={16} class="text-white" /></div>
-          <div class="px-4 py-3 bg-bg-page rounded-2xl rounded-bl-md">
-            <div class="flex gap-1"><span class="w-2 h-2 bg-text-muted rounded-full animate-bounce" style="animation-delay: 0ms"></span><span class="w-2 h-2 bg-text-muted rounded-full animate-bounce" style="animation-delay: 150ms"></span><span class="w-2 h-2 bg-text-muted rounded-full animate-bounce" style="animation-delay: 300ms"></span></div>
+          <div class="w-7 h-7 rounded-full bg-bg-page text-teal flex items-center justify-center"><Bot size={15} /></div>
+          <div class="px-3.5 py-2.5 bg-bg-page rounded-xl rounded-bl-sm">
+            <div class="flex gap-1"><span class="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce" style="animation-delay: 0ms"></span><span class="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce" style="animation-delay: 150ms"></span><span class="w-1.5 h-1.5 bg-text-muted rounded-full animate-bounce" style="animation-delay: 300ms"></span></div>
           </div>
         </div>
       {/if}
@@ -102,9 +146,9 @@
     </div>
 
     <!-- Input -->
-    <form onsubmit={sendMessage} class="border-t border-border p-4 flex gap-3">
-      <input type="text" bind:value={input} placeholder="Ask about tags, pricing, SEO, competitors..." class="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:border-teal bg-white" disabled={isTyping} data-testid="chat-input" />
-      <button type="submit" disabled={!input.trim() || isTyping} class="w-10 h-10 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition-all hover:opacity-90" style="background: var(--navy)" data-testid="chat-send">
+    <form onsubmit={sendMessage} class="border-t border-border p-3.5 flex gap-3">
+      <input type="text" bind:value={input} placeholder="Ask about tags, pricing, SEO, what to fix…" class="field flex-1 disabled:opacity-60 disabled:cursor-not-allowed" disabled={isStreaming} data-testid="chat-input" />
+      <button type="submit" disabled={!input.trim() || isStreaming} aria-label="Send message" class="btn btn-primary w-11 flex-shrink-0" style="padding: 0;" data-testid="chat-send">
         <Send size={16} />
       </button>
     </form>

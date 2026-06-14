@@ -1,71 +1,133 @@
 <script lang="ts">
   import ToolPageLayout from "$lib/components/tools/ToolPageLayout.svelte";
-  import { Copy, Check, Sparkles } from "lucide-svelte";
-
-  const MOCK_DESCRIPTION = `✨ PERSONALIZED NAME NECKLACE - CUSTOM GOLD JEWELRY ✨
-
-Make every day special with our stunning personalized name necklace. Handcrafted with love, this dainty piece is the perfect way to keep your name or a loved one's close to your heart.
-
-🎁 PERFECT GIFT FOR:
-• Birthday gifts for her
-• Bridesmaid proposal gifts
-• Mother's Day
-• Anniversary celebrations
-• Christmas & Valentine's Day
-
-📐 PRODUCT DETAILS:
-• Material: 18K Gold Plated / Sterling Silver / Rose Gold
-• Chain Length: 16" - 20" (adjustable)
-• Pendant Size: Custom based on name length
-• Closure: Lobster clasp
-• Packaging: Gift-ready box included
-
-💎 QUALITY GUARANTEE:
-• Hypoallergenic & tarnish-resistant
-• Nickel-free and lead-free
-• 30-day money-back guarantee
-• Handmade with premium materials
-
-📦 SHIPPING & PROCESSING:
-• Processing time: 1-3 business days
-• Standard shipping: 5-10 business days
-• Express shipping available at checkout
-
-⭐ HOW TO ORDER:
-1. Select your preferred material
-2. Choose your chain length
-3. Enter the custom name in the personalization box
-4. Add to cart and checkout!
-
-💬 NEED HELP?
-Feel free to message us with any questions about customization, sizing, or bulk orders. We're happy to help!
-
-Tags: personalized necklace, custom name jewelry, birthday gift, bridesmaid gift, mothers day, dainty necklace, gold necklace, minimalist jewelry`;
+  import ToolEmpty from "$lib/components/ui/ToolEmpty.svelte";
+  import { Copy, Check, LoaderCircle, CircleAlert, FileText } from "lucide-svelte";
+  import { callTool } from "$lib/tools-client";
+  import { invalidateAll } from "$app/navigation";
 
   let productInfo = $state("");
+  let tone = $state("Friendly");
+  let generated = $state("");
   let hasGenerated = $state(false);
+  let loading = $state(false);
+  let error = $state<string | null>(null);
+  let needsUpgrade = $state(false);
   let copied = $state(false);
-  const handleGenerate = (e: Event) => { e.preventDefault(); if (productInfo.trim()) hasGenerated = true; };
-  const copyDesc = () => { navigator.clipboard.writeText(MOCK_DESCRIPTION); copied = true; setTimeout(() => (copied = false), 2000); };
+
+  const TONES = ["Friendly", "Informative", "Short & Sweet", "Professional", "Creative"];
+
+  const wordCount = $derived(generated ? generated.trim().split(/\s+/).filter(Boolean).length : 0);
+  const charCount = $derived(generated ? generated.length : 0);
+
+  const handleGenerate = async (e: Event) => {
+    e.preventDefault();
+    if (!productInfo.trim() || loading || productInfo.length > 2000) return;
+    loading = true;
+    error = null;
+    needsUpgrade = false;
+
+    const res = await callTool<{ description: string }>("description-generator", {
+      productInfo: productInfo.trim(),
+      tone,
+    });
+
+    if (res.ok) {
+      generated = res.data.description ?? "";
+      hasGenerated = true;
+      await invalidateAll();
+    } else if (res.status === 402) {
+      needsUpgrade = true;
+      error = res.message;
+    } else {
+      error = res.message;
+    }
+    loading = false;
+  };
+
+  const copyDesc = () => {
+    navigator.clipboard.writeText(generated);
+    copied = true;
+    setTimeout(() => (copied = false), 2000);
+  };
 </script>
 
-<ToolPageLayout title="Description Generator" description="Generate compelling, SEO-friendly Etsy listing descriptions. Describe your product and get a ready-to-paste description with all the right keywords.">
-  <form onsubmit={handleGenerate} class="mb-8">
-    <label class="text-xs font-semibold uppercase tracking-wider text-text-primary mb-1.5 flex items-center gap-1">Product details <span class="text-danger text-xs font-normal">(required)</span></label>
-    <textarea bind:value={productInfo} placeholder="Describe your product: what it is, materials, colors, sizes, who it's for, what makes it special..." rows={4} class="w-full px-4 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20 bg-white resize-none"></textarea>
-    <button type="submit" class="mt-3 px-8 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center gap-2 hover:opacity-90" style="background: var(--navy)"><Sparkles size={14} /> Generate Description</button>
-  </form>
-  {#if hasGenerated}
-    <div class="animate-fade-in">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-bold text-text-primary">Generated Description</h3>
-        <button onclick={copyDesc} class="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-sm font-medium text-text-secondary hover:bg-bg-page transition-colors">
-          {#if copied}<Check size={14} class="text-success" /> Copied!{:else}<Copy size={14} /> Copy Description{/if}
-        </button>
+<ToolPageLayout
+  title="Description Writer"
+  description="Tell us about your piece and we'll write the listing copy for you — a warm, keyword-aware draft you can read over, tweak, and paste in."
+  icon={FileText}
+  credits={1}
+>
+  {#snippet controls()}
+    <form onsubmit={handleGenerate}>
+      <label for="desc-product-details" class="field-label">Tell us about your product</label>
+      <textarea
+        id="desc-product-details"
+        bind:value={productInfo}
+        placeholder="What it is, the materials and colors, the sizes, who it's for, and what makes it yours…"
+        rows={6}
+        class="field resize-none {productInfo.length > 2000 ? 'border-danger focus:border-danger' : ''}"
+        maxlength="2200"
+      ></textarea>
+      <div class="flex justify-between items-start gap-4 mt-1.5">
+        <p class="field-hint !mt-0 flex-1">The more you share, the more it sounds like you.</p>
+        <span class="text-[0.8125rem] tabular-nums shrink-0 {productInfo.length > 2000 ? 'text-danger font-semibold' : 'text-text-muted'}">
+          {productInfo.length}/2000
+        </span>
       </div>
-      <div class="card p-6">
-        <pre class="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed font-sans">{MOCK_DESCRIPTION}</pre>
+
+      <label for="desc-tone" class="field-label mt-4">Writing Tone</label>
+      <select
+        id="desc-tone"
+        bind:value={tone}
+        class="field appearance-none cursor-pointer"
+      >
+        {#each TONES as t}
+          <option value={t}>{t}</option>
+        {/each}
+      </select>
+
+      <button type="submit" disabled={loading || !productInfo.trim() || productInfo.length > 2000} class="btn btn-primary w-full justify-center mt-5">
+        {#if loading}<LoaderCircle size={14} class="animate-spin" /> Writing…{:else}Write it{/if}
+      </button>
+    </form>
+  {/snippet}
+
+  {#if error}
+    <div class="mb-7 flex items-start gap-3 animate-fade-in" role="alert">
+      <CircleAlert size={18} class="text-danger flex-shrink-0 mt-0.5" />
+      <div class="flex-1">
+        <p class="text-sm text-text-primary">{error}</p>
+        {#if needsUpgrade}
+          <a href="/pricing" class="copy-link mt-2 !text-teal">Upgrade your plan →</a>
+        {/if}
       </div>
     </div>
+  {/if}
+
+  {#if hasGenerated && generated}
+    <div class="animate-fade-in">
+      <div class="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <p class="section-kicker mb-1">Your draft · {tone} Tone</p>
+          <h2 class="text-lg font-semibold tracking-tight text-text-primary mb-1">A description, ready to paste</h2>
+          <p class="lead text-sm">Read it over, make it yours, then drop it into your listing.</p>
+        </div>
+        <button type="button" onclick={copyDesc} class="copy-link shrink-0 pt-1">
+          {#if copied}<Check size={13} class="text-success" /> Copied{:else}<Copy size={13} /> Copy{/if}
+        </button>
+      </div>
+      <div class="text-xs text-text-muted mb-4 flex gap-3 tabular-nums font-mono">
+        <span>{charCount} characters</span>
+        <span>•</span>
+        <span>{wordCount} words</span>
+      </div>
+      <pre class="text-[0.9375rem] text-text-primary whitespace-pre-wrap leading-relaxed font-sans border border-border bg-bg-page/40 p-4 rounded-lg">{generated}</pre>
+    </div>
+  {:else if !error}
+    <ToolEmpty icon={FileText} title="Your description will appear here" hint="Tell us about your piece on the left and we'll write a warm, keyword-aware draft you can read over, tweak, and paste straight into your listing.">
+      {#snippet preview()}
+        <pre class="text-[0.8125rem] text-text-primary whitespace-pre-wrap leading-relaxed font-sans">Handmade with care, this dainty gold-plated name necklace is the kind of little detail that makes a gift feel personal. Each piece is finished by hand, so the lettering sits clean and catches the light just so — perfect for a birthday, a bridesmaid, or simply treating yourself.</pre>
+      {/snippet}
+    </ToolEmpty>
   {/if}
 </ToolPageLayout>

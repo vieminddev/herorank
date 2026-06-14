@@ -1,198 +1,231 @@
 <script lang="ts">
   import ToolPageLayout from "$lib/components/tools/ToolPageLayout.svelte";
-  import StatCard from "$lib/components/ui/StatCard.svelte";
   import ScoreBar from "$lib/components/ui/ScoreBar.svelte";
-  import { Search, ExternalLink, Star, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertCircle } from "lucide-svelte";
-
-  const MOCK_LISTING = {
-    title: 'KIT-836 WEEKLY || "Class Time" - Weekly Kit Planner Stickers',
-    shop: "PlannerKate1",
-    price: "$3.00",
-    rating: 0,
-    numRatings: 0,
-    date: "May 25, 2026",
-    scores: {
-      title: { score: 100, feedback: {
-        clarity: [
-          { status: "good", text: "No heavily repeated words in the title. Great job!" },
-          { status: "good", text: "The title length is within the recommended range for clarity and scannability. Good job!" },
-          { status: "good", text: "The average word length in the title is 5.8 characters, which is comfortable for reading." },
-          { status: "good", text: "The use of capitalization in the title is within a reasonable range." },
-          { status: "good", text: "The title uses a consistent delimiter style, enhancing readability." },
-          { status: "good", text: "No emoji or decorative symbols detected in the title. Good job!" },
-        ],
-        seo: [
-          { status: "good", text: "The title has a good variety of unique words, enhancing searchability." },
-          { status: "good", text: "The title length and word count are within the recommended range for searchability. Good job!" },
-          { status: "good", text: 'The title includes 1 tag(s): Planner Stickers. This helps improve searchability.' },
-        ],
-      }},
-      tags: { score: 90, feedback: {
-        clarity: [
-          { status: "good", text: "Tags are relevant and descriptive." },
-          { status: "warning", text: "Consider adding more long-tail keywords for better targeting." },
-        ],
-        seo: [
-          { status: "good", text: "Good mix of broad and specific tags." },
-        ],
-      }},
-      images: { score: 77, feedback: {
-        clarity: [
-          { status: "good", text: "Multiple product images provided." },
-          { status: "warning", text: "Consider adding lifestyle/mockup images to show the product in use." },
-          { status: "error", text: "Main image could benefit from better contrast." },
-        ],
-        seo: [],
-      }},
-      video: { score: 0, feedback: {
-        clarity: [
-          { status: "error", text: "No video attached to this listing." },
-          { status: "warning", text: "Listings with video receive 40% more views on average." },
-        ],
-        seo: [],
-      }},
-      description: { score: 100, feedback: {
-        clarity: [
-          { status: "good", text: "Description is well-structured with clear sections." },
-          { status: "good", text: "Good use of bullet points for readability." },
-        ],
-        seo: [
-          { status: "good", text: "Description includes relevant keywords." },
-        ],
-      }},
-    },
-    stats: {
-      estimatedSales: 3,
-      estimatedRevenue: "$9.00",
-      faves: 1,
-      views: 60,
-    },
-  };
+  import EstimatedBadge from "$lib/components/ui/EstimatedBadge.svelte";
+  import ToolEmpty from "$lib/components/ui/ToolEmpty.svelte";
+  import { Search, ExternalLink, Star, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertCircle, LoaderCircle, CircleAlert, FileText } from "lucide-svelte";
+  import { callTool } from "$lib/tools-client";
+  import { invalidateAll } from "$app/navigation";
 
   type ScoreKey = "title" | "tags" | "images" | "video" | "description";
+  type FeedbackItem = { status: "good" | "warning" | "error"; text: string };
+  type ScoreData = { score: number; feedback: { clarity: FeedbackItem[]; seo: FeedbackItem[] } };
+
+  // Response shape per BA spec §4.1 (maps onto the former MOCK_LISTING). `stats.views` is
+  // intentionally absent — Etsy v3 exposes no views for others' listings (PM Q7: remove,
+  // don't fabricate). `estimatedSales`/`estimatedRevenue` are estimates → EstimatedBadge.
+  interface ListingResult {
+    title: string;
+    shop: string;
+    price: string;
+    rating: number;
+    numRatings: number;
+    date: string;
+    url?: string;
+    imageUrl: string | null;
+    scores: Record<ScoreKey, ScoreData>;
+    stats: {
+      estimatedSales: number;
+      estimatedRevenue: string;
+      faves: number;
+    };
+  }
 
   let listingInput = $state("");
   let hasSearched = $state(false);
+  let loading = $state(false);
+  let error = $state<string | null>(null);
+  let needsUpgrade = $state(false);
+  let notFound = $state(false);
   let expandedScore = $state<ScoreKey | null>(null);
+  let listing = $state<ListingResult | null>(null);
 
-  const handleSearch = (e: SubmitEvent) => {
-    e.preventDefault();
-    if (listingInput.trim()) hasSearched = true;
-  };
-
-  const listing = MOCK_LISTING;
-  const scoreKeys = Object.keys(listing.scores) as ScoreKey[];
+  const scoreKeys: ScoreKey[] = ["title", "tags", "images", "video", "description"];
   const cap = (key: string) => key.charAt(0).toUpperCase() + key.slice(1);
+
+  const handleSearch = async (e: SubmitEvent) => {
+    e.preventDefault();
+    if (!listingInput.trim() || loading) return;
+    loading = true;
+    error = null;
+    needsUpgrade = false;
+    notFound = false;
+
+    const res = await callTool<ListingResult>("listing-analyzer", {
+      listing: listingInput.trim(),
+    });
+
+    if (res.ok) {
+      listing = res.data;
+      hasSearched = true;
+      await invalidateAll(); // refresh Header credits badge
+    } else if (res.status === 402) {
+      needsUpgrade = true;
+      error = res.message;
+    } else if (res.status === 404) {
+      notFound = true;
+      listing = null;
+      hasSearched = true;
+    } else {
+      error = res.message;
+    }
+    loading = false;
+  };
 </script>
 
 <ToolPageLayout
-  title="Listing Analyzer"
-  description="Get instant feedback on any Etsy listing and clear fixes to improve visibility. Paste a listing URL or ID to start."
+  title="Listing Optimizer"
+  description="Paste a listing and we'll read it the way a buyer's search does — then point out the small fixes that help it get found."
 >
-  <!-- Search -->
-  <form onsubmit={handleSearch} class="mb-8">
-    <label class="text-xs font-semibold uppercase tracking-wider text-text-primary mb-1.5 flex items-center gap-1" for="listing-input">
-      Listing URL or ID
-      <span class="text-danger text-xs font-normal">(required)</span>
-    </label>
-    <div class="flex gap-3">
-      <div class="relative flex-1">
-        <Search size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+  {#snippet controls()}
+    <!-- Search -->
+    <form onsubmit={handleSearch}>
+      <label class="field-label" for="listing-input">Which listing should we look at?</label>
+      <div class="field-wrap">
+        <span class="field-affix"><Search size={16} /></span>
         <input
           id="listing-input"
           type="text"
           bind:value={listingInput}
           placeholder="e.g. 4511075902"
-          class="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20 bg-white"
+          class="field"
           data-testid="listing-input"
         />
       </div>
+      <p class="field-hint">A full Etsy URL or just the listing ID — either works.</p>
       <button
         type="submit"
-        class="px-8 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-all"
-        style="background: var(--navy)"
+        disabled={loading || !listingInput.trim()}
+        class="btn btn-primary w-full justify-center mt-4"
         data-testid="listing-submit"
       >
-        Analyze
+        {#if loading}<LoaderCircle size={14} class="animate-spin" /> Reading it...{:else}Check it{/if}
       </button>
-    </div>
-  </form>
+    </form>
+  {/snippet}
 
-  {#if hasSearched}
+  {#if error}
+    <div class="mb-7 flex items-start gap-3 animate-fade-in" role="alert">
+      <CircleAlert size={18} class="text-danger flex-shrink-0 mt-0.5" />
+      <div class="flex-1">
+        <p class="text-sm text-text-primary">{error}</p>
+        {#if needsUpgrade}
+          <a href="/pricing" class="copy-link mt-2 !text-teal">Upgrade your plan →</a>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  {#if notFound}
+    <ToolEmpty icon={FileText} title="We couldn't find that listing" hint="Double-check the URL or ID and give it another go — a full Etsy link or just the listing ID both work." />
+  {/if}
+
+  {#if hasSearched && listing}
     <div class="animate-fade-in">
       <!-- Listing Header -->
-      <div class="card p-6 mb-6">
-        <div class="flex flex-col md:flex-row gap-6">
-          <!-- Image placeholder -->
-          <div class="w-full md:w-64 h-64 rounded-lg bg-gradient-to-br from-bg-page to-border flex items-center justify-center flex-shrink-0">
-            <span class="text-text-muted text-xs">Product Image</span>
+      <div class="flex flex-col md:flex-row gap-6">
+        <!-- Product image (real Etsy photo) -->
+        {#if listing.imageUrl}
+          <img src={listing.imageUrl} alt={listing.title} loading="lazy" class="w-full md:w-56 h-56 rounded-lg object-cover flex-shrink-0" />
+        {:else}
+          <div class="w-full md:w-56 h-56 rounded-lg bg-gradient-to-br from-bg-page to-border flex items-center justify-center flex-shrink-0">
+            <span class="text-text-muted text-xs">No image</span>
+          </div>
+        {/if}
+
+        <div class="flex-1 min-w-0">
+          <h2 class="text-lg font-semibold tracking-tight text-text-primary mb-1 leading-snug">
+            {listing.title}
+          </h2>
+          <span class="text-sm text-teal">
+            {listing.shop}
+          </span>
+
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
+            <span class="text-lg font-semibold text-text-primary">
+              {listing.price}
+            </span>
+            <div class="flex items-center gap-1">
+              {#each [1, 2, 3, 4, 5] as s}
+                <Star
+                  size={12}
+                  class={s <= listing.rating ? "text-warning fill-warning" : "text-border"}
+                />
+              {/each}
+              <span class="text-xs text-text-muted">
+                {listing.rating} ({listing.numRatings})
+              </span>
+            </div>
+            <span class="text-xs text-text-muted">{listing.date}</span>
+            {#if listing.url}
+              <a
+                href={listing.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="copy-link"
+              >
+                <ExternalLink size={11} /> View on Etsy
+              </a>
+            {/if}
           </div>
 
-          <div class="flex-1 min-w-0">
-            <h2 class="text-lg font-bold text-text-primary mb-1 leading-snug">
-              {listing.title}
-            </h2>
-            <a href="#" class="text-sm text-teal hover:underline">
-              {listing.shop}
-            </a>
-
-            <div class="flex flex-wrap items-center gap-3 mt-2">
-              <span class="text-lg font-bold text-text-primary">
-                {listing.price}
-              </span>
-              <div class="flex items-center gap-1">
-                {#each [1, 2, 3, 4, 5] as s}
-                  <Star
-                    size={12}
-                    class={s <= listing.rating ? "text-warning fill-warning" : "text-border"}
-                  />
-                {/each}
-                <span class="text-xs text-text-muted">
-                  {listing.rating} ({listing.numRatings})
-                </span>
-              </div>
-              <span class="text-xs text-text-muted">📅 {listing.date}</span>
-              <a
-                href="#"
-                class="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary border border-border rounded px-2 py-1"
-              >
-                <ExternalLink size={10} /> View on Etsy
-              </a>
-            </div>
-
-            <!-- Score Summary Bars -->
-            <div class="mt-4 space-y-2">
-              {#each scoreKeys as key}
-                <ScoreBar label={cap(key)} score={listing.scores[key].score} />
-              {/each}
-            </div>
+          <!-- Score Summary Bars -->
+          <div class="mt-5 space-y-2.5">
+            {#each scoreKeys as key}
+              <ScoreBar label={cap(key)} score={listing.scores[key].score} />
+            {/each}
           </div>
         </div>
       </div>
 
-      <!-- Stats Row -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Estimated Sales" value={listing.stats.estimatedSales} subtitle="0.2 per day" />
-        <StatCard label="Estimated Revenue" value={listing.stats.estimatedRevenue} subtitle="0.53 per day" />
-        <StatCard label="Faves" value={listing.stats.faves} subtitle="0.1 per day" />
-        <StatCard label="Views" value={listing.stats.views} subtitle="3.5 per day" />
+      <hr class="rule my-8" />
+
+      <!-- Stats Row. Views StatCard removed (PM Q7): Etsy v3 exposes no views for others'
+           listings, so we do not fabricate one. Sales/Revenue carry an Estimated badge. -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-5">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="section-kicker">Estimated sales</span>
+            <EstimatedBadge />
+          </div>
+          <div class="text-2xl font-semibold tracking-tight text-text-primary">{listing.stats.estimatedSales}</div>
+          <p class="text-xs text-text-muted mt-0.5">per month</p>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="section-kicker">Estimated revenue</span>
+            <EstimatedBadge />
+          </div>
+          <div class="text-2xl font-semibold tracking-tight text-text-primary">{listing.stats.estimatedRevenue}</div>
+          <p class="text-xs text-text-muted mt-0.5">per month</p>
+        </div>
+        <div>
+          <span class="section-kicker">Faves</span>
+          <div class="text-2xl font-semibold tracking-tight text-text-primary mt-1">{listing.stats.faves}</div>
+        </div>
       </div>
 
+      <hr class="rule my-8" />
+
       <!-- Detailed Score Sections -->
-      <div class="space-y-3">
+      <p class="section-kicker mb-1">Where to look next</p>
+      <h2 class="text-lg font-semibold tracking-tight text-text-primary mb-1">A closer read, section by section</h2>
+      <p class="lead text-sm mb-5">Open any line to see what's working and what's worth a tweak.</p>
+      <div class="entry-list">
         {#each scoreKeys as key}
           {@const scoreData = listing.scores[key]}
           {@const isExpanded = expandedScore === key}
           {@const label = cap(key)}
-          <div class="card overflow-hidden">
+          <div class="entry !block !py-0">
             <button
               onclick={() => (expandedScore = isExpanded ? null : key)}
-              class="w-full flex items-center justify-between px-5 py-4 hover:bg-bg-page/50 transition-colors"
+              class="w-full flex items-center justify-between py-4 text-left"
               data-testid="score-toggle-{key}"
             >
-              <div class="flex items-center gap-4 flex-1 min-w-0">
-                <span class="text-sm font-bold text-text-primary">{label}</span>
-                <div class="flex-1 max-w-md">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <span class="text-sm font-medium text-text-primary">{label}</span>
+                <EstimatedBadge label="Est." tooltip="Rule-based audit score estimated from public listing data — not an official Etsy figure." />
+                <div class="flex-1 max-w-md hidden sm:block">
                   <div class="score-bar">
                     <div
                       class="score-bar-fill"
@@ -203,7 +236,7 @@
               </div>
               <div class="flex items-center gap-3">
                 <span
-                  class="text-sm font-bold"
+                  class="text-sm font-semibold tabular-nums"
                   style="color: {scoreData.score >= 70 ? 'var(--score-high)' : scoreData.score >= 40 ? 'var(--score-medium)' : 'var(--score-low)'}"
                 >
                   {scoreData.score}/100
@@ -213,58 +246,73 @@
             </button>
 
             {#if isExpanded}
-              <div class="px-5 pb-5 animate-fade-in">
-                <div class="border-t border-border-light pt-4">
-                  {#if scoreData.feedback.clarity.length > 0}
-                    <div class="mb-4">
-                      <h4 class="text-xs font-semibold uppercase tracking-wider text-text-primary mb-2 flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-success"></span>
-                        Clarity
-                      </h4>
-                      <ul class="space-y-1.5">
-                        {#each scoreData.feedback.clarity as item}
-                          <li class="flex items-start gap-2 text-xs text-text-secondary">
-                            {#if item.status === "good"}
-                              <CheckCircle size={12} class="text-success flex-shrink-0" />
-                            {:else if item.status === "warning"}
-                              <AlertCircle size={12} class="text-warning flex-shrink-0" />
-                            {:else}
-                              <XCircle size={12} class="text-danger flex-shrink-0" />
-                            {/if}
-                            <span>{item.text}</span>
-                          </li>
-                        {/each}
-                      </ul>
-                    </div>
-                  {/if}
-                  {#if scoreData.feedback.seo.length > 0}
-                    <div>
-                      <h4 class="text-xs font-semibold uppercase tracking-wider text-text-primary mb-2 flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-teal"></span>
-                        SEO
-                      </h4>
-                      <ul class="space-y-1.5">
-                        {#each scoreData.feedback.seo as item}
-                          <li class="flex items-start gap-2 text-xs text-text-secondary">
-                            {#if item.status === "good"}
-                              <CheckCircle size={12} class="text-success flex-shrink-0" />
-                            {:else if item.status === "warning"}
-                              <AlertCircle size={12} class="text-warning flex-shrink-0" />
-                            {:else}
-                              <XCircle size={12} class="text-danger flex-shrink-0" />
-                            {/if}
-                            <span>{item.text}</span>
-                          </li>
-                        {/each}
-                      </ul>
-                    </div>
-                  {/if}
-                </div>
+              <div class="pb-5 pl-1 animate-fade-in">
+                {#if scoreData.feedback.clarity.length > 0}
+                  <div class="mb-4">
+                    <h4 class="section-kicker mb-2 flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                      Clarity
+                    </h4>
+                    <ul class="space-y-1.5">
+                      {#each scoreData.feedback.clarity as item}
+                        <li class="flex items-start gap-2 text-xs text-text-secondary">
+                          {#if item.status === "good"}
+                            <CheckCircle size={12} class="text-success flex-shrink-0 mt-0.5" />
+                          {:else if item.status === "warning"}
+                            <AlertCircle size={12} class="text-warning flex-shrink-0 mt-0.5" />
+                          {:else}
+                            <XCircle size={12} class="text-danger flex-shrink-0 mt-0.5" />
+                          {/if}
+                          <span>{item.text}</span>
+                        </li>
+                      {/each}
+                    </ul>
+                  </div>
+                {/if}
+                {#if scoreData.feedback.seo.length > 0}
+                  <div>
+                    <h4 class="section-kicker mb-2 flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-teal"></span>
+                      SEO
+                    </h4>
+                    <ul class="space-y-1.5">
+                      {#each scoreData.feedback.seo as item}
+                        <li class="flex items-start gap-2 text-xs text-text-secondary">
+                          {#if item.status === "good"}
+                            <CheckCircle size={12} class="text-success flex-shrink-0 mt-0.5" />
+                          {:else if item.status === "warning"}
+                            <AlertCircle size={12} class="text-warning flex-shrink-0 mt-0.5" />
+                          {:else}
+                            <XCircle size={12} class="text-danger flex-shrink-0 mt-0.5" />
+                          {/if}
+                          <span>{item.text}</span>
+                        </li>
+                      {/each}
+                    </ul>
+                  </div>
+                {/if}
               </div>
             {/if}
           </div>
         {/each}
       </div>
     </div>
+  {:else if !error && !notFound}
+    <ToolEmpty icon={FileText} title="Your listing's read will appear here" hint="Paste a listing on the left and we'll read it the way a buyer's search does — section by section, with the small fixes that help it get found.">
+      {#snippet preview()}
+        <div class="flex items-start gap-4">
+          <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-bg-page to-border shrink-0"></div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[0.8125rem] font-medium text-text-primary leading-snug">Handmade Ceramic Coffee Mug · Rustic Blue Pottery</p>
+            <span class="text-xs text-teal">BlueClayStudio</span>
+          </div>
+        </div>
+        <div class="mt-4 space-y-2.5">
+          {#each [{ l: "Title", n: 88 }, { l: "Tags", n: 72 }, { l: "Images", n: 95 }] as ex (ex.l)}
+            <ScoreBar label={ex.l} score={ex.n} />
+          {/each}
+        </div>
+      {/snippet}
+    </ToolEmpty>
   {/if}
 </ToolPageLayout>

@@ -7,10 +7,13 @@ metadata:
 
 When porting `lucide-react` icons to `lucide-svelte`, the names do NOT always map 1:1. Recent lucide versions (observed in `lucide-svelte@0.469.0`) removed legacy/numeric-suffix aliases.
 
-Confirmed renames:
+Confirmed renames / dropped names:
 - `Home` → `House`
 - `BarChart3` → `ChartColumn`
 - `Wand2` → `Wand`
+- `AlertCircle` → `CircleAlert` (error/alert icon)
+- `Loader2` (spinner) → `LoaderCircle` — pair with `class="animate-spin"`
+- `AlertTriangle`/`TriangleAlert`: the new canonical name is `TriangleAlert`, but `AlertTriangle` STILL resolves via `dist/aliases/aliases.js` (so existing imports compile). Prefer the canonical name in new code.
 
 **Why:** lucide deprecated old names; `lucide-svelte` 0.469 only ships the current PascalCase exports from `dist/icons/index.js`. Importing a dropped name fails silently at runtime / errors at build.
 

@@ -10,5 +10,24 @@
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "bundler"
-  }
+  },
+  // The adapter-generated worker (`.svelte-kit/cloudflare/_worker.js`) is bundled,
+  // minified output — not source. `src/worker.ts` imports it, but with `checkJs`
+  // TypeScript would otherwise try to type-check that generated file and emit
+  // spurious errors. Its import is typed via `src/worker-generated.d.ts` instead.
+  // (`exclude` here REPLACES the extended config's exclude, so re-list service-worker.)
+  "exclude": [
+    "node_modules/**",
+    ".svelte-kit/cloudflare/**",
+    ".svelte-kit/cloudflare-tmp/**",
+    ".svelte-kit/output/**",
+    ".svelte-kit/server-worker/**",
+    "src/service-worker.js",
+    "src/service-worker/**/*.js",
+    "src/service-worker.ts",
+    "src/service-worker/**/*.ts",
+    "src/service-worker.d.ts",
+    "src/service-worker/**/*.d.ts",
+    "tests/e2e/**"
+  ]
 }

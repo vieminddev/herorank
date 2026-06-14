@@ -1,0 +1,9 @@
+{
+  "count": 4,
+  "results": [
+    { "listing_id": 4511075902, "shop_id": 12345678, "rating": 5, "review": "Beautiful necklace, arrived quickly!", "created_timestamp": 0, "_days_ago": 6 },
+    { "listing_id": 4511075902, "shop_id": 12345678, "rating": 5, "review": "Perfect gift!", "created_timestamp": 0, "_days_ago": 20 },
+    { "listing_id": 4511075902, "shop_id": 12345678, "rating": 4, "review": "Lovely, slightly small.", "created_timestamp": 0, "_days_ago": 55 },
+    { "listing_id": 4511075902, "shop_id": 12345678, "rating": 5, "review": "Great quality.", "created_timestamp": 0, "_days_ago": 110 }
+  ]
+}

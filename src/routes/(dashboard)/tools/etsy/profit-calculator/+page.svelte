@@ -1,6 +1,7 @@
 <script lang="ts">
   import ToolPageLayout from "$lib/components/tools/ToolPageLayout.svelte";
 
+  let country = $state("US");
   let itemPrice = $state("25.00");
   let shippingCharged = $state("5.99");
   let materialCost = $state("8.00");
@@ -8,6 +9,16 @@
   let shippingCost = $state("4.50");
   let packagingCost = $state("1.00");
   let etsyAds = $state("0.00");
+
+  const REGIONS = [
+    { code: "US", name: "United States (3% + $0.25)", rate: 0.03, fixed: 0.25, currency: "$" },
+    { code: "UK", name: "United Kingdom (4% + £0.20)", rate: 0.04, fixed: 0.20, currency: "£" },
+    { code: "CA", name: "Canada (3% + $0.25 CAD)", rate: 0.03, fixed: 0.25, currency: "$" },
+    { code: "EU", name: "Europe (4% + €0.30)", rate: 0.04, fixed: 0.30, currency: "€" },
+    { code: "AU", name: "Australia (3% + $0.25 AUD)", rate: 0.03, fixed: 0.25, currency: "$" }
+  ];
+
+  const activeRegion = $derived(REGIONS.find((r) => r.code === country) ?? REGIONS[0]);
 
   const calculations = $derived.by(() => {
     const price = parseFloat(itemPrice) || 0;
@@ -21,7 +32,7 @@
     const totalRevenue = price + shipping;
     const listingFee = 0.2;
     const transactionFee = totalRevenue * 0.065;
-    const processingFee = totalRevenue * 0.03 + 0.25;
+    const processingFee = totalRevenue * activeRegion.rate + activeRegion.fixed;
     const totalEtsyFees = listingFee + transactionFee + processingFee;
     const totalCosts = material + labor + shipCost + packaging + ads + totalEtsyFees;
     const profit = totalRevenue - totalCosts;
@@ -67,99 +78,102 @@
 <ToolPageLayout
   title="Profit Calculator"
   prefix="Etsy"
-  description="Know your real profit on every sale. Plug in your costs and Etsy calculates the rest — fees, shipping, and your take-home."
+  description="See what you actually keep on a sale. Put in your numbers and we'll work out the fees, the shipping, and your take-home."
 >
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {#snippet controls()}
     <!-- Input Section -->
-    <div class="card p-6">
-      <h3 class="text-base font-bold text-text-primary mb-5">Costs</h3>
-      <div class="space-y-4">
-        {#each fields as field (field.key)}
-          <div>
-            <label class="text-xs font-semibold text-text-secondary mb-1 block">
-              {field.label}
-            </label>
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">$</span>
-              <input
-                type="number"
-                step="0.01"
-                value={field.value}
-                oninput={(e) => setField(field.key, e.currentTarget.value)}
-                class="w-full pl-7 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal/20 bg-white"
-              />
-            </div>
-          </div>
-        {/each}
-      </div>
-    </div>
-
-    <!-- Results Section -->
+    <p class="section-kicker mb-4">Your numbers</p>
     <div class="space-y-4">
-      <!-- Profit Display -->
-      <div
-        class="card p-6 text-center"
-        style="background: {isProfit ? 'var(--success-bg)' : 'var(--danger-bg)'}; border-color: {isProfit ? 'var(--success)' : 'var(--danger)'}"
-      >
-        <div class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">
-          Your Profit
-        </div>
-        <div
-          class="text-4xl font-bold"
-          style="color: {isProfit ? 'var(--success)' : 'var(--danger)'}"
+      <div>
+        <label for="profit-country" class="field-label">Etsy Payments Country</label>
+        <select
+          id="profit-country"
+          bind:value={country}
+          class="field appearance-none cursor-pointer"
         >
-          ${calculations.profit}
-        </div>
-        <div
-          class="text-sm font-semibold mt-1"
-          style="color: {isProfit ? 'var(--success)' : 'var(--danger)'}"
-        >
-          {calculations.margin}% margin
-        </div>
+          {#each REGIONS as r}
+            <option value={r.code}>{r.name}</option>
+          {/each}
+        </select>
+        <p class="field-hint">Etsy Payments processing fees vary depending on your shop's country.</p>
       </div>
 
-      <!-- Fee Breakdown -->
-      <div class="card p-6">
-        <h3 class="text-base font-bold text-text-primary mb-4">
-          Breakdown
-        </h3>
-        <div class="space-y-3">
-          <div class="flex justify-between text-sm">
-            <span class="text-text-secondary">Total Revenue</span>
-            <span class="font-semibold text-success">+${calculations.totalRevenue}</span>
-          </div>
-          <hr class="border-border-light" />
-          <div class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">
-            Etsy Fees
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-text-secondary">Listing Fee</span>
-            <span class="text-danger">-${calculations.listingFee}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-text-secondary">Transaction Fee (6.5%)</span>
-            <span class="text-danger">-${calculations.transactionFee}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-text-secondary">Processing Fee (3% + $0.25)</span>
-            <span class="text-danger">-${calculations.processingFee}</span>
-          </div>
-          <div class="flex justify-between text-sm font-semibold border-t border-border-light pt-2">
-            <span class="text-text-primary">Total Etsy Fees</span>
-            <span class="text-danger">-${calculations.totalEtsyFees}</span>
-          </div>
-          <hr class="border-border-light" />
-          <div class="flex justify-between text-sm font-semibold">
-            <span class="text-text-primary">Total Costs</span>
-            <span class="text-danger">-${calculations.totalCosts}</span>
-          </div>
-          <div class="flex justify-between text-base font-bold border-t border-border pt-3">
-            <span class="text-text-primary">Net Profit</span>
-            <span style="color: {isProfit ? 'var(--success)' : 'var(--danger)'}">
-              ${calculations.profit}
-            </span>
+      {#each fields as field (field.key)}
+        <div>
+          <label for={`profit-${field.key}`} class="field-label">
+            {field.label}
+          </label>
+          <div class="field-wrap">
+            <span class="field-affix">{activeRegion.currency}</span>
+            <input
+              id={`profit-${field.key}`}
+              type="number"
+              step="0.01"
+              value={field.value}
+              oninput={(e) => setField(field.key, e.currentTarget.value)}
+              class="field"
+            />
           </div>
         </div>
+      {/each}
+    </div>
+  {/snippet}
+
+  <!-- Results Section -->
+  <div>
+    <!-- Profit Display -->
+    <p class="section-kicker mb-1">What you keep</p>
+    <div
+      class="text-5xl font-semibold tracking-tight"
+      style="color: {isProfit ? 'var(--success)' : 'var(--danger)'}"
+    >
+      {activeRegion.currency}{calculations.profit}
+    </div>
+    <p class="lead text-sm mt-2">
+      {#if isProfit}
+        That's a <span class="font-semibold" style="color: var(--success)">{calculations.margin}% margin</span> after Etsy takes its cut.
+      {:else}
+        You're <span class="font-semibold" style="color: var(--danger)">in the red</span> here — a {calculations.margin}% margin once the fees land.
+      {/if}
+    </p>
+
+    <hr class="rule my-8" />
+
+    <!-- Fee Breakdown -->
+    <p class="section-kicker mb-4">Where it goes</p>
+    <div class="space-y-3">
+      <div class="flex justify-between text-sm">
+        <span class="text-text-secondary">Total revenue</span>
+        <span class="font-semibold tabular-nums text-success">+{activeRegion.currency}{calculations.totalRevenue}</span>
+      </div>
+      <hr class="rule" />
+      <p class="section-kicker">Etsy's fees</p>
+      <div class="flex justify-between text-sm">
+        <span class="text-text-secondary">Listing fee (equivalent)</span>
+        <span class="tabular-nums text-danger">-{activeRegion.currency}{calculations.listingFee}</span>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-text-secondary">Transaction fee (6.5%)</span>
+        <span class="tabular-nums text-danger">-{activeRegion.currency}{calculations.transactionFee}</span>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-text-secondary">Processing fee ({activeRegion.rate * 100}% + {activeRegion.fixed})</span>
+        <span class="tabular-nums text-danger">-{activeRegion.currency}{calculations.processingFee}</span>
+      </div>
+      <div class="flex justify-between text-sm font-semibold pt-1">
+        <span class="text-text-primary">Etsy fees, all in</span>
+        <span class="tabular-nums text-danger">-{activeRegion.currency}{calculations.totalEtsyFees}</span>
+      </div>
+      <hr class="rule" />
+      <div class="flex justify-between text-sm font-semibold">
+        <span class="text-text-primary">Everything it costs you</span>
+        <span class="tabular-nums text-danger">-{activeRegion.currency}{calculations.totalCosts}</span>
+      </div>
+      <div class="flex justify-between text-base font-semibold pt-1">
+        <span class="text-text-primary">Take-home</span>
+        <span class="tabular-nums" style="color: {isProfit ? 'var(--success)' : 'var(--danger)'}">
+          {activeRegion.currency}{calculations.profit}
+        </span>
       </div>
     </div>
   </div>

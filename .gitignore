@@ -17,9 +17,12 @@
 /.next/
 /out/
 
-# sveltekit
+# sveltekit / cloudflare
 .svelte-kit
 .wrangler
+# wrangler local secrets (BETTER_AUTH_SECRET, STRIPE_*, ...)
+.dev.vars
+.dev.vars.*
 
 # production
 /build
