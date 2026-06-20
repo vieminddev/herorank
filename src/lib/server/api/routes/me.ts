@@ -11,6 +11,7 @@ import { requireAuth } from '../middleware/requireAuth';
 import { getDb, getUser } from '../context';
 import { createCreditsRepo } from '../../repositories/creditsRepo';
 import { createCreditsService } from '../../services/creditsService';
+import history from './history';
 
 const router = new Hono<AppEnv>();
 
@@ -34,5 +35,9 @@ router.get('/', requireAuth, async (c) => {
     credits: { balance },
   });
 });
+
+// GET /api/me/history — recent analyses across tools (mounted on the `me` router,
+// matching the deployed bundle).
+router.route('/', history);
 
 export default router;

@@ -18,6 +18,7 @@ import type { Context } from 'hono';
 import type { ZodType } from 'zod';
 import { z } from 'zod';
 import type { AppEnv } from '../types';
+import type { Env } from '../../env';
 import { getEnv, getUser, getDb } from '../context';
 import { requireAuth } from '../middleware/requireAuth';
 import { loadReviewRateProvider } from '../../services/calibration/reviewRateProvider';
@@ -34,6 +35,9 @@ import { getEtsyContext, hasEtsyKey } from '../../services/etsy/provider';
 import { cacheKeys, TTL, normalize } from '../../services/etsy/cache';
 import { createAnalysesStore } from '../../services/etsy/analysesStore';
 import { getEstimation } from '../../services/etsy/estimationContract';
+import { loadTaxonomyResolver } from '../../services/etsy/taxonomyResolver';
+import { llmListingAudit } from '../../services/prompts/listingAudit';
+import { createLlmService, type LlmService } from '../../services/llmService';
 import type {
   EtsyClient,
   EtsyListing,
@@ -138,10 +142,42 @@ function formatDate(epochSec?: number): string {
 
 const SEC_90D = 90 * 86_400;
 
-/** Reviews in the trailing 90 days (the sales-velocity signal, spec §3.2). */
+/**
+ * Reviews in the trailing 90 days (the sales-velocity signal, spec §3.2).
+ *
+ * When the observed review history spans <90 days (a young listing/shop, or a capped sample whose
+ * oldest review is recent), the raw 90-day count understates velocity, so we PROJECT the observed
+ * per-day rate out to 90 days and take the larger of the two. With ≥90 days of span we use the
+ * true in-window count.
+ */
 function reviewsLast90d(reviews: EtsyReview[], now = Date.now()): number {
-  const cutoff = Math.floor(now / 1000) - SEC_90D;
-  return reviews.filter((r) => r.created_timestamp >= cutoff).length;
+  if (!reviews.length) return 0;
+  const ts = reviews
+    .map((r) => r.created_timestamp)
+    .filter((t) => Number.isFinite(t))
+    .sort((a, b) => b - a);
+  if (!ts.length) return 0;
+
+  const nowSec = Math.floor(now / 1000);
+  const cutoff = nowSec - SEC_90D;
+  const within90 = ts.filter((t) => t >= cutoff).length;
+
+  const newest = ts[0];
+  const oldest = ts[ts.length - 1];
+  const spanDays = (newest - oldest) / 86_400;
+  if (spanDays >= 90) return within90;
+
+  const projected = (ts.length / Math.max(1, spanDays)) * 90;
+  return Math.round(Math.max(within90, projected));
+}
+
+/** Build an LlmService from env (OpenAI-compatible gateway), defaults mirror the deployed config. */
+function llmFromEnv(env: Env): LlmService {
+  return createLlmService({
+    baseUrl: env.LLM_BASE_URL ?? 'https://vtoken.viemind.ai/v1',
+    apiKey: env.LLM_API_KEY ?? '',
+    model: env.LLM_MODEL ?? '',
+  });
 }
 
 function avgRating(reviews: EtsyReview[]): number {
@@ -198,14 +234,29 @@ router.post('/listing-analyzer', requireAuth, requireCredits('listing-analyzer')
     const images = listing.images?.length ? listing.images : await client.getListingImages(listingId);
     const reviewsPage = await client.getReviewsByListing(listingId, { limit: 100 });
     const reviews = reviewsPage.results ?? [];
-
-    const audit = est.listingAudit({ ...listing, images });
     const price = priceValue(listing.price);
     const reviewProvider = await loadReviewRateProvider(getDb(c));
+    const { toTopLevel } = await loadTaxonomyResolver(client, cache);
+
+    // LLM content-aware audit (best-effort) reading the listing's REAL fields; fall back to the
+    // rule-based audit when the LLM is unavailable/invalid so the analysis never fails.
+    const llmAudit = await llmListingAudit(llmFromEnv(env), {
+      title: listing.title ?? '',
+      tags: listing.tags ?? [],
+      description: listing.description ?? '',
+      imageCount: images.length,
+      hasVideo: Array.isArray(listing.videos) && listing.videos.length > 0,
+      price,
+      currency: listing.price?.currency_code,
+      category: listing.taxonomy_id != null ? String(listing.taxonomy_id) : null,
+    });
+    const audit = llmAudit ?? est.listingAudit({ ...listing, images });
+
     const sales = est.salesEstimate({
       reviewsLast90d: reviewsLast90d(reviews),
       avgPrice: price,
-      categoryId: listing.taxonomy_id ?? null,
+      // Category-specific review-rate keys off the TOP-LEVEL taxonomy, not the leaf.
+      categoryId: toTopLevel(listing.taxonomy_id),
     }, reviewProvider);
 
     const payload: ListingAnalyzerResponse = {
@@ -228,6 +279,10 @@ router.post('/listing-analyzer', requireAuth, requireCredits('listing-analyzer')
     };
 
     await cache.put(key, payload, TTL.listing);
+    await recordRun(env, getUser(c).id, 'listing-analyzer', String(listingId), {
+      title: payload.title,
+      grade: gradeFromScores(audit),
+    });
     return c.json(payload);
   } catch (err) {
     return degradeOrError<ListingAnalyzerResponse>(c, cache, key, err);
@@ -249,6 +304,7 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
   try {
     const est = await getEstimation();
     const reviewProvider = await loadReviewRateProvider(getDb(c));
+    const { toTopLevel, nameOf } = await loadTaxonomyResolver(client, cache);
 
     // Resolve name → shop_id (cached separately to avoid repeat findShops).
     const nameKey = cacheKeys.shopName(shopName);
@@ -274,19 +330,23 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
     const reviewsPage = await client.getReviewsByShop(shopId, { limit: 100 });
     const reviews = reviewsPage.results ?? [];
 
-    // Shop-listings endpoint omits images; fetch thumbnails for the displayed rows in ONE
-    // batch call (best-effort — never fail the analysis if images can't be fetched).
+    // Shop-listings endpoint omits media; fetch images + videos for the displayed rows in ONE
+    // batch call (best-effort — never fail the analysis if media can't be fetched). The fetched
+    // listing (with images/videos) feeds the per-row audit so the video score is accurate.
     const imageById = new Map<number, string>();
+    const mediaById = new Map<number, EtsyListing>();
     const displayIds = listings.slice(0, 20).map((l) => l.listing_id).filter((id): id is number => !!id);
     if (displayIds.length) {
       try {
-        const withImages = await client.getListingsByListingIds(displayIds, { includes: ['Images'] });
-        for (const wl of withImages) {
+        const withMedia = await client.getListingsByListingIds(displayIds, { includes: ['Images', 'Videos'] });
+        for (const wl of withMedia) {
+          if (!wl.listing_id) continue;
+          mediaById.set(wl.listing_id, wl);
           const u = wl.images?.[0]?.url_570xN ?? wl.images?.[0]?.url_fullxfull;
-          if (wl.listing_id && u) imageById.set(wl.listing_id, u);
+          if (u) imageById.set(wl.listing_id, u);
         }
       } catch {
-        /* thumbnails are best-effort */
+        /* media is best-effort */
       }
     }
 
@@ -297,7 +357,7 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
     const shopSales = est.salesEstimate({
       reviewsLast90d: reviewsLast90d(reviews),
       avgPrice,
-      categoryId: listings[0]?.taxonomy_id ?? null,
+      categoryId: toTopLevel(listings[0]?.taxonomy_id),
     }, reviewProvider);
     const totalReviews = shop.review_count ?? reviewsPage.count ?? reviews.length;
     const activeListings = shop.listing_active_count ?? listings.length;
@@ -305,14 +365,19 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
     // only when the field is absent. monthlySales stays estimated (no live velocity in API).
     const totalSales = shop.transaction_sold_count ?? shopSales.monthlySales * 12;
 
-    const listingRows = listings.slice(0, 20).map((l, i) => {
-      const audit = est.listingAudit(l);
+    // Distribute the shop's estimated monthly sales across the sampled rows by FAVES SHARE (a
+    // per-listing demand proxy), so popular listings get more of the estimate than dead stock.
+    const sampled = listings.slice(0, 20);
+    const sampledFaves = sampled.reduce((a, l) => a + (l.num_favorers ?? 0), 0);
+    const listingRows = sampled.map((l, i) => {
+      const media = l.listing_id ? mediaById.get(l.listing_id) : undefined;
+      const forAudit = media ? { ...l, images: media.images, videos: media.videos } : l;
+      const audit = est.listingAudit(forAudit);
       const lp = priceValue(l.price);
-      const lSales = est.salesEstimate({
-        reviewsLast90d: Math.round(reviewsLast90d(reviews) / Math.max(1, listings.length)),
-        avgPrice: lp,
-        categoryId: l.taxonomy_id ?? null,
-      }, reviewProvider);
+      const faves = l.num_favorers ?? 0;
+      const share = sampledFaves > 0 ? faves / sampledFaves : 1 / sampled.length;
+      const estSales = Math.round(shopSales.monthlySales * share);
+      const estRevenue = estSales * lp;
       return {
         id: l.listing_id || i + 1,
         title: l.title,
@@ -326,9 +391,9 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
           video: audit.video.score,
           description: audit.description.score,
         },
-        sales: lSales.monthlySales,
-        revenue: lSales.monthlyRevenue,
-        faves: l.num_favorers ?? 0,
+        sales: estSales,
+        revenue: formatMoney(estRevenue, currency),
+        faves,
       };
     });
 
@@ -337,7 +402,18 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
     for (const l of listings) for (const t of l.tags ?? []) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
     const tags = [...tagCounts.entries()]
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
+      .slice(0, 60)
+      .map(([name, count]) => ({ name, count }));
+
+    // Aggregate the shop's category mix (by taxonomy name) across all sampled listings.
+    const catCounts = new Map<string, number>();
+    for (const l of listings) {
+      const name = nameOf(l.taxonomy_id);
+      if (name) catCounts.set(name, (catCounts.get(name) ?? 0) + 1);
+    }
+    const categories = [...catCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 60)
       .map(([name, count]) => ({ name, count }));
 
     const totalFaves = listings.reduce((a, l) => a + (l.num_favorers ?? 0), 0) || (shop.num_favorers ?? 0);
@@ -373,6 +449,7 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
         salesPerListing: activeListings > 0 ? Math.round(totalSales / activeListings) : 0,
       },
       tags,
+      categories,
       listings: listingRows,
       reviews: {
         distribution: dist,
@@ -685,6 +762,148 @@ router.post('/buyer-check', requireAuth, requireCredits('buyer-check'), async (c
   }
 });
 
+// --- listing-compare (cost 3) — batch fetch + estimation across 2-4 listings --
+const compareBody = z.object({
+  listings: z.array(z.string().min(1)).min(2).max(4),
+});
+
+router.post('/listing-compare', requireAuth, requireCredits('listing-compare'), async (c) => {
+  const body = await readBody(c, compareBody);
+  if (!body.ok) return body.res;
+
+  // Parse + de-duplicate (preserving order). Any invalid input fails the whole request.
+  const ids: number[] = [];
+  for (const raw of body.data.listings) {
+    const id = parseListingId(raw);
+    if (id === null) {
+      return c.json({ error: 'VALIDATION', message: `Not a valid Etsy listing: "${raw}"` }, 400);
+    }
+    if (!ids.includes(id)) ids.push(id);
+  }
+  if (ids.length < 2) {
+    return c.json({ error: 'VALIDATION', message: 'Enter at least 2 different listings.' }, 400);
+  }
+
+  const env = getEnv(c);
+  const { client } = getEtsyContext(env);
+
+  try {
+    const est = await getEstimation();
+    const fetched = await client.getListingsByListingIds(ids, { includes: ['Images'] });
+    const byId = new Map(fetched.map((l) => [l.listing_id, l] as const));
+
+    const rows = ids
+      .map((id) => byId.get(id))
+      .filter((l): l is EtsyListing => Boolean(l))
+      .map((listing) => {
+        const images = listing.images ?? [];
+        const audit = est.listingAudit({ ...listing, images });
+        const overall = Math.round(
+          (audit.title.score +
+            audit.tags.score +
+            audit.images.score +
+            audit.video.score +
+            audit.description.score) /
+            5
+        );
+        const price = priceValue(listing.price);
+        return {
+          listingId: listing.listing_id,
+          title: listing.title,
+          url: listing.url,
+          imageUrl: images[0]?.url_570xN ?? images[0]?.url_fullxfull ?? null,
+          price: formatMoney(price, listing.price?.currency_code),
+          priceValue: price,
+          faves: listing.num_favorers ?? 0,
+          tagCount: listing.tags?.length ?? 0,
+          titleLength: listing.title?.length ?? 0,
+          imageCount: images.length,
+          hasVideo: Array.isArray(listing.videos) && listing.videos.length > 0,
+          seoScore: overall,
+        };
+      });
+
+    if (rows.length < 2) {
+      return c.json({ error: 'NOT_FOUND', message: 'Could not load enough of those listings to compare.' }, 404);
+    }
+
+    return c.json({ listings: rows, estimated: { seoScore: true } });
+  } catch (err) {
+    const m = mapEtsyError(err);
+    return c.json({ error: m.error, message: m.message }, m.status);
+  }
+});
+
+// --- tag-gap (cost 3) — top-listings tag analysis vs your own --------------
+const tagGapBody = z.object({
+  keyword: z.string().min(1, 'keyword is required').max(120),
+  myTags: z.array(z.string().min(1).max(40)).max(13).optional(),
+});
+
+router.post('/tag-gap', requireAuth, requireCredits('tag-gap'), async (c) => {
+  const body = await readBody(c, tagGapBody);
+  if (!body.ok) return body.res;
+
+  const env = getEnv(c);
+  const { client, cache } = getEtsyContext(env);
+  const kw = body.data.keyword.trim();
+  const key = cacheKeys.keyword(`taggap:${normalize(kw)}`);
+
+  try {
+    const cached = await cache.get<{ counts: [string, number][]; sampled: number }>(key);
+    let tagCounts: Map<string, number>;
+    let sampled: number;
+
+    if (cached?.fresh) {
+      tagCounts = new Map(cached.payload.counts);
+      sampled = cached.payload.sampled;
+    } else {
+      const page = await client.findActiveListings({ keywords: kw, limit: 25 });
+      const ids = (page.results ?? [])
+        .map((l) => l.listing_id)
+        .filter((id): id is number => Boolean(id))
+        .slice(0, 25);
+      const listings = ids.length ? await client.getListingsByListingIds(ids) : [];
+      tagCounts = new Map<string, number>();
+      for (const l of listings) {
+        for (const t of l.tags ?? []) {
+          const tag = t.trim().toLowerCase();
+          if (tag) tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+        }
+      }
+      sampled = listings.length;
+      await cache.put(key, { counts: [...tagCounts.entries()], sampled }, TTL.keyword);
+    }
+
+    const mine = new Set((body.data.myTags ?? []).map((t) => t.trim().toLowerCase()));
+    const all = [...tagCounts.entries()]
+      .map(([tag, count]) => ({
+        tag,
+        count,
+        inMine: mine.has(tag),
+        sharePct: sampled ? Math.round((count / sampled) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+    const gaps = all.filter((t) => !t.inMine && t.count >= 2);
+
+    await recordRun(env, getUser(c).id, 'tag-gap', kw, {
+      gaps: gaps.slice(0, 10).map((g) => g.tag),
+      sampled,
+    });
+
+    return c.json({
+      keyword: kw,
+      sampled,
+      tags: all.slice(0, 40),
+      gaps: gaps.slice(0, 20),
+      hasMine: mine.size > 0,
+    });
+  } catch (err) {
+    const m = mapEtsyError(err);
+    return c.json({ error: m.error, message: m.message }, m.status);
+  }
+});
+
 export default router;
 
 // ---------------------------------------------------------------------------
@@ -705,6 +924,24 @@ async function degradeOrError<T extends { cached: boolean; stale?: boolean }>(
   }
   const m = mapEtsyError(err);
   return c.json({ error: m.error, message: m.message }, m.status);
+}
+
+/**
+ * Best-effort "saved run" write — appends a snapshot to the `analyses` table so it shows up in
+ * the user's `/api/me/history` feed. Never throws: a failed history write must not fail the tool.
+ */
+async function recordRun(
+  env: Env,
+  userId: string,
+  tool: string,
+  subject: string,
+  payload: unknown
+): Promise<void> {
+  try {
+    await createAnalysesStore(env.DB).insert({ userId, tool, subject, payload });
+  } catch {
+    /* history is best-effort */
+  }
 }
 
 interface NicheCandidate {

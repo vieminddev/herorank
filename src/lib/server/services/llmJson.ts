@@ -54,3 +54,30 @@ export async function completeJson<T>(
 
   return null;
 }
+
+/**
+ * Second-pass "refine" with graceful fallback: run `completeJson` for the refine prompt and return
+ * the refined result, but fall back to `draft` whenever refinement yields nothing usable (null
+ * result OR a thrown LLM error). The first-pass draft is never discarded on a refine failure.
+ *
+ * @param svc   - LLM service (only `complete` is used).
+ * @param draft - The pass-1 result to fall back to.
+ * @param opts  - The refine messages + schema (+ optional temperature).
+ * @returns The refined result, or `draft` when refinement is unavailable/invalid.
+ */
+export async function refineOrFallback<T>(
+  svc: Pick<LlmService, 'complete'>,
+  draft: T,
+  opts: CompleteJsonOpts<T>
+): Promise<T> {
+  try {
+    const refined = await completeJson(svc, {
+      messages: opts.messages,
+      schema: opts.schema,
+      temperature: opts.temperature,
+    });
+    return refined ?? draft;
+  } catch {
+    return draft;
+  }
+}

@@ -148,6 +148,10 @@ export function clientIp(headers: Headers): string {
  */
 export function rateLimit(bucket: BucketName) {
   return createMiddleware<AppEnv>(async (c, next) => {
+    if (c.req.path.startsWith('/api/internal')) {
+      return next();
+    }
+
     const env = getEnv(c);
     const kv = env.KV;
     if (!kv) return next(); // no KV (dev) → no limiting

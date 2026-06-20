@@ -6,6 +6,7 @@
   import { Search, Copy, Check, LoaderCircle, CircleAlert } from "lucide-svelte";
   import { callTool } from "$lib/tools-client";
   import { invalidateAll } from "$app/navigation";
+  import { page } from "$app/stores";
 
   type Level = "high" | "medium" | "low";
   type KeywordRow = {
@@ -16,7 +17,7 @@
     trend: string;
   };
 
-  let seed = $state("");
+  let seed = $state($page.url.searchParams.get("seed") ?? "");
   let keywords = $state<KeywordRow[]>([]);
   let hasSearched = $state(false);
   let loading = $state(false);
@@ -62,7 +63,7 @@
 
 <ToolPageLayout
   title="Keyword Finder"
-  description="See the words buyers actually type when they're after something like yours. We show volume and competition as estimates, so you know what's worth chasing."
+  description="See the words buyers actually type when they're after something like yours. Competition comes from the real number of live Etsy listings; search volume is an honest AI estimate."
   icon={Search}
   credits={1}
 >

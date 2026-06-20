@@ -17,6 +17,8 @@ import { requireCredits } from '../middleware/requireCredits';
 import llmTools from './llm-tools';
 import etsyTools from './etsy-tools';
 import jobs from './jobs';
+import experiments from './experiments';
+import image from './image';
 
 const echoBody = z.object({
   text: z.string().min(1, 'text is required').max(2000),
@@ -58,5 +60,10 @@ router.route('/', etsyTools);
 // Mount Phase 4 jobs router (Engineer F) — rank tracking + deep shop analysis.
 // Relative paths in jobs.ts (/track-listing, /shop-analysis-deep, etc.) become /api/tools/*.
 router.route('/', jobs);
+
+// Phase 5/6 additions: title experiments + AI image studio (relative paths
+// /experiments, /image-studio → /api/tools/* via the same mount).
+router.route('/', experiments);
+router.route('/', image);
 
 export default router;

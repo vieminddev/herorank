@@ -53,6 +53,11 @@ export interface Env {
   LLM_API_KEY?: string;
   /** Gateway model name (OpenAI-compatible). Never hardcoded — env-driven (spec §10). */
   LLM_MODEL?: string;
+  /**
+   * OpenAI-compatible IMAGE model for the `image-studio` tool (Phase 5). Absent → image-studio
+   * returns 503 IMAGE_UNAVAILABLE (no credit spent). Env-driven, never hardcoded.
+   */
+  IMAGE_MODEL?: string;
 
   // --- Etsy data (Phase 3; declared now so config is stable, PM decision Q7) ---
   ETSY_API_KEY?: string;
@@ -83,6 +88,12 @@ export interface Env {
    * store (BR-P4-OAUTH-03). Workers secret in prod; placeholder in .dev.vars. Engineer H consumes.
    */
   OAUTH_TOKEN_KEY?: string;
+  /**
+   * Etsy listing-WRITE feature flag (`/my-shop` edit/restore + `listings_w` OAuth scope).
+   * Accepts "true"/"1" (case-insensitive). Absent/false → edits return WRITE_PENDING_APPROVAL
+   * and only read scopes are requested. Flips on automatically once Etsy grants write access.
+   */
+  ETSY_WRITE_ENABLED?: string;
 
   // --- Phase 5: rate-limit threshold overrides (S2, INFRA-EDGE) ---
   // All optional; absent → tuned soft-beta defaults in api/middleware/rateLimit.ts.
@@ -93,4 +104,6 @@ export interface Env {
   RATE_LIMIT_GENERAL_PER_MIN?: string;
   /** Auth bucket (hooks layer): max sign-in/sign-up attempts per 15 min per IP. Default 10. */
   RATE_LIMIT_AUTH_PER_15MIN?: string;
+  /** Internal API key for server-to-server endpoints (Section 11). */
+  INTERNAL_API_KEY?: string;
 }

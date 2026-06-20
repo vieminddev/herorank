@@ -14,6 +14,15 @@ export interface AnalysisRow {
   payload: string;
 }
 
+/** A recent saved analysis for the user's history feed (`/api/me/history`). */
+export interface RecentAnalysisRow {
+  id: number;
+  tool: string;
+  subject: string;
+  payload: string;
+  created_at: number; // epoch seconds
+}
+
 export interface AnalysesStore {
   insert(input: {
     userId: string;
@@ -24,6 +33,8 @@ export interface AnalysesStore {
   }): Promise<void>;
   /** This user's history for a tool+subject, oldest→newest, capped to `limit` rows. */
   history(userId: string, tool: string, subject: string, limit?: number): Promise<AnalysisRow[]>;
+  /** This user's most recent saved analyses across all tools, newest→oldest. */
+  recentForUser(userId: string, limit?: number): Promise<RecentAnalysisRow[]>;
 }
 
 export function createAnalysesStore(db: D1Database): AnalysesStore {
@@ -46,6 +57,17 @@ export function createAnalysesStore(db: D1Database): AnalysesStore {
         )
         .bind(userId, tool, subject, limit)
         .all<AnalysisRow>();
+      return res.results ?? [];
+    },
+
+    async recentForUser(userId, limit = 40): Promise<RecentAnalysisRow[]> {
+      const res = await db
+        .prepare(
+          'SELECT id, tool, subject, payload, created_at FROM analyses ' +
+            'WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?'
+        )
+        .bind(userId, limit)
+        .all<RecentAnalysisRow>();
       return res.results ?? [];
     },
   };

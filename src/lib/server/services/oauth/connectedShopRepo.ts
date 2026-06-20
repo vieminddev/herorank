@@ -61,6 +61,10 @@ export interface ConnectedShopRepo {
   upsertShop(input: ConnectedShopUpsert): Promise<void>;
   /** Decrypted shop for a user, or null if not connected. */
   getShop(userId: string): Promise<ConnectedShop | null>;
+  /** All decrypted shops for a user (Etsy-write flow `connected`; supports ?shopId selection). */
+  listForUser(userId: string): Promise<ConnectedShop[]>;
+  /** Decrypted shop by its Etsy shop id (Etsy-write flow `resolveShop`), or null. */
+  getShopByEtsyId(etsyShopId: number): Promise<ConnectedShop | null>;
   /** All connected shops (decrypted) — used by the calibration job. */
   listShops(): Promise<ConnectedShop[]>;
   deleteShop(userId: string): Promise<void>;
@@ -149,6 +153,23 @@ export function createConnectedShopRepo(db: D1Database, cipher: TokenCipher): Co
       const row = await db
         .prepare(SHOP_SELECT + ' WHERE user_id = ?')
         .bind(userId)
+        .first<RawShopRow>();
+      return row ? decryptRow(row) : null;
+    },
+
+    async listForUser(userId) {
+      const res = await db
+        .prepare(SHOP_SELECT + ' WHERE user_id = ?')
+        .bind(userId)
+        .all<RawShopRow>();
+      const rows = res.results ?? [];
+      return Promise.all(rows.map(decryptRow));
+    },
+
+    async getShopByEtsyId(etsyShopId) {
+      const row = await db
+        .prepare(SHOP_SELECT + ' WHERE etsy_shop_id = ?')
+        .bind(etsyShopId)
         .first<RawShopRow>();
       return row ? decryptRow(row) : null;
     },

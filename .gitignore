@@ -31,6 +31,18 @@
 .DS_Store
 *.pem
 
+# test / QA scratch (local artifacts, not source)
+/screenshots
+/test-results
+/playwright-report
+/playwright-session.json
+/playwright-state-*.json
+/_workspaces
+
+# recovery scratch
+herorank.zip
+herorank-bundle.zip
+
 # debug
 npm-debug.log*
 yarn-debug.log*

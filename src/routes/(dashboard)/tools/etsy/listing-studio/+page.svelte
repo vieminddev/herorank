@@ -1,87 +1,49 @@
 <script lang="ts">
+  // Listing Studio is NOT live yet. The earlier build faked a "generate" with a setTimeout and
+  // showed a result it never produced — worse than an honest "Coming soon". No backend, no credits.
+  // Its planned scope (compose a full listing visual) is already served by two REAL tools today,
+  // so we point there instead of shipping a fake preview.
   import ToolPageLayout from "$lib/components/tools/ToolPageLayout.svelte";
-  import { Upload, Sparkles, Image as ImageIcon } from "lucide-svelte";
-
-  let uploaded = $state(false);
-  let generated = $state(false);
-  let generating = $state(false);
-
-  const handleUpload = () => (uploaded = true);
-  const handleGenerate = () => { generating = true; setTimeout(() => { generating = false; generated = true; }, 2000); };
-
-  const TAGS = ["personalized necklace", "custom name jewelry", "birthday gift", "bridesmaid gift", "dainty necklace", "gold pendant", "minimalist jewelry", "gift for her", "handmade jewelry", "name necklace", "custom gift", "mothers day", "anniversary gift"];
-
-  const GENERATED_DESCRIPTION = `✨ Handmade Personalized Name Necklace ✨
-
-Make every moment special with our dainty gold name necklace. Each piece is handcrafted to perfection and makes the ideal gift for birthdays, bridesmaids, and every celebration in between.
-
-🎁 Perfect for: Birthday gifts, bridesmaid proposals, Mother's Day, anniversaries
-📐 Material: 18K Gold Plated Sterling Silver
-📦 Free gift-ready packaging included`;
+  import { Wand, Sparkles, Image as ImageIcon, ArrowRight, WandSparkles } from "lucide-svelte";
 </script>
 
-<ToolPageLayout title="Listing Studio" description="Turn your product photos into a complete listing draft — title, tags, and description — ready to refine.">
-  {#snippet controls()}
-    <label class="field-label" for="ls-upload">Your product photos</label>
-    <div
-      id="ls-upload"
-      onclick={handleUpload}
-      onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleUpload(); }}
-      role="button"
-      tabindex="0"
-      class="border border-dashed border-border rounded-md px-6 py-8 text-center cursor-pointer hover:border-teal transition-colors"
-    >
-      <Upload size={28} class="mx-auto text-text-muted mb-2.5" />
-      <p class="text-sm text-text-primary font-medium">Add your product images</p>
+<ToolPageLayout
+  title="Listing Studio"
+  prefix="Etsy"
+  description="An all-in-one studio to compose a finished listing visual. In the works — and we'd rather say so than fake it."
+  icon={Wand}
+>
+  <div class="animate-fade-in">
+    <div class="flex items-center gap-2 mb-2">
+      <Sparkles size={16} class="text-teal shrink-0" />
+      <p class="section-kicker !text-teal font-semibold">In the works</p>
     </div>
-    <p class="field-hint">We read the photos and draft a full listing — title, tags, and description.</p>
-    {#if uploaded}
-      <div class="mt-4 animate-fade-in">
-        <div class="flex gap-2.5 pb-1 overflow-x-auto">
-          {#each [1, 2, 3] as i (i)}
-            <div class="w-16 h-16 rounded-md bg-bg-page flex items-center justify-center flex-shrink-0 border border-border">
-              <ImageIcon size={18} class="text-text-muted" />
-            </div>
-          {/each}
+    <h2 class="text-lg font-semibold tracking-tight text-text-primary mb-2">Not live yet — and we'd rather tell you straight</h2>
+    <p class="text-sm text-text-secondary leading-relaxed max-w-xl">Listing Studio will pull your title, tags, description, and product photos into one finished
+      composition. It isn't ready yet — so instead of a fake preview, here are the two tools that
+      already do this for real today.</p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-7 max-w-xl">
+      <a href="/tools/etsy/image-studio" class="group flex items-start gap-3 p-4 rounded-xl border border-border hover:border-teal/50 transition-colors">
+        <span class="w-9 h-9 rounded-lg bg-teal/8 text-teal flex items-center justify-center shrink-0">
+          <ImageIcon size={18} />
+        </span>
+        <div class="min-w-0">
+          <p class="text-[0.9375rem] font-medium text-text-primary group-hover:text-teal transition-colors">AI Image Studio</p>
+          <p class="entry-meta mt-0.5">Generate real product mockups + lifestyle photos from a description.</p>
         </div>
-        <button type="button" onclick={handleGenerate} disabled={generating} class="btn btn-primary w-full justify-center mt-4">
-          {#if generating}<span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Reading photos…{:else}<Sparkles size={14} /> Draft the listing{/if}
-        </button>
-      </div>
-    {/if}
-  {/snippet}
-
-  {#if generated}
-    <div class="animate-fade-in">
-      <p class="section-kicker mb-1">Your draft</p>
-      <h2 class="text-lg font-semibold tracking-tight text-text-primary mb-1">A listing to refine</h2>
-      <p class="lead text-sm mb-6">Read it over, tweak what doesn't sound like you, then paste it in.</p>
-
-      <div class="space-y-7">
-        <section>
-          <p class="field-label !mb-1.5">Title</p>
-          <p class="text-[0.9375rem] text-text-primary leading-relaxed">Handmade Gold Necklace • Personalized Name Pendant • Birthday Gift for Her • Dainty Minimalist Jewelry</p>
-        </section>
-        <hr class="rule" />
-        <section>
-          <p class="field-label !mb-2.5">Tags</p>
-          <div class="flex flex-wrap gap-2">
-            {#each TAGS as tag (tag)}
-              <span class="px-2.5 py-1 bg-bg-page rounded-full text-xs font-medium text-text-primary border border-border">{tag}</span>
-            {/each}
-          </div>
-        </section>
-        <hr class="rule" />
-        <section>
-          <p class="field-label !mb-1.5">Description</p>
-          <p class="text-sm text-text-secondary leading-relaxed whitespace-pre-line">{GENERATED_DESCRIPTION}</p>
-        </section>
-      </div>
+        <ArrowRight size={15} class="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+      </a>
+      <a href="/tools/etsy/listing-builder" class="group flex items-start gap-3 p-4 rounded-xl border border-border hover:border-teal/50 transition-colors">
+        <span class="w-9 h-9 rounded-lg bg-teal/8 text-teal flex items-center justify-center shrink-0">
+          <WandSparkles size={18} />
+        </span>
+        <div class="min-w-0">
+          <p class="text-[0.9375rem] font-medium text-text-primary group-hover:text-teal transition-colors">Listing Builder</p>
+          <p class="entry-meta mt-0.5">Build a full listing — title, tags, description, and a photo — in one flow.</p>
+        </div>
+        <ArrowRight size={15} class="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+      </a>
     </div>
-  {:else}
-    <div class="resting animate-fade-in">
-      <p class="text-sm text-text-secondary">Your listing draft will appear here.</p>
-      <p class="text-[0.8125rem]">Add your product photos on the left to get started.</p>
-    </div>
-  {/if}
+  </div>
 </ToolPageLayout>

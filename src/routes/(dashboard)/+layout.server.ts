@@ -4,10 +4,10 @@
  * - Not authenticated → redirect to /auth/login.
  * - Authenticated → return `{ user, subscription, credits }` for the layout/Header.
  *
- * Subscription + balance are read directly from D1 here (read-only) so the guard does not
- * depend on C's service layer. Balance is the cached `subscriptions.credits_balance`
- * (kept in sync with the ledger by C's atomic writes, BR-007). If a row is missing (e.g.
- * the signup grant hook hasn't completed), we fall back to the free defaults.
+ * Subscription is read directly from D1 here (read-only) so the guard does not depend on
+ * C's service layer. Balance is the live SUM over `credits_ledger` (source of truth, BR-007)
+ * rather than a cached column, so the Header always reflects the ledger exactly. If rows are
+ * missing (e.g. the signup grant hook hasn't completed), we fall back to the free defaults.
  */
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
@@ -16,7 +16,10 @@ interface SubscriptionRow {
   plan: string;
   status: string;
   period: string | null;
-  credits_balance: number;
+}
+
+interface LedgerTotalRow {
+  total: number;
 }
 
 export const load: LayoutServerLoad = async ({ locals, platform }) => {
@@ -30,16 +33,19 @@ export const load: LayoutServerLoad = async ({ locals, platform }) => {
 
   const db = platform?.env?.DB;
   if (db) {
-    const row = await db
-      .prepare(
-        'SELECT plan, status, period, credits_balance FROM subscriptions WHERE user_id = ?'
-      )
+    const sub = await db
+      .prepare('SELECT plan, status, period FROM subscriptions WHERE user_id = ?')
       .bind(user.id)
       .first<SubscriptionRow>();
-    if (row) {
-      subscription = { plan: row.plan, status: row.status, period: row.period };
-      balance = row.credits_balance ?? 0;
+    if (sub) {
+      subscription = { plan: sub.plan, status: sub.status, period: sub.period };
     }
+
+    const led = await db
+      .prepare('SELECT COALESCE(SUM(delta), 0) AS total FROM credits_ledger WHERE user_id = ?')
+      .bind(user.id)
+      .first<LedgerTotalRow>();
+    balance = led?.total ?? 0;
   }
 
   return {

@@ -13,7 +13,7 @@
  * internals are never leaked.
  */
 import { Hono } from 'hono';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 import type { AppEnv } from '../types';
 import { getDb, getEnv, getUser } from '../context';
 import { requireAuth } from '../middleware/requireAuth';
@@ -34,6 +34,7 @@ import * as descriptionPrompt from '../../services/prompts/description';
 import * as tagPrompt from '../../services/prompts/tag';
 import * as keywordPrompt from '../../services/prompts/keyword';
 import * as chatPrompt from '../../services/prompts/chat';
+import * as chatgptOptimizerPrompt from '../../services/prompts/chatgptOptimizer';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -211,6 +212,100 @@ router.post('/keyword-generator', requireAuth, requireCredits('keyword'), async 
   try {
     const source = createLlmKeywordSource(llmFromEnv(c));
     const result = await source.getKeywords(body.data);
+    return c.json(result);
+  } catch (err) {
+    const m = mapLlmError(err);
+    return c.json({ error: m.error, message: m.message }, m.status);
+  }
+});
+
+// --- bulk-keywords (JSON, cost 1 PER seed, MANUAL deduct) --------------------
+// Runs the keyword generator over up to 10 seeds, charging one credit per seed that succeeds.
+// Each seed is deducted INDIVIDUALLY in the loop (not via requireCredits) so a partial run only
+// charges for the seeds it actually produced. The per-seed ledger ref includes the seed so each
+// spend is distinct, and stable across a retry of the same request (idempotent per request+seed).
+const bulkBody = z.object({
+  seeds: z.array(z.string().min(1).max(120)).min(1).max(10),
+});
+
+router.post('/bulk-keywords', requireAuth, async (c) => {
+  const body = await readBody(c, bulkBody);
+  if (!body.ok) return body.res;
+
+  // Pre-check LLM config before doing any work (matches the JSON LLM_CONFIG branch).
+  const env = getEnv(c);
+  if (!env.LLM_API_KEY || !env.LLM_MODEL) {
+    return c.json(
+      { error: 'LLM_UNAVAILABLE', message: 'AI service is not configured yet. Please try again later.' },
+      503
+    );
+  }
+
+  const user = getUser(c);
+  const credits = createCreditsService(createCreditsRepo(getDb(c)));
+  const perSeed = getToolCost('bulk-keywords') ?? 1;
+
+  // Pre-check: need at least one seed's worth of credits to start.
+  let balance = await credits.getBalance(user.id);
+  if (balance < perSeed) {
+    return c.json({ error: 'INSUFFICIENT_CREDITS', message: 'Not enough credits', balance }, 402);
+  }
+
+  // Dedupe + trim, cap at 10.
+  const seeds = [...new Set(body.data.seeds.map((s) => s.trim()).filter(Boolean))].slice(0, 10);
+
+  const requestId = (() => {
+    const v = (c as unknown as { get: (k: string) => unknown }).get('requestId');
+    return typeof v === 'string' ? v : crypto.randomUUID();
+  })();
+
+  const source = createLlmKeywordSource(llmFromEnv(c));
+  const results: Array<{ seed: string; keywords: Array<Record<string, unknown>> }> = [];
+  let charged = 0;
+  for (const seed of seeds) {
+    // Stop as soon as the running balance can no longer cover another seed.
+    if (balance < perSeed) break;
+    try {
+      const r = await source.getKeywords({ seed });
+      const spend = await credits.spendCredits(
+        user.id,
+        'bulk-keywords',
+        `spend:bulk-keywords:${requestId}:${seed}`
+      );
+      balance = spend.balance;
+      charged += perSeed;
+      results.push({ seed, keywords: r.keywords });
+    } catch {
+      // Skip a failed seed (LLM error / spend race) — it is simply not charged.
+    }
+  }
+
+  if (!results.length) {
+    return c.json(
+      { error: 'LLM_UNAVAILABLE', message: 'AI service is temporarily unavailable. Please try again.' },
+      502
+    );
+  }
+  return c.json({ results, charged, creditsRemaining: balance });
+});
+
+// --- chatgpt-optimizer (JSON, cost 2) ----------------------------------------
+// Restructure a listing for AI shopping assistants. Single LLM pass (no refine), 45s timeout.
+router.post('/chatgpt-optimizer', requireAuth, requireCredits('chatgpt-optimizer'), async (c) => {
+  const body = await readBody(c, chatgptOptimizerPrompt.inputSchema);
+  if (!body.ok) return body.res;
+
+  try {
+    const llm = llmFromEnv(c, 45_000);
+    const result = await completeJson(llm, {
+      messages: chatgptOptimizerPrompt.buildMessages(body.data),
+      schema: chatgptOptimizerPrompt.outputSchema,
+      temperature: 0.5,
+    });
+    if (!result) {
+      const m = mapLlmError(new LlmError('LLM_PARSE', 'bad output'));
+      return c.json({ error: m.error, message: m.message }, m.status);
+    }
     return c.json(result);
   } catch (err) {
     const m = mapLlmError(err);

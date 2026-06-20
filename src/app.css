@@ -313,6 +313,64 @@ p {
 .sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
 
 /* ============================================
+   Collapsible nav groups
+   ============================================ */
+
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 16px);
+  margin: 0 8px;
+  padding: 8px 8px 8px 8px;
+  margin-top: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.nav-group-toggle:hover { color: var(--text-primary); background: var(--bg-page); }
+
+.nav-group-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--teal);
+  flex-shrink: 0;
+}
+
+.nav-group-count {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-page);
+  border-radius: var(--radius-full);
+  padding: 1px 6px;
+  letter-spacing: 0;
+}
+
+.nav-group-chevron {
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+.nav-group-chevron.is-open { transform: rotate(180deg); }
+
+.nav-group-items {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition-fast);
+}
+.nav-group-items > div { overflow: hidden; min-height: 0; }
+.nav-group-items.is-open { grid-template-rows: 1fr; }
+
+/* ============================================
    Estimated badge — the honesty marker
    ============================================ */
 

@@ -24,6 +24,8 @@ export interface LlmConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
+  /** OpenAI-compatible image model (e.g. `gpt-image-1`). Required for `generateImage`. */
+  imageModel?: string;
   timeoutMs?: number;
   /** DI seam for tests — defaults to the global `fetch`. */
   fetchImpl?: typeof fetch;
@@ -40,9 +42,27 @@ interface StreamOptions {
   temperature?: number;
 }
 
+export interface GenerateImageOptions {
+  prompt: string;
+  /** Number of images to generate (default 1). */
+  n?: number;
+  /** Output size, e.g. "1024x1024" (default "1024x1024"). */
+  size?: string;
+  /** Override the configured `imageModel` for this call. */
+  model?: string;
+}
+
+/** One generated image — `b64` (base64 JSON) and/or `url`. */
+export interface GeneratedImage {
+  b64?: string;
+  url?: string;
+}
+
 export interface LlmService {
   complete(opts: CompleteOptions): Promise<string>;
   stream(opts: StreamOptions): AsyncIterable<string>;
+  /** Generate one or more images from a prompt (POST {baseUrl}/images/generations). */
+  generateImage(opts: GenerateImageOptions): Promise<GeneratedImage[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,7 +120,7 @@ export class LlmParseError extends LlmError {
 // ---------------------------------------------------------------------------
 
 export function createLlmService(config: LlmConfig): LlmService {
-  const { baseUrl, apiKey, model, timeoutMs = 30_000 } = config;
+  const { baseUrl, apiKey, model, imageModel, timeoutMs = 30_000 } = config;
   const doFetch = config.fetchImpl ?? globalThis.fetch;
 
   function checkConfig(): void {
@@ -249,6 +269,51 @@ export function createLlmService(config: LlmConfig): LlmService {
       } finally {
         clearTimeout(timer);
       }
+    },
+
+    async generateImage(opts) {
+      if (!apiKey) throw new LlmConfigError();
+      const imgModel = opts.model ?? imageModel;
+      if (!imgModel) throw new LlmConfigError('AI image model is not configured.');
+
+      const body: Record<string, unknown> = {
+        model: imgModel,
+        prompt: opts.prompt,
+        n: opts.n ?? 1,
+        size: opts.size ?? '1024x1024',
+        response_format: 'b64_json',
+      };
+
+      // Image generation is slow — give it at least 60s regardless of the configured chat timeout.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), Math.max(timeoutMs, 60_000));
+
+      let res: Response;
+      try {
+        res = await doFetch(`${baseUrl}/images/generations`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+      } catch (err) {
+        throw mapCatchError(err);
+      } finally {
+        clearTimeout(timer);
+      }
+
+      if (!res.ok) throw mapStatus(res.status);
+
+      const json = (await res.json()) as { data?: Array<{ b64_json?: string; url?: string }> };
+      const items = json.data ?? [];
+      const images: GeneratedImage[] = items
+        .map((d) => ({ b64: d.b64_json, url: d.url }))
+        .filter((d) => Boolean(d.b64 || d.url));
+      if (!images.length) throw new LlmParseError('AI returned no image.');
+      return images;
     },
   };
 }

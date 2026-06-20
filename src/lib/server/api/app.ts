@@ -26,6 +26,12 @@ import creditsRouter from './routes/credits';
 import billingRouter from './routes/billing';
 import toolsRouter from './routes/tools';
 import oauthRouter from './routes/oauth';
+import collectionsRouter from './routes/collections';
+import myShopRouter from './routes/myShop';
+import extRouter from './routes/ext';
+import notificationsRouter from './routes/notifications';
+import watchlistRouter from './routes/watchlist';
+import internalRouter from './routes/internal';
 
 const app = new Hono<AppEnv>().basePath('/api');
 
@@ -41,6 +47,12 @@ app.route('/credits', creditsRouter);
 app.route('/billing', billingRouter);
 app.route('/tools', toolsRouter);
 app.route('/connect', oauthRouter);
+app.route('/collections', collectionsRouter);
+app.route('/my-shop', myShopRouter);
+app.route('/ext', extRouter);
+app.route('/notifications', notificationsRouter);
+app.route('/watchlist', watchlistRouter);
+app.route('/internal', internalRouter);
 
 // --- Global error handler ---
 app.onError((err, c) => {

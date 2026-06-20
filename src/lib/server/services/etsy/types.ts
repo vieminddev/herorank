@@ -106,6 +106,8 @@ export interface EtsyTaxonomyNode {
   name: string;
   level: number;
   parent_id?: number | null;
+  /** Full root→node id path (Etsy exposes this on some nodes); index 0 = top-level category. */
+  full_path_taxonomy_ids?: number[];
   children?: EtsyTaxonomyNode[];
 }
 
@@ -252,7 +254,8 @@ export interface ShopAnalyzerResponse extends ToolMeta {
     totalRevenue: string; // estimated
     salesPerListing: number; // estimated
   };
-  tags: Array<{ name: string; count: number }>; // real (aggregated)
+  tags: Array<{ name: string; count: number }>; // real (aggregated, top 60)
+  categories: Array<{ name: string; count: number }>; // real (taxonomy-name mix, top 60)
   listings: ShopListingRow[];
   reviews: {
     distribution: Record<'1' | '2' | '3' | '4' | '5', number>;

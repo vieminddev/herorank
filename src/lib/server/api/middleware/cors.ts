@@ -31,7 +31,7 @@ function originHost(origin: string): string | null {
 
 export const cors = createMiddleware<AppEnv>(async (c, next) => {
   const path = c.req.path;
-  if (EXEMPT_PATHS.includes(path)) return next();
+  if (EXEMPT_PATHS.includes(path) || path.startsWith('/api/internal')) return next();
 
   const origin = c.req.header('origin');
   // No Origin → same-origin navigation/fetch, server-to-server, or non-browser client. Allow.
