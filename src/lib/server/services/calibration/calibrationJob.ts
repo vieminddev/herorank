@@ -118,7 +118,7 @@ export async function calibrationJob(
         perCategory.set(categoryId, bucket);
       }
 
-      await repo.markCalibrated(shop.userId, Math.floor(Date.now() / 1000));
+      await repo.markCalibrated(shop.userId, shop.etsyShopId, Math.floor(Date.now() / 1000));
       shopsProcessed++;
     } catch (err) {
       // Per-shop isolation: one shop's failure must not abort the whole calibration.
@@ -154,6 +154,7 @@ export async function ensureFreshToken(
   const tokens = await oauthClient.refresh(shop.refreshToken);
   await repo.updateTokens({
     userId: shop.userId,
+    etsyShopId: shop.etsyShopId,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     tokenExpiresAt: tokens.expiresAt,

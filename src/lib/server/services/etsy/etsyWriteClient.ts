@@ -13,7 +13,7 @@
  * the `listings_w` scope the routers gate edits behind it and request only read scopes.
  */
 import type { Context } from 'hono';
-import type { Env } from '../../env';
+import { etsyOAuthApiKey, type Env } from '../../env';
 import type { AppEnv } from '../../api/types';
 import { getDb, getEnv, getUser } from '../../api/context';
 import { ETSY_API_BASE } from '../oauth/etsyOAuth';
@@ -241,7 +241,12 @@ export function createUserEtsyClient(cfg: UserEtsyClientConfig) {
       for (let page = 0; page < maxPages; page++) {
         const url = `${apiBase}/shops/${shopId}/receipts?limit=${pageSize}&offset=${offset}`;
         const res = await authedGet(url);
-        if (!res.ok) break;
+        if (!res.ok) {
+          // A dead/expired token (401/403) must surface so the caller can prompt a reconnect —
+          // otherwise we'd return an empty list and the UI would show a misleading "$0 / no orders".
+          if (res.status === 401 || res.status === 403) throw new Error(`etsy receipts ${res.status}`);
+          break; // other transient errors: stop paging, return what we have (graceful)
+        }
         const json = (await res.json()) as { results?: RawReceipt[] };
         const results = json.results ?? [];
         for (const r of results) {
@@ -331,6 +336,104 @@ export function createUserEtsyClient(cfg: UserEtsyClientConfig) {
       });
       if (!res.ok) throw new Error(`etsy update ${res.status}`);
     },
+
+    /**
+     * List the seller's own active listings as RAW Etsy objects — keeps `taxonomy_id`,
+     * `readiness_state_id`, `shipping_profile_id` (stripped by `listOwnListings`). Used to seed
+     * create-draft defaults. Throws `etsy own-listings-raw <status>` so a 401/403 surfaces reauth.
+     */
+    async listOwnListingsRaw({
+      shopId,
+      limit = 20,
+    }: {
+      shopId: number;
+      limit?: number;
+    }): Promise<RawListing[]> {
+      const res = await authedGet(
+        `${apiBase}/shops/${shopId}/listings/active?limit=${Math.min(limit, 100)}`
+      );
+      if (!res.ok) throw new Error(`etsy own-listings-raw ${res.status}`);
+      const json = (await res.json()) as { results?: RawListing[] };
+      return json.results ?? [];
+    },
+
+    /** The shop's shipping profiles → `[{id, title}]`. Best-effort: [] on any non-ok. */
+    async getShippingProfiles(shopId: number): Promise<Array<{ id: number; title: string }>> {
+      const res = await authedGet(`${apiBase}/shops/${shopId}/shipping-profiles`);
+      if (!res.ok) return [];
+      const json = (await res.json()) as {
+        results?: Array<{ shipping_profile_id: number; title?: string }>;
+      };
+      return (json.results ?? []).map((p) => ({
+        id: p.shipping_profile_id,
+        title: p.title ?? `Profile ${p.shipping_profile_id}`,
+      }));
+    },
+
+    /**
+     * Create a DRAFT listing on the shop (form-encoded). Required fields per Etsy v3 for a physical
+     * listing: quantity, title, description, price, who_made, when_made, taxonomy_id,
+     * shipping_profile_id, readiness_state_id. Returns the new listing id + state + url. Throws
+     * `etsy create-listing <status>` on a rejected write so `writeError` can map it.
+     */
+    async createDraftListing(input: {
+      shopId: number;
+      title: string;
+      description: string;
+      price: number;
+      quantity: number;
+      taxonomyId: number;
+      shippingProfileId: number;
+      tags?: string[];
+      whoMade?: string;
+      whenMade?: string;
+      readinessStateId?: number;
+    }): Promise<{ listingId: number; url: string | null; state: string }> {
+      const form = new URLSearchParams();
+      form.set('quantity', String(input.quantity));
+      form.set('title', input.title);
+      form.set('description', input.description);
+      form.set('price', String(input.price));
+      form.set('who_made', input.whoMade ?? 'i_did');
+      form.set('when_made', input.whenMade ?? 'made_to_order');
+      form.set('taxonomy_id', String(input.taxonomyId));
+      form.set('shipping_profile_id', String(input.shippingProfileId));
+      if (input.readinessStateId != null) form.set('readiness_state_id', String(input.readinessStateId));
+      if (input.tags?.length) form.set('tags', input.tags.slice(0, 13).join(','));
+      const res = await authed(`${apiBase}/shops/${input.shopId}/listings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form.toString(),
+      });
+      if (!res.ok) throw new Error(`etsy create-listing ${res.status}`);
+      const l = (await res.json()) as { listing_id?: number; url?: string | null; state?: string };
+      return { listingId: l.listing_id ?? 0, url: l.url ?? null, state: l.state ?? 'draft' };
+    },
+
+    /**
+     * Upload one image to a listing (multipart). Best-effort: returns false rather than throwing so
+     * a created draft still succeeds if an individual image fails. Do NOT set Content-Type — fetch
+     * adds the multipart boundary itself.
+     */
+    async uploadListingImage(
+      shopId: number,
+      listingId: number,
+      bytes: ArrayBuffer,
+      rank: number
+    ): Promise<boolean> {
+      const fd = new FormData();
+      fd.set('image', new Blob([bytes], { type: 'image/jpeg' }), `image-${rank}.jpg`);
+      fd.set('rank', String(rank));
+      try {
+        const res = await authed(`${apiBase}/shops/${shopId}/listings/${listingId}/images`, {
+          method: 'POST',
+          body: fd,
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    },
   };
 }
 
@@ -366,7 +469,7 @@ async function safeCipher(secret: string | undefined) {
 export async function connected(c: Context<AppEnv>): Promise<ConnectedContext | null> {
   const env = getEnv(c);
   if (!env.ETSY_OAUTH_CLIENT_ID) return null;
-  const clientId = env.ETSY_API_KEY ?? env.ETSY_OAUTH_CLIENT_ID;
+  const clientId = etsyOAuthApiKey(env)!; // OAuth app's keystring:secret — MUST match the Bearer's app
   const cipher = await safeCipher(env.OAUTH_TOKEN_KEY);
   if (!cipher) return null;
   const repo = createConnectedShopRepo(getDb(c), cipher);
@@ -383,6 +486,7 @@ export async function connected(c: Context<AppEnv>): Promise<ConnectedContext | 
       const tokens = await getEtsyOAuth(env).refresh(shop.refreshToken);
       await repo.updateTokens({
         userId: shop.userId,
+        etsyShopId: shop.etsyShopId,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         tokenExpiresAt: tokens.expiresAt,
@@ -405,7 +509,7 @@ export async function resolveShop(
 ): Promise<ConnectedContext | null> {
   const env = getEnv(c);
   if (!env.ETSY_OAUTH_CLIENT_ID) return null;
-  const clientId = env.ETSY_API_KEY ?? env.ETSY_OAUTH_CLIENT_ID;
+  const clientId = etsyOAuthApiKey(env)!; // OAuth app's keystring:secret — MUST match the Bearer's app
   const cipher = await safeCipher(env.OAUTH_TOKEN_KEY);
   if (!cipher) return null;
   const repo = createConnectedShopRepo(getDb(c), cipher);
@@ -418,6 +522,7 @@ export async function resolveShop(
       const tokens = await getEtsyOAuth(env).refresh(shop.refreshToken);
       await repo.updateTokens({
         userId: shop.userId,
+        etsyShopId: shop.etsyShopId,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         tokenExpiresAt: tokens.expiresAt,

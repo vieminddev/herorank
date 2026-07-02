@@ -81,20 +81,16 @@ function makeD1() {
       if (row) { row.payload = args[0] as string; row.metric = args[1] as number | null; }
       return { changes: row ? 1 : 0 };
     }
-    if (s.startsWith('INSERT INTO credits_ledger') && s.includes('SELECT')) {
-      const [uid, delta, reason, ref, , , cost] = args as [string, number, string, string | null, number, string, number];
-      const sub = subs.find((x) => x.user_id === uid);
-      if (sub && sub.credits_balance >= cost) {
-        ledger.push({ id: ledgerSeq++, user_id: uid, delta, reason, ref, balance_after: sub.credits_balance + delta });
-        return { changes: 1 };
+    // creditsRepo.spend: INSERT ... VALUES ... ON CONFLICT (user_id, ref) DO NOTHING (balance
+    // guard is done in JS via sumLedger). Model the partial unique index: a duplicate non-null
+    // ref inserts no row (changes 0 → idempotent), otherwise the spend row lands.
+    if (s.startsWith('INSERT INTO credits_ledger') && s.includes('ON CONFLICT')) {
+      const [uid, delta, reason, ref, balanceAfter] = args as [string, number, string, string | null, number];
+      if (ref != null && ledger.some((l) => l.user_id === uid && l.ref === ref)) {
+        return { changes: 0 };
       }
-      return { changes: 0 };
-    }
-    if (s.startsWith('UPDATE subscriptions') && s.includes('credits_balance = credits_balance - ?')) {
-      const [cost, uid] = args as [number, string];
-      const sub = subs.find((x) => x.user_id === uid);
-      if (sub && sub.credits_balance >= cost) { sub.credits_balance -= cost; return { changes: 1 }; }
-      return { changes: 0 };
+      ledger.push({ id: ledgerSeq++, user_id: uid, delta, reason, ref, balance_after: balanceAfter });
+      return { changes: 1 };
     }
     return { changes: 0 };
   }

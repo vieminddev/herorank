@@ -103,18 +103,18 @@ describe('creditsService.grantPlanCredits', () => {
     ledger = f.ledger;
   });
 
-  it('grants the free plan allotment at signup (BR-002 = 30)', async () => {
+  it('grants the free plan allotment at signup (BR-002 = 50)', async () => {
     const { balance } = await svc.grantPlanCredits(USER, 'free');
     expect(balance).toBe(PLAN_CREDITS.free);
-    expect(balance).toBe(30);
-    expect(await svc.getBalance(USER)).toBe(30);
+    expect(balance).toBe(50);
+    expect(await svc.getBalance(USER)).toBe(50);
   });
 
   it('grants each paid plan its PM-chosen monthly amount (BR-003)', async () => {
     const cases: Array<[PlanSlug, number]> = [
-      ['side', 750],
-      ['business', 3000],
-      ['enterprise', 9000],
+      ['side', 300],
+      ['business', 500],
+      ['enterprise', 1500],
     ];
     for (const [plan, expected] of cases) {
       const f = makeFakeRepo();
@@ -129,24 +129,24 @@ describe('creditsService.grantPlanCredits', () => {
     await svc.grantPlanCredits(USER, 'free');
     const rows = ledger.filter((r) => r.userId === USER);
     expect(rows).toHaveLength(1);
-    expect(rows[0].delta).toBe(30);
+    expect(rows[0].delta).toBe(50);
     expect(rows[0].reason).toBe('grant:signup');
-    expect(rows[0].balance_after).toBe(30);
+    expect(rows[0].balance_after).toBe(50);
   });
 
   it('is idempotent per ref — the same Stripe event grants once (BR-010)', async () => {
     const ref = 'evt_123';
     const first = await svc.grantPlanCredits(USER, 'business', ref);
     const second = await svc.grantPlanCredits(USER, 'business', ref);
-    expect(first.balance).toBe(3000);
-    expect(second.balance).toBe(3000); // unchanged
+    expect(first.balance).toBe(500);
+    expect(second.balance).toBe(500); // unchanged
     expect(ledger.filter((r) => r.userId === USER)).toHaveLength(1);
   });
 
   it('stacks grants without a ref (e.g. multiple billing cycles)', async () => {
     await svc.grantPlanCredits(USER, 'business', 'evt_a');
     await svc.grantPlanCredits(USER, 'business', 'evt_b');
-    expect(await svc.getBalance(USER)).toBe(6000);
+    expect(await svc.getBalance(USER)).toBe(1000);
   });
 });
 
@@ -158,42 +158,57 @@ describe('creditsService.spendCredits', () => {
     const f = makeFakeRepo();
     svc = createCreditsService(f.repo);
     ledger = f.ledger;
-    await svc.grantPlanCredits(USER, 'free'); // 30 credits
+    await svc.grantPlanCredits(USER, 'free'); // 50 credits
   });
 
   it('spends a tool cost when balance is sufficient + writes a negative ledger row', async () => {
     const { balance } = await svc.spendCredits(USER, 'echo'); // echo = 1
-    expect(balance).toBe(29);
+    expect(balance).toBe(49);
     const spendRow = ledger.find((r) => r.userId === USER && r.delta < 0)!;
     expect(spendRow.delta).toBe(-1);
     expect(spendRow.reason).toBe('spend:echo');
     expect(spendRow.ref).toBe('echo');
-    expect(spendRow.balance_after).toBe(29);
+    expect(spendRow.balance_after).toBe(49);
   });
 
   it('throws INSUFFICIENT_CREDITS and does NOT change balance when balance < cost (BR-005)', async () => {
-    // Drain the 30 credits.
-    for (let i = 0; i < 30; i++) await svc.spendCredits(USER, 'echo');
+    // Drain the 50 credits.
+    for (let i = 0; i < 50; i++) await svc.spendCredits(USER, 'echo');
     expect(await svc.getBalance(USER)).toBe(0);
 
     await expect(svc.spendCredits(USER, 'echo')).rejects.toBeInstanceOf(InsufficientCreditsError);
     // Balance untouched (no extra ledger row written).
     expect(await svc.getBalance(USER)).toBe(0);
-    expect(ledger.filter((r) => r.userId === USER && r.delta < 0)).toHaveLength(30);
+    expect(ledger.filter((r) => r.userId === USER && r.delta < 0)).toHaveLength(50);
+  });
+
+  it('multiplies the per-unit cost by `units` for per-output tools (image-studio = 5 × n)', async () => {
+    // image-studio = 5 credits per image; n=3 images → 15 credits in one spend.
+    const { balance } = await svc.spendCredits(USER, 'image-studio', 'req_1', 3);
+    expect(balance).toBe(50 - 15);
+    const spendRow = ledger.find((r) => r.userId === USER && r.delta < 0)!;
+    expect(spendRow.delta).toBe(-15);
+    expect(spendRow.reason).toBe('spend:image-studio');
+  });
+
+  it('treats units <1 or fractional as a single whole unit (floor, min 1)', async () => {
+    await svc.spendCredits(USER, 'echo', 'a', 0); // clamps to 1 → -1
+    await svc.spendCredits(USER, 'echo', 'b', 2.9); // floors to 2 → -2
+    expect(await svc.getBalance(USER)).toBe(50 - 1 - 2);
   });
 
   it('rejects an unpriced tool rather than charging a default', async () => {
     await expect(svc.spendCredits(USER, 'does-not-exist')).rejects.toBeInstanceOf(UnknownToolError);
-    expect(await svc.getBalance(USER)).toBe(30); // unchanged
+    expect(await svc.getBalance(USER)).toBe(50); // unchanged
   });
 
   it('race: N concurrent spends on a balance that only covers M succeed exactly M times (BR-009)', async () => {
     // Reset to a tiny balance so the race window is observable: grant a user 1 credit.
     const f = makeFakeRepo();
     const s = createCreditsService(f.repo);
-    await s.grantPlanCredits('racer', 'free'); // 30
+    await s.grantPlanCredits('racer', 'free'); // 50
     // Spend down to exactly 1 remaining.
-    for (let i = 0; i < 29; i++) await s.spendCredits('racer', 'echo');
+    for (let i = 0; i < 49; i++) await s.spendCredits('racer', 'echo');
     expect(await s.getBalance('racer')).toBe(1);
 
     // Fire two spends "concurrently" — only one may succeed (cost 1, balance 1).
@@ -210,20 +225,43 @@ describe('creditsService.spendCredits', () => {
   });
 });
 
+describe('creditsService.refundCredits', () => {
+  let svc: ReturnType<typeof createCreditsService>;
+
+  beforeEach(async () => {
+    const f = makeFakeRepo();
+    svc = createCreditsService(f.repo);
+    await svc.grantPlanCredits(USER, 'free'); // 50
+  });
+
+  it('adds the refunded amount back to the balance', async () => {
+    await svc.spendCredits(USER, 'image-studio', 'req_x', 4); // -20
+    expect(await svc.getBalance(USER)).toBe(30);
+    const { balance } = await svc.refundCredits(USER, 20, 'refund:req_x');
+    expect(balance).toBe(50);
+  });
+
+  it('is idempotent per ref — a webhook retry refunds at most once', async () => {
+    await svc.refundCredits(USER, 20, 'refund:job_1');
+    await svc.refundCredits(USER, 20, 'refund:job_1'); // retry
+    expect(await svc.getBalance(USER)).toBe(70); // 50 + 20 once, not twice
+  });
+});
+
 describe('balance invariant (BR-007)', () => {
   it('getBalance always equals SUM(ledger.delta) across a sequence of ops', async () => {
     const f = makeFakeRepo();
     const svc = createCreditsService(f.repo);
 
-    await svc.grantPlanCredits(USER, 'free'); // +30
+    await svc.grantPlanCredits(USER, 'free'); // +50
     await svc.spendCredits(USER, 'echo'); // -1
     await svc.spendCredits(USER, 'echo'); // -1
-    await svc.grantPlanCredits(USER, 'side', 'cycle_1'); // +750
+    await svc.grantPlanCredits(USER, 'side', 'cycle_1'); // +300
 
     const expected = f.ledger
       .filter((r) => r.userId === USER)
       .reduce((acc, r) => acc + r.delta, 0);
     expect(await svc.getBalance(USER)).toBe(expected);
-    expect(expected).toBe(30 - 1 - 1 + 750);
+    expect(expected).toBe(50 - 1 - 1 + 300);
   });
 });

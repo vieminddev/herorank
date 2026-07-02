@@ -1,0 +1,65 @@
+/* VieRank overlay panel — scoped under #vierank-panel so it never leaks into Etsy's styles. */
+#vierank-panel.vrk-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483600;
+  width: 248px;
+  background: #ffffff;
+  border: 1px solid #d6e0db;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(30, 42, 38, 0.18);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  color: #1e2a26;
+  overflow: hidden;
+  animation: vrk-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes vrk-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+#vierank-panel .vrk-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; background: #00754A; color: #fff;
+}
+#vierank-panel .vrk-brand { font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+#vierank-panel .vrk-dot { width: 8px; height: 8px; border-radius: 50%; background: #cba258; display: inline-block; }
+#vierank-panel .vrk-close { background: none; border: 0; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; opacity: 0.8; padding: 0 2px; }
+#vierank-panel .vrk-close:hover { opacity: 1; }
+
+#vierank-panel .vrk-body { padding: 12px; }
+#vierank-panel .vrk-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; border-top: 1px solid #e6ece9; }
+#vierank-panel .vrk-row:first-child { border-top: 0; }
+#vierank-panel .vrk-label { color: #5b6b65; }
+#vierank-panel .vrk-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+#vierank-panel .vrk-est { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #b07a00; background: #fbf2dd; border-radius: 999px; padding: 1px 5px; margin-left: 4px; vertical-align: middle; }
+
+#vierank-panel .vrk-score { text-align: center; padding: 4px 0 10px; }
+#vierank-panel .vrk-score-num { font-size: 30px; font-weight: 800; color: var(--c, #00754A); line-height: 1; }
+#vierank-panel .vrk-score-num span { font-size: 13px; font-weight: 600; color: #5b6b65; }
+#vierank-panel .vrk-score-cap { font-size: 11px; color: #5b6b65; margin-top: 3px; }
+
+#vierank-panel .vrk-sales { display: flex; gap: 8px; margin: 4px 0 8px; }
+#vierank-panel .vrk-sales-cell { flex: 1; text-align: center; background: #e9f1ed; border: 1px solid #e6ece9; border-radius: 8px; padding: 8px 4px; }
+#vierank-panel .vrk-sales-num { font-size: 18px; font-weight: 800; color: #00754A; line-height: 1.1; }
+#vierank-panel .vrk-sales-cap { font-size: 10px; color: #5b6b65; margin-top: 2px; }
+
+#vierank-panel .vrk-kw { font-weight: 700; font-size: 14px; margin-bottom: 6px; word-break: break-word; }
+#vierank-panel .vrk-muted { color: #5b6b65; font-size: 13px; margin: 2px 0; }
+#vierank-panel .vrk-sm { font-size: 11px; }
+#vierank-panel .vrk-cta { display: inline-block; margin-top: 10px; color: #00754A; font-weight: 700; font-size: 13px; text-decoration: none; }
+#vierank-panel .vrk-cta:hover { text-decoration: underline; }
+
+/* Bulk-analyze button (Feature B) */
+#vierank-panel .vrk-btn { display: block; width: 100%; margin-top: 10px; padding: 7px 10px; background: #00754A; color: #fff; border: 0; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+#vierank-panel .vrk-btn:hover { background: #006040; }
+
+/* Wide panel for the bulk-analyze table */
+#vierank-panel.vrk-wide { width: 420px; }
+#vierank-panel .vrk-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+#vierank-panel .vrk-table th { text-align: left; color: #5b6b65; font-weight: 700; padding: 4px 6px; border-bottom: 1px solid #d6e0db; cursor: pointer; user-select: none; white-space: nowrap; }
+#vierank-panel .vrk-table th:hover { color: #00754A; }
+#vierank-panel .vrk-table td { padding: 4px 6px; border-bottom: 1px solid #eef2f0; font-variant-numeric: tabular-nums; }
+#vierank-panel .vrk-table td:first-child { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#vierank-panel .vrk-table th:not(:first-child), #vierank-panel .vrk-table td:not(:first-child) { text-align: right; }
+
+/* Autocomplete competition pill (Feature A) — injected into Etsy's own suggestion rows */
+.vrk-pill { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; color: #fff; text-transform: capitalize; background: #9aa6a1; vertical-align: middle; line-height: 1.5; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }

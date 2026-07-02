@@ -12,8 +12,10 @@ import type { Env } from '../env';
 export interface AppEnv {
   Bindings: Env;
   Variables: {
-    /** D1 database binding — set by `withDb` middleware. */
+    /** D1 database binding (OLTP) — set by `withDb` middleware. */
     db: D1Database;
+    /** Analytics time-series D1 binding (`vierank-history`) — set by `withDb` middleware. */
+    historyDb: D1Database;
     /** Authenticated user — set by `requireAuth` middleware. Absent on public routes. */
     user: { id: string; email: string; name: string };
   };

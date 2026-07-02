@@ -22,14 +22,27 @@ interface LedgerTotalRow {
   total: number;
 }
 
-export const load: LayoutServerLoad = async ({ locals, platform }) => {
+export const load: LayoutServerLoad = async ({ locals, platform, url }) => {
   const user = locals.user;
   if (!user) {
-    throw redirect(302, '/auth/login');
+    // Preserve where the visitor was headed so login can return them there (not always /dashboard).
+    const target = url.pathname + url.search;
+    throw redirect(302, `/auth/login?redirect=${encodeURIComponent(target)}`);
   }
 
   let subscription = { plan: 'free', status: 'active', period: null as string | null };
   let balance = 0;
+  // Whether the caller has an OAuth-connected Etsy shop. Surfaced here so own-shop pages
+  // (My Shop / Shop Audit / Review Requests) can render the connect state immediately
+  // instead of firing a request that 404s and logs a console error.
+  //
+  // Multi-shop: a user can connect MORE THAN ONE Etsy shop. We expose the full list
+  // (`connectedShops`) plus the primary/default (`connectedShop`) for app context, while keeping
+  // the legacy `shopConnected` boolean that existing pages (dashboard / shop-audit /
+  // review-requests / my-shop) read.
+  let shopConnected = false;
+  let connectedShops: Array<{ shopId: number; shopName: string | null; isPrimary: boolean }> = [];
+  let connectedShop: { shopId: number; shopName: string | null; isPrimary: boolean } | null = null;
 
   const db = platform?.env?.DB;
   if (db) {
@@ -46,11 +59,37 @@ export const load: LayoutServerLoad = async ({ locals, platform }) => {
       .bind(user.id)
       .first<LedgerTotalRow>();
     balance = led?.total ?? 0;
+
+    // List every connected shop (primary first). Wrapped so a partially-migrated dev DB
+    // (table/`is_primary` column missing) degrades to "no shops" instead of 500ing the layout.
+    try {
+      const { results } = await db
+        .prepare(
+          'SELECT etsy_shop_id, shop_name, is_primary FROM connected_shops ' +
+            'WHERE user_id = ? ORDER BY is_primary DESC, connected_at ASC'
+        )
+        .bind(user.id)
+        .all<{ etsy_shop_id: number; shop_name: string | null; is_primary: number }>();
+
+      connectedShops = (results ?? []).map((row) => ({
+        shopId: row.etsy_shop_id,
+        shopName: row.shop_name,
+        isPrimary: !!row.is_primary,
+      }));
+    } catch {
+      connectedShops = [];
+    }
+
+    shopConnected = connectedShops.length > 0;
+    connectedShop = connectedShops.find((s) => s.isPrimary) ?? connectedShops[0] ?? null;
   }
 
   return {
     user: { id: user.id, name: user.name, email: user.email },
     subscription,
     credits: { balance },
+    shopConnected,
+    connectedShops,
+    connectedShop,
   };
 };

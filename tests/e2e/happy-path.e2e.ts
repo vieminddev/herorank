@@ -75,7 +75,7 @@ test.describe('2. Full happy path flow', () => {
     expect(me.credits!.balance).toBeGreaterThanOrEqual(0);
 
     // --- Step 3: LLM tool (title-generator) runs ---
-    await page.goto('/tools/etsy/title-generator');
+    await page.goto('/tools/title-generator');
     await expect(page).toHaveURL(/title-generator/, { timeout: 15_000 });
     await page.screenshot({ path: 'screenshots/e2e_03_title_generator_page.png' });
 
@@ -100,7 +100,7 @@ test.describe('2. Full happy path flow', () => {
     await page.screenshot({ path: 'screenshots/e2e_05_title_generator_results.png' });
 
     // --- Step 4: Etsy tool (listing-analyzer) runs ---
-    await page.goto('/tools/etsy/listing-analyzer');
+    await page.goto('/tools/listing-analyzer');
     await expect(page).toHaveURL(/listing-analyzer/, { timeout: 15_000 });
     await page.screenshot({ path: 'screenshots/e2e_06_listing_analyzer_page.png' });
 

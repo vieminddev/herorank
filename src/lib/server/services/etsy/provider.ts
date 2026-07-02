@@ -8,24 +8,71 @@
  * Also exposes `getEtsyContext(env)` which bundles the client + cache + keyword-history +
  * usage counter the route needs, so `etsy-tools.ts` constructs them in one call.
  */
-import type { Env } from '../../env';
+import { etsyApiKey, etsyApiKeys, etsyOAuthApiKey, type Env } from '../../env';
 import type { EtsyClient } from './types';
 import { createEtsyClient, EtsyError } from './client';
 import { createMockEtsyClient, defaultFixtures } from './mock';
-import { createUsageCounter, DEFAULT_ETSY_DAILY_CAP } from './usageCounter';
+import { createUsageCounter } from './usageCounter';
+import { createEtsyKeyPool } from './keyPool';
+import { etsyLimitsFromEnv } from './limits';
 import { cacheKeys, TTL, createEtsyCache, createKeywordHistory, type EtsyCache, type KeywordHistoryStore } from './cache';
 
-/** True when a real Etsy key is configured (drives real-vs-mock selection). */
+/**
+ * True when a real Etsy keystring is configured (drives real-vs-mock selection). Accepts the
+ * dedicated `ETSY_API_KEY` or the OAuth keystring (`ETSY_OAUTH_CLIENT_ID`) — they're the same
+ * Etsy keystring, so having OAuth configured is enough to use the real research client.
+ */
 export function hasEtsyKey(env: Env): boolean {
-  return !!env.ETSY_API_KEY;
+  return !!(env.ETSY_API_KEY ?? env.ETSY_OAUTH_CLIENT_ID);
 }
 
+/**
+ * Seller-facing READ client — runs on the OAuth app key (`ETSY_OAUTH_CLIENT_ID`, "8mh6"), the SAME
+ * registered app sellers connect/authorize through, NOT the cron pool. Keeps the reviewable,
+ * user-facing surface on our own approved app key. Usage is tracked in `etsy_api_usage` (a table
+ * SEPARATE from the pool's `etsy_key_usage`), so seller traffic never eats the cron accumulator's
+ * budget. Used by `getEtsyContext` (all etsy-tools routes), My Shop, and user-initiated jobs.
+ *
+ * NOTE: assumes the OAuth app key ("8mh6") is DISTINCT from the ETSY_API_KEYS pool keys, so the two
+ * paths don't double-spend one physical key's real Etsy daily limit.
+ */
+export function getEtsyClientForUser(env: Env): EtsyClient {
+  if (!hasEtsyKey(env)) return createMockEtsyClient(defaultFixtures);
+  const limits = etsyLimitsFromEnv(env);
+  // OAuth app's keystring:secret (8mh6); fall back to etsyApiKey only if OAuth isn't configured.
+  const keystring = etsyOAuthApiKey(env) ?? etsyApiKey(env)!;
+  return createEtsyClient({
+    apiKey: keystring,
+    rps: limits.rps,
+    usageCounter: createUsageCounter(env.DB, { cap: limits.dailyCap, hardLimit: limits.rpd }),
+  });
+}
+
+/**
+ * Background/CRON READ client — runs on the `ETSY_API_KEYS` pool (rotates across keys; per-key caps
+ * tracked in `etsy_key_usage`). Kept separate from seller traffic so the heavy data-enrichment cron
+ * never competes with user-facing reads. Used by the scheduled cron + calibration.
+ */
 export function getEtsyClient(env: Env): EtsyClient {
   if (!hasEtsyKey(env)) return createMockEtsyClient(defaultFixtures);
-  const cap = parseCap(env.ETSY_DAILY_CAP, DEFAULT_ETSY_DAILY_CAP);
+  const limits = etsyLimitsFromEnv(env);
+  const keys = etsyApiKeys(env);
+
+  // Multi-key POOL: rotate across keys (each its own RPS + daily cap) → ~N× effective throughput.
+  if (keys.length >= 2) {
+    const pool = createEtsyKeyPool(keys, {
+      db: env.DB,
+      rpsPerKey: limits.rps,
+      rpdPerKey: limits.dailyCap,
+    });
+    return createEtsyClient({ apiKey: '', keyPool: pool });
+  }
+
+  // Single key — unchanged legacy path (shared usage counter + the client's own RPS gate).
   return createEtsyClient({
-    apiKey: env.ETSY_API_KEY!,
-    usageCounter: createUsageCounter(env.DB, { cap }),
+    apiKey: keys[0]?.apiKey ?? etsyApiKey(env)!, // keystring:shared_secret for the x-api-key header
+    rps: limits.rps,
+    usageCounter: createUsageCounter(env.DB, { cap: limits.dailyCap, hardLimit: limits.rpd }),
   });
 }
 
@@ -39,17 +86,11 @@ export interface EtsyContext {
 
 export function getEtsyContext(env: Env): EtsyContext {
   return {
-    client: getEtsyClient(env),
+    client: getEtsyClientForUser(env), // seller-facing surface → OAuth app key (8mh6), not the cron pool
     cache: createEtsyCache(env.KV),
-    history: createKeywordHistory(env.DB),
+    history: createKeywordHistory(env.HISTORY_DB ?? env.DB), // keywords_cache lives in vierank-history
     live: hasEtsyKey(env),
   };
-}
-
-function parseCap(raw: string | undefined, fallback: number): number {
-  if (!raw) return fallback;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 /**

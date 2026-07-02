@@ -20,6 +20,12 @@ export interface TaxonomyResolver {
   toTopLevel(taxonomyId: number | null | undefined): number | null;
   /** Human category name for a taxonomy id; null when unknown or input is null. */
   nameOf(taxonomyId: number | null | undefined): string | null;
+  /**
+   * Nodes whose name contains `query` (case-insensitive), prefix-matches first, up to `limit`.
+   * `path` is the top-level category name (for disambiguation), null when the node IS top-level.
+   * Used by the create-draft category picker.
+   */
+  search(query: string, limit?: number): Array<{ taxonomyId: number; name: string; path: string | null }>;
 }
 
 /** Cached, derived form of the taxonomy tree (what we persist in KV, not the raw nodes). */
@@ -99,6 +105,22 @@ export async function loadTaxonomyResolver(
     nameOf: (taxonomyId) => {
       if (taxonomyId == null) return null;
       return nameMap[taxonomyId] ?? null;
+    },
+    search: (query, limit = 20) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return [];
+      const starts: Array<{ taxonomyId: number; name: string; path: string | null }> = [];
+      const contains: Array<{ taxonomyId: number; name: string; path: string | null }> = [];
+      for (const [idStr, name] of Object.entries(nameMap)) {
+        const lower = name.toLowerCase();
+        if (!lower.includes(q)) continue;
+        const id = Number(idStr);
+        const topId = topMap[id];
+        const path = topId && topId !== id ? (nameMap[topId] ?? null) : null;
+        (lower.startsWith(q) ? starts : contains).push({ taxonomyId: id, name, path });
+        if (starts.length >= limit) break;
+      }
+      return [...starts, ...contains].slice(0, limit);
     },
   };
 }

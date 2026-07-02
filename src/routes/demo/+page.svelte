@@ -45,7 +45,7 @@
       { name: "Video Generator", desc: "Create social-ready product videos from photos.", icon: Video },
     ],
     research: [
-      { name: "Shop Research", desc: "Deconstruct top competitors' strategies and best-sellers.", icon: ChartColumn },
+      { name: "Competitor Research", desc: "Deconstruct top competitors' strategies and best-sellers.", icon: ChartColumn },
       { name: "Niche Finder", desc: "Identify high-demand, low-competition product niches.", icon: Target },
       { name: "Best Sellers", desc: "Analyze what items are currently trending globally.", icon: Crown },
       { name: "Buyer Check", desc: "Evaluate shopper feedback history to spot serial returners.", icon: UserCheck },
@@ -194,7 +194,7 @@
                 <span class="w-3 h-3 rounded-full bg-yellow-500/50"></span>
                 <span class="w-3 h-3 rounded-full bg-green-500/50"></span>
               </div>
-              <div class="text-[10px] text-white/30 font-mono">herorank.claystation.workers.dev</div>
+              <div class="text-[10px] text-white/30 font-mono">vierank.com</div>
               <div class="w-6"></div>
             </div>
 

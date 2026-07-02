@@ -31,12 +31,25 @@ export type FetchImpl = (input: string, init?: RequestInit) => Promise<Response>
 export interface EtsyOAuthConfig {
   clientId: string;
   redirectUri: string;
+  /**
+   * App shared secret. Since 2026-02-09 Etsy requires the `x-api-key` header to carry
+   * `keystring:shared_secret` (not just the keystring) — without it every v3 API call 403s
+   * with "Shared secret is required in x-api-key header." Optional so tests/mock can omit it.
+   */
+  sharedSecret?: string;
   /** Injected fetch (real `fetch` in prod, a stub in tests / mock provider). */
   fetchImpl?: FetchImpl;
   /** Override authorize/token/api hosts (tests point these at a local stub). */
   authorizeUrl?: string;
   tokenUrl?: string;
   apiBase?: string;
+  /**
+   * Space-separated scope string to request at authorize time. Defaults to the READ-ONLY
+   * `ETSY_OAUTH_SCOPE_STRING`. The provider passes `oauthScopeString(env)` (which appends
+   * `listings_w` once `ETSY_WRITE_ENABLED` is on) so the listing-editor write feature gets the
+   * write scope without touching this client's read-only default.
+   */
+  scope?: string;
 }
 
 export interface PkcePair {
@@ -62,8 +75,8 @@ export interface EtsyTransaction {
 }
 
 export interface EtsyOAuthClient {
-  /** Build the browser authorize URL (state + S256 challenge embedded). */
-  buildAuthorizeUrl(input: { state: string; codeChallenge: string }): string;
+  /** Build the browser authorize URL (state + S256 challenge embedded; optional scope override). */
+  buildAuthorizeUrl(input: { state: string; codeChallenge: string; scope?: string }): string;
   /** Exchange an authorization code (+ the matching verifier) for tokens. */
   exchangeCode(input: { code: string; codeVerifier: string }): Promise<OAuthTokens>;
   /** Refresh an access token from a refresh token. */
@@ -105,13 +118,28 @@ export function createEtsyOAuthClient(cfg: EtsyOAuthConfig): EtsyOAuthClient {
   const authorizeUrl = cfg.authorizeUrl ?? ETSY_AUTHORIZE_URL;
   const tokenUrl = cfg.tokenUrl ?? ETSY_TOKEN_URL;
   const apiBase = cfg.apiBase ?? ETSY_API_BASE;
+  // Etsy requires the keystring on every v3 call, and since 2026-02-09 it must be paired with
+  // the shared secret as `keystring:secret` (keystring alone now 403s).
+  const apiKeyHeader = cfg.sharedSecret ? `${cfg.clientId}:${cfg.sharedSecret}` : cfg.clientId;
+  // Read-only baseline by default; the provider may pass a wider scope (e.g. + `listings_w`)
+  // when `ETSY_WRITE_ENABLED` is on so the listing editor can PUT edits.
+  const requestedScope = cfg.scope ?? ETSY_OAUTH_SCOPE_STRING;
 
-  function buildAuthorizeUrl({ state, codeChallenge }: { state: string; codeChallenge: string }): string {
+  function buildAuthorizeUrl({
+    state,
+    codeChallenge,
+    scope,
+  }: {
+    state: string;
+    codeChallenge: string;
+    /** Override the configured scope for this single authorize call (rarely needed). */
+    scope?: string;
+  }): string {
     const u = new URL(authorizeUrl);
     u.searchParams.set('response_type', 'code');
     u.searchParams.set('client_id', cfg.clientId);
     u.searchParams.set('redirect_uri', cfg.redirectUri);
-    u.searchParams.set('scope', ETSY_OAUTH_SCOPE_STRING);
+    u.searchParams.set('scope', scope ?? requestedScope);
     u.searchParams.set('state', state);
     u.searchParams.set('code_challenge', codeChallenge);
     u.searchParams.set('code_challenge_method', 'S256');
@@ -141,7 +169,7 @@ export function createEtsyOAuthClient(cfg: EtsyOAuthConfig): EtsyOAuthClient {
       accessToken: json.access_token,
       refreshToken: json.refresh_token,
       expiresAt: nowSec() + expiresIn,
-      scopes: ETSY_OAUTH_SCOPE_STRING,
+      scopes: requestedScope,
     };
   }
 
@@ -167,10 +195,12 @@ export function createEtsyOAuthClient(cfg: EtsyOAuthConfig): EtsyOAuthClient {
     },
 
     async getMyShop(accessToken) {
-      // Etsy: GET /users/me → user_id, then GET /users/{id}/shops, OR getMe shop fields.
-      // We hit the documented /application/shops endpoint scoped by the token's user. Tests stub
-      // this via fetchImpl; the exact upstream path is isolated behind this method.
-      const res = await authedGet(`${apiBase}/users/me/shops`, accessToken);
+      // Etsy v3 has no `me` alias on the nested /shops resource (returns 403). Use the
+      // documented getShopByOwnerUserId endpoint: GET /users/{user_id}/shops. Etsy access
+      // tokens are prefixed with the owner's user id ("{user_id}.{secret}"), so we read it
+      // from the token rather than making an extra getMe call. Tests stub this via fetchImpl.
+      const userId = accessToken.split('.')[0];
+      const res = await authedGet(`${apiBase}/users/${userId}/shops`, accessToken);
       const json = (await res.json()) as
         | { shop_id?: number; shop_name?: string }
         | { results?: Array<{ shop_id: number; shop_name: string }> };
@@ -211,8 +241,7 @@ export function createEtsyOAuthClient(cfg: EtsyOAuthConfig): EtsyOAuthClient {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        // Etsy requires the keystring header on every call; client_id doubles as keystring.
-        'x-api-key': cfg.clientId,
+        'x-api-key': apiKeyHeader,
       },
     });
     if (!res.ok) throw new EtsyOAuthError(`etsy api ${res.status} for ${stripUrl(url)}`, res.status);

@@ -64,10 +64,12 @@ router.post('/', async (c) => {
     return c.json({ error: 'VALIDATION', message: 'Enter a valid Etsy shop.' }, 400);
   }
 
+  // Idempotent on (user_id, shop_name); a re-POST with a note UPDATES the note so inline note
+  // editing on the watchlist page actually persists (was DO NOTHING → edits were silently dropped).
   const res = await getDb(c)
     .prepare(
       'INSERT INTO watched_shops (user_id, shop_name, note, created_at) VALUES (?, ?, ?, ?) ' +
-        'ON CONFLICT(user_id, shop_name) DO NOTHING'
+        'ON CONFLICT(user_id, shop_name) DO UPDATE SET note = excluded.note'
     )
     .bind(getUser(c).id, shopName, parsed.data.note ?? null, Math.floor(Date.now() / 1000))
     .run();

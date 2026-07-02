@@ -43,11 +43,28 @@ const ENC_KEY = 'test-oauth-token-key-0123456789';
 // ---------------------------------------------------------------------------
 // In-memory D1 fake — handles oauth_states, connected_shops, calibration_factors
 // ---------------------------------------------------------------------------
+interface ShopRow {
+  user_id: string;
+  etsy_shop_id: number;
+  shop_name: string | null;
+  access_token_enc: string;
+  refresh_token_enc: string;
+  token_expires_at: number;
+  scopes: string;
+  connected_at: number;
+  last_calibrated_at: number | null;
+  is_primary: number;
+}
+
 function makeD1() {
   const states = new Map<string, { state: string; user_id: string; code_verifier: string; created_at: number }>();
-  const shops = new Map<string, Record<string, unknown>>(); // user_id → row
+  // Multi-shop (migration 0015): keyed on `${user_id}:${etsy_shop_id}`.
+  const shops = new Map<string, ShopRow>();
   const factors = new Map<number, { category_id: number; review_rate: number; sample_size: number; updated_at: number }>();
   const nowSec = () => Math.floor(Date.now() / 1000);
+  const key = (userId: string, shopId: number) => `${userId}:${shopId}`;
+  // Stable connected_at ordering even when several shops are inserted within the same second.
+  let connSeq = 0;
 
   function prepare(sql: string) {
     let args: unknown[] = [];
@@ -60,8 +77,43 @@ function makeD1() {
         if (sql.includes('FROM oauth_states')) {
           return (states.get(args[0] as string) ?? null) as unknown as T | null;
         }
+        // COUNT(*) of a user's primary shops (upsert primary-decision).
+        if (sql.includes('COUNT(*) AS n FROM connected_shops')) {
+          const userId = args[0] as string;
+          const n = [...shops.values()].filter((s) => s.user_id === userId && s.is_primary === 1).length;
+          return { n } as unknown as T;
+        }
+        // is_primary lookup for a specific shop (deleteShop promotion check).
+        if (sql.startsWith('SELECT is_primary FROM connected_shops')) {
+          const [userId, shopId] = args as [string, number];
+          const row = shops.get(key(userId, shopId));
+          return row ? ({ is_primary: row.is_primary } as unknown as T) : null;
+        }
+        // most-recent remaining shop for promotion.
+        if (sql.startsWith('SELECT etsy_shop_id FROM connected_shops')) {
+          const userId = args[0] as string;
+          const rows = [...shops.values()].filter((s) => s.user_id === userId);
+          rows.sort((a, b) => b.connected_at - a.connected_at);
+          return rows.length ? ({ etsy_shop_id: rows[0].etsy_shop_id } as unknown as T) : null;
+        }
+        // SHOP_SELECT … WHERE … (getShop / getPrimary / getShopByEtsyId).
         if (sql.includes('FROM connected_shops')) {
-          return (shops.get(args[0] as string) ?? null) as unknown as T | null;
+          let rows = [...shops.values()];
+          if (sql.includes('user_id = ? AND etsy_shop_id = ?')) {
+            const [userId, shopId] = args as [string, number];
+            const row = shops.get(key(userId, shopId));
+            return (row ?? null) as unknown as T | null;
+          }
+          if (sql.includes('WHERE user_id = ?')) {
+            const userId = args[0] as string;
+            rows = rows.filter((s) => s.user_id === userId);
+          } else if (sql.includes('WHERE etsy_shop_id = ?')) {
+            const shopId = args[0] as number;
+            rows = rows.filter((s) => s.etsy_shop_id === shopId);
+          }
+          // primary first, then most recently connected.
+          rows.sort((a, b) => b.is_primary - a.is_primary || b.connected_at - a.connected_at);
+          return (rows[0] ?? null) as unknown as T | null;
         }
         return null;
       },
@@ -75,29 +127,52 @@ function makeD1() {
           const cutoff = args[0] as number;
           for (const [k, v] of states) if (v.created_at < cutoff) states.delete(k);
         } else if (sql.startsWith('INSERT INTO connected_shops')) {
-          const [user_id, etsy_shop_id, shop_name, access_token_enc, refresh_token_enc, token_expires_at, scopes] =
-            args as [string, number, string | null, string, string, number, string];
-          shops.set(user_id, {
-            user_id,
-            etsy_shop_id,
-            shop_name,
-            access_token_enc,
-            refresh_token_enc,
-            token_expires_at,
-            scopes,
-            connected_at: nowSec(),
-            last_calibrated_at: null,
-          });
+          const [user_id, etsy_shop_id, shop_name, access_token_enc, refresh_token_enc, token_expires_at, scopes, is_primary] =
+            args as [string, number, string | null, string, string, number, string, number];
+          const k = key(user_id, etsy_shop_id);
+          const existing = shops.get(k);
+          if (existing) {
+            // ON CONFLICT … DO UPDATE (keeps connected_at + is_primary).
+            Object.assign(existing, { shop_name, access_token_enc, refresh_token_enc, token_expires_at, scopes });
+          } else {
+            shops.set(k, {
+              user_id,
+              etsy_shop_id,
+              shop_name,
+              access_token_enc,
+              refresh_token_enc,
+              token_expires_at,
+              scopes,
+              connected_at: nowSec() * 1000 + connSeq++,
+              last_calibrated_at: null,
+              is_primary,
+            });
+          }
         } else if (sql.startsWith('UPDATE connected_shops SET last_calibrated_at')) {
-          const [at, user_id] = args as [number, string];
-          const row = shops.get(user_id);
+          const [at, user_id, etsy_shop_id] = args as [number, string, number];
+          const row = shops.get(key(user_id, etsy_shop_id));
           if (row) row.last_calibrated_at = at;
         } else if (sql.startsWith('UPDATE connected_shops SET access_token_enc')) {
-          const [access_token_enc, refresh_token_enc, token_expires_at, user_id] = args as [string, string, number, string];
-          const row = shops.get(user_id);
+          const [access_token_enc, refresh_token_enc, token_expires_at, user_id, etsy_shop_id] =
+            args as [string, string, number, string, number];
+          const row = shops.get(key(user_id, etsy_shop_id));
           if (row) Object.assign(row, { access_token_enc, refresh_token_enc, token_expires_at });
+        } else if (sql.startsWith('UPDATE connected_shops SET is_primary = 0')) {
+          const userId = args[0] as string;
+          for (const s of shops.values()) if (s.user_id === userId) s.is_primary = 0;
+        } else if (sql.startsWith('UPDATE connected_shops SET is_primary = 1')) {
+          const [userId, shopId] = args as [string, number];
+          const row = shops.get(key(userId, shopId));
+          if (row) row.is_primary = 1;
         } else if (sql.startsWith('DELETE FROM connected_shops')) {
-          shops.delete(args[0] as string);
+          if (sql.includes('AND etsy_shop_id = ?')) {
+            const [userId, shopId] = args as [string, number];
+            shops.delete(key(userId, shopId));
+          } else {
+            // deleteAllForUser
+            const userId = args[0] as string;
+            for (const [k, v] of shops) if (v.user_id === userId) shops.delete(k);
+          }
         } else if (sql.startsWith('INSERT INTO calibration_factors')) {
           const [category_id, review_rate, sample_size] = args as [number, number, number];
           factors.set(category_id, { category_id, review_rate, sample_size, updated_at: nowSec() });
@@ -106,7 +181,13 @@ function makeD1() {
       },
       async all<T>(): Promise<{ results: T[] }> {
         if (sql.includes('FROM connected_shops')) {
-          return { results: [...shops.values()] as unknown as T[] };
+          let rows = [...shops.values()];
+          if (sql.includes('WHERE user_id = ?')) {
+            const userId = args[0] as string;
+            rows = rows.filter((s) => s.user_id === userId);
+          }
+          rows.sort((a, b) => b.is_primary - a.is_primary || b.connected_at - a.connected_at);
+          return { results: rows as unknown as T[] };
         }
         if (sql.includes('FROM calibration_factors')) {
           return { results: [...factors.values()] as unknown as T[] };
@@ -191,7 +272,7 @@ describe('EtsyOAuthClient (real code, injected fetch)', () => {
       if (url.endsWith('/oauth/token')) {
         return jsonResponse({ access_token: 'AT', refresh_token: 'RT', expires_in: 3600 });
       }
-      if (url.includes('/users/me/shops')) {
+      if (url.includes('/users/') && url.includes('/shops')) {
         return jsonResponse({ results: [{ shop_id: 777, shop_name: 'StubShop' }] });
       }
       if (url.includes('/transactions')) {
@@ -239,21 +320,59 @@ describe('connectedShopRepo', () => {
       userId: 'u1', etsyShopId: 1, shopName: 'S', accessToken: 'plain-access',
       refreshToken: 'plain-refresh', tokenExpiresAt: 9999999999, scopes: ETSY_OAUTH_SCOPE_STRING,
     });
-    const raw = shops.get('u1')!;
+    const raw = shops.get('u1:1')!;
     expect(raw.access_token_enc).not.toContain('plain-access'); // encrypted at rest
     const got = await repo.getShop('u1');
     expect(got?.accessToken).toBe('plain-access');
     expect(got?.refreshToken).toBe('plain-refresh');
   });
 
-  it('enforces 1 shop per user (upsert overwrites)', async () => {
+  it('connects a SECOND shop: both rows exist, first stays primary', async () => {
     const { db, shops } = makeD1();
     const repo = createConnectedShopRepo(db, await createTokenCipher(ENC_KEY));
     const common = { userId: 'u1', shopName: 'S', accessToken: 'a', refreshToken: 'r', tokenExpiresAt: 1, scopes: 's' };
     await repo.upsertShop({ ...common, etsyShopId: 1 });
     await repo.upsertShop({ ...common, etsyShopId: 2 });
+    expect(shops.size).toBe(2); // both shops persisted (no replace)
+
+    const list = await repo.listForUser('u1');
+    expect(list.map((s) => s.etsyShopId).sort()).toEqual([1, 2]);
+    // First connected shop is the primary; primary comes first.
+    expect(list[0].etsyShopId).toBe(1);
+    expect(list[0].isPrimary).toBe(true);
+    expect(list[1].isPrimary).toBe(false);
+    // getShop() with no shopId resolves the primary.
+    expect((await repo.getShop('u1'))?.etsyShopId).toBe(1);
+  });
+
+  it('setPrimary moves the default; reconnecting keeps the flag', async () => {
+    const { db } = makeD1();
+    const repo = createConnectedShopRepo(db, await createTokenCipher(ENC_KEY));
+    const common = { userId: 'u1', shopName: 'S', accessToken: 'a', refreshToken: 'r', tokenExpiresAt: 1, scopes: 's' };
+    await repo.upsertShop({ ...common, etsyShopId: 1 });
+    await repo.upsertShop({ ...common, etsyShopId: 2 });
+
+    await repo.setPrimary('u1', 2);
+    expect((await repo.getPrimary('u1'))?.etsyShopId).toBe(2);
+    // Reconnecting shop 1 must NOT steal primary back from shop 2.
+    await repo.upsertShop({ ...common, etsyShopId: 1, accessToken: 'a2' });
+    expect((await repo.getPrimary('u1'))?.etsyShopId).toBe(2);
+  });
+
+  it('deleteShop removes one shop and promotes another when primary', async () => {
+    const { db, shops } = makeD1();
+    const repo = createConnectedShopRepo(db, await createTokenCipher(ENC_KEY));
+    const common = { userId: 'u1', shopName: 'S', accessToken: 'a', refreshToken: 'r', tokenExpiresAt: 1, scopes: 's' };
+    await repo.upsertShop({ ...common, etsyShopId: 1 }); // primary
+    await repo.upsertShop({ ...common, etsyShopId: 2 });
+
+    await repo.deleteShop('u1', 1); // delete the primary
     expect(shops.size).toBe(1);
-    expect((await repo.getShop('u1'))?.etsyShopId).toBe(2);
+    expect(shops.has('u1:1')).toBe(false);
+    // The remaining shop is promoted to primary.
+    const promoted = await repo.getPrimary('u1');
+    expect(promoted?.etsyShopId).toBe(2);
+    expect(promoted?.isPrimary).toBe(true);
   });
 
   it('takeState validates + consumes; rejects unknown/expired', async () => {
@@ -278,7 +397,17 @@ describe('connectedShopRepo', () => {
     const { db, shops } = makeD1();
     const repo = createConnectedShopRepo(db, await createTokenCipher(ENC_KEY));
     await repo.upsertShop({ userId: 'u1', etsyShopId: 1, shopName: 'S', accessToken: 'a', refreshToken: 'r', tokenExpiresAt: 1, scopes: 's' });
-    await repo.deleteShop('u1');
+    await repo.deleteShop('u1', 1);
+    expect(shops.size).toBe(0);
+  });
+
+  it('deleteAllForUser removes every shop (GDPR erase)', async () => {
+    const { db, shops } = makeD1();
+    const repo = createConnectedShopRepo(db, await createTokenCipher(ENC_KEY));
+    const common = { userId: 'u1', shopName: 'S', accessToken: 'a', refreshToken: 'r', tokenExpiresAt: 1, scopes: 's' };
+    await repo.upsertShop({ ...common, etsyShopId: 1 });
+    await repo.upsertShop({ ...common, etsyShopId: 2 });
+    await repo.deleteAllForUser('u1');
     expect(shops.size).toBe(0);
   });
 });
@@ -323,7 +452,7 @@ describe('calibrationJob', () => {
     expect(cat1.sample_size).toBe(40);
     expect(cat1.review_rate).toBeCloseTo(0.2, 5);
     // shop marked calibrated
-    expect(shops.get('u1')!.last_calibrated_at).not.toBeNull();
+    expect(shops.get('u1:900001')!.last_calibrated_at).not.toBeNull();
   });
 
   it('refreshes a near-expiry token before reading', async () => {

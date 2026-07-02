@@ -12,6 +12,7 @@ import {
   type EtsyOAuthClient,
   type FetchImpl,
 } from './etsyOAuth';
+import { oauthScopeString } from '../etsy/etsyWriteClient';
 import { createMockOAuthClient } from './mockOAuth';
 
 /** True when a real Etsy OAuth keystring + redirect URI are configured. */
@@ -27,7 +28,10 @@ export function getEtsyOAuth(env: Env, opts?: { fetchImpl?: FetchImpl }): EtsyOA
   if (!hasOAuthKey(env)) return createMockOAuthClient();
   return createEtsyOAuthClient({
     clientId: env.ETSY_OAUTH_CLIENT_ID!,
+    sharedSecret: env.ETSY_OAUTH_CLIENT_SECRET,
     redirectUri: env.ETSY_OAUTH_REDIRECT_URI!,
+    // Request listings_w too when write is enabled (so the editor can push changes to Etsy).
+    scope: oauthScopeString(env),
     fetchImpl: opts?.fetchImpl,
   });
 }

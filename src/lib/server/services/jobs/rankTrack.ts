@@ -86,7 +86,7 @@ export async function runRankTrack(deps: RankTrackDeps): Promise<RankTrackResult
           limit: 100,
         });
         ordered = (page.results ?? []).map((l) => l.listing_id);
-        await deps.cache.put(key, { ordered } satisfies RankCachePayload, TTL.rank, now());
+        await deps.cache.put(key, { ordered } satisfies RankCachePayload, TTL.rank, { now: now() });
       }
 
       // 3. Estimate rank → global history + idempotency stamp.

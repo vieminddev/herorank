@@ -21,19 +21,68 @@
   },
   "observability": { "enabled": true },
 
+  // --- Custom domain ---------------------------------------------------------
+  // vierank.com is an ACTIVE zone on this same Cloudflare account, so attaching it
+  // as a Worker Custom Domain auto-provisions the DNS record + TLS cert on deploy.
+  // The *.workers.dev URL keeps working as a fallback.
+  "routes": [
+    { "pattern": "vierank.com", "custom_domain": true },
+    { "pattern": "www.vierank.com", "custom_domain": true }
+  ],
+
   // Smart Placement: run the Worker near D1 (APAC) instead of near the user, so the
   // multiple per-request D1 queries (auth/session) become low-latency in-region hops.
   "placement": { "mode": "smart" },
 
   // --- Non-secret environment vars ---
   "vars": {
+    // Canonical site origin — Better Auth uses this for cookie/redirect base + trustedOrigins
+    // (else it falls back to the request origin). Must match the custom domain below.
+    "BETTER_AUTH_URL": "https://vierank.com",
     "LLM_BASE_URL": "https://vtoken.viemind.ai/v1",
     "LLM_MODEL": "gemini-3.5-flash-high",
-    "ETSY_DAILY_CAP": "4500",
-    "ETSY_CRON_CAP": "1000"
+    // Etsy app rate limits — the two knobs to edit when the Etsy plan changes. Everything else
+    // (dailyCap, cronCap, quota-warning threshold) is derived from these (see etsy/limits.ts).
+    "ETSY_RPS": "5",
+    "ETSY_RPD": "5000",
+    // Optional legacy pins (uncomment to override the derived values):
+    // "ETSY_DAILY_CAP": "4500",   // internal hard-cap; default floor(RPD * 0.9)
+    // "ETSY_CRON_CAP": "1800",    // cron sub-cap;       default floor(dailyCap * 0.4)
+
+    // --- History accumulation (no users yet → use the free quota to build deep history) ---
+    // The background accumulator fills review-cadence history every 30 min up to this many total
+    // logical Etsy calls/day. IMPORTANT: our per-key counter (etsy_key_usage) resets on the UTC
+    // calendar day, but Etsy enforces a ROLLING 24h sliding window (no midnight reset in any tz —
+    // see developer.etsy.com/documentation/essentials/rate-limits). So a heavy late-UTC-day burst
+    // stays counted in Etsy's window into the next morning while OUR counter shows a "fresh" low
+    // day — which is exactly what silently exhausted the pool and killed the 00:45 best-sellers
+    // cron on 2026-07-02. Cure: keep total daily usage FAR below the pool ceiling so the rolling
+    // window never bites and best-sellers/trends always have headroom. 7000 across 3 keys ≈ 2333/key
+    // (~half of Etsy's ~4500/key rolling cap) leaves comfortable margin. The bulk backfill is mostly
+    // done (~1.6k shops captured) so the recurring snapshot+trends load fits well under this.
+    "HISTORY_DAILY_TARGET": "7000",
+    "HISTORY_ACCUM_PER_TICK": "320",
+    // Shops pulled from the backfill queue per 30-min tick — raised so shallow shops don't leave the
+    // fat per-tick call budget unspent (48 ticks × 320 ≈ 15k, self-capped by DAILY_TARGET).
+    "HISTORY_ACCUM_SHOPS_PER_TICK": "120",
+    // Discovery breadth (feeds the backfill queue so the accumulator never starves): more
+    // shops/keywords found per best-sellers run. 18 cats × 80 ≈ 1440 shops/run; watch the
+    // best-sellers wall-clock (~3.5 min at this breadth).
+    "BESTSELLERS_SHOPS_PER_CAT": "80",
+    "BESTSELLERS_LEADS": "8"
   },
 
-  // --- D1 (primary datastore: users, sessions, subscriptions, credits) ---
+  // --- D1 ---
+  // Two databases, split by access pattern so neither approaches the per-DB 10GB ceiling and the
+  // append-heavy analytics writes never contend with transactional OLTP:
+  //   DB         (herorank)        → OLTP: users, sessions, subscriptions, credits, oauth tokens,
+  //                                  tracked_listings config, jobs, analyses (user-scoped, FK to user).
+  //   HISTORY_DB (vierank-history) → analytics time-series: the unified `metric_series` long table
+  //                                  (keyword demand, shop sales velocity, listing rank/price, …).
+  //                                  Market data with NO user FK, so it lives cross-DB safely (D1 can't
+  //                                  JOIN across databases — cron reads "due" rows from DB, writes
+  //                                  series to HISTORY_DB; charts read HISTORY_DB by entity id).
+  // Each DB has its own migrations_dir; apply with `wrangler d1 migrations apply <name>`.
   "d1_databases": [
     {
       "binding": "DB",
@@ -41,6 +90,12 @@
       // Placeholder id for local dev; replace with real id when a Cloudflare account exists.
       "database_id": "e8a41229-da9f-45cd-83d0-a755b22bc159",
       "migrations_dir": "migrations"
+    },
+    {
+      "binding": "HISTORY_DB",
+      "database_name": "vierank-history",
+      "database_id": "17fab48e-5b9a-4d9c-b010-efda022cc9f9",
+      "migrations_dir": "migrations-history"
     }
   ],
 
@@ -49,6 +104,17 @@
     {
       "binding": "KV",
       "id": "191fae0f88ae4b73823acb0c02c14d6c"
+    }
+  ],
+
+  // --- R2 (cold archive: time-series rows are dumped here as NDJSON.gz before retention prunes
+  // them from D1, so operational history is kept for backfill/read-path continuity at ~$0 — R2 has
+  // zero egress fees. Optional: absent under plain `vite dev` → retention falls back to delete-only.
+  // Create the bucket on deploy: `wrangler r2 bucket create herorank-archive`.) ---
+  "r2_buckets": [
+    {
+      "binding": "ARCHIVE",
+      "bucket_name": "herorank-archive"
     }
   ],
 
@@ -61,7 +127,13 @@
   //   "0 3 * * 0"    → weekly Etsy best-sellers refresh    (Phase 3 cron)
   //   "0 4 * * 0"    → weekly OAuth calibration job        (Phase 4 §3.4, Engineer H logic)
   "triggers": {
-    "crons": ["*/30 * * * *", "0 4 * * 7"]
+    // "*/30 * * * *" → rank-track sweep + history accumulator (deep review-backfill, budgeted).
+    // "30 0 * * *"   → research half A: taxonomy + trends + retention prune.   (00:30 UTC scrape)
+    // "45 0 * * *"   → research half B: best-sellers + calibration.            (00:45 UTC)
+    //                  Split into two invocations so neither approaches the per-invocation wall-clock
+    //                  limit. Any cron ≠ */30 and ≠ "45 0" runs the trends half (so an ad-hoc one-off
+    //                  trigger added here forces a trends run; use "45 0"-style for best-sellers).
+    "crons": ["*/30 * * * *", "30 0 * * *", "45 0 * * *"]
   },
 
   // --- Queues (Phase 4, Engineer A) ─────────────────────────────────────────

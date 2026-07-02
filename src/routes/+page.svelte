@@ -1,12 +1,22 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
+  import { slide, fade } from "svelte/transition";
+  import MascotLogo from "$lib/components/ui/MascotLogo.svelte";
+  import CocoonToButterfly from "$lib/components/ui/CocoonToButterfly.svelte";
+  import MarketingNav from "$lib/components/marketing/MarketingNav.svelte";
+  import MarketingFooter from "$lib/components/marketing/MarketingFooter.svelte";
   import {
-    Sprout, ArrowRight, Plug, Sparkles, BadgeCheck, Check, Copy,
+    ArrowRight, Plug, Sparkles, BadgeCheck, Check, Copy,
     Type, Tag, AlignLeft, Search, FileText, TrendingUp, Calculator,
     Store, Target, Crown, LineChart, ShieldCheck, HelpCircle,
     ChevronLeft, ChevronRight, Info, Lock, Shuffle, X, Play, Smartphone, Star
   } from "lucide-svelte";
+
+  // Auth state from the root layout load — drives whether the header shows "Log in / Start free"
+  // (guest) or "Go to dashboard" (signed in).
+  let { data } = $props();
+  const loggedIn = $derived(!!data.user);
 
   const PILLARS = [
     {
@@ -15,11 +25,11 @@
       blurb: "Write listing content buyers actually search for — for your own shop.",
       icon: Sparkles,
       tools: [
-        { name: "Title Generator", href: "/tools/etsy/title-generator", icon: Type },
-        { name: "Tag Generator", href: "/tools/etsy/tag-generator", icon: Tag },
-        { name: "Description Writer", href: "/tools/etsy/description-generator", icon: AlignLeft },
+        { name: "Title Generator", href: "/tools/title-generator", icon: Type },
+        { name: "Tag Generator", href: "/tools/tag-generator", icon: Tag },
+        { name: "Description Writer", href: "/tools/description-generator", icon: AlignLeft },
         { name: "Keyword Finder", href: "/tools/keyword-generator", icon: Search },
-        { name: "VieRank Assistant", href: "/tools/rankhero-ai", icon: Sparkles },
+        { name: "VieRank Assistant", href: "/tools/assistant", icon: Sparkles },
       ]
     },
     {
@@ -28,9 +38,9 @@
       blurb: "See what to fix on your listings and where they stand in search.",
       icon: FileText,
       tools: [
-        { name: "Listing Optimizer", href: "/tools/etsy/listing-analyzer", icon: FileText },
-        { name: "Search Position", href: "/tools/etsy/rank-check", icon: TrendingUp },
-        { name: "Profit Calculator", href: "/tools/etsy/profit-calculator", icon: Calculator },
+        { name: "Listing Optimizer", href: "/tools/listing-analyzer", icon: FileText },
+        { name: "Search Position", href: "/tools/rank-check", icon: TrendingUp },
+        { name: "Profit Calculator", href: "/tools/profit-calculator", icon: Calculator },
       ]
     },
     {
@@ -39,11 +49,11 @@
       blurb: "Look around for inspiration — niches, trends, and what good shops do.",
       icon: Store,
       tools: [
-        { name: "Shop Research", href: "/tools/etsy/shop-analyzer", icon: Store },
-        { name: "Niche Finder", href: "/tools/etsy/niche-finder", icon: Target },
-        { name: "Best Sellers", href: "/tools/etsy/best-sellers", icon: Crown },
-        { name: "Etsy Trends", href: "/tools/etsy/etsy-trends", icon: LineChart },
-        { name: "Reputation Check", href: "/tools/etsy/buyer-check", icon: ShieldCheck },
+        { name: "Competitor Research", href: "/tools/shop-analyzer", icon: Store },
+        { name: "Niche Finder", href: "/tools/niche-finder", icon: Target },
+        { name: "Best Sellers", href: "/tools/best-sellers", icon: Crown },
+        { name: "Etsy Trends", href: "/tools/etsy-trends", icon: LineChart },
+        { name: "Reputation Check", href: "/tools/buyer-check", icon: ShieldCheck },
       ]
     },
   ];
@@ -183,29 +193,23 @@
   const seoBoost = $derived(Math.min(15 + Math.round(calcListings / 12), 45));
   const opportunityValue = $derived(calcListings * 4);
 
-  // Testimonials Carousel state
+  // Commitments carousel — honest brand principles (no fabricated testimonials/users yet).
   let testimonialIndex = $state(0);
   const TESTIMONIALS = [
     {
-      quote: "The first Etsy SEO tool that doesn't dress guesses up as facts. The distinction between estimates and real data is a lifesaver.",
-      author: "Sarah Jenkins",
-      shop: "SpeckledClayCo",
-      niche: "Ceramics",
-      sales: "12.4k sales"
+      quote: "Estimates are labeled as estimates. The figures we pull straight from Etsy — your reviews, sales, and shop stats — are shown as real. You always know which is which.",
+      title: "Honest by default",
+      sub: "Estimated vs. real, clearly marked"
     },
     {
-      quote: "VieRank helped me identify that my keywords were underperforming in search. I changed my tags and titles and saw an instant rank improvement.",
-      author: "David Miller",
-      shop: "KnitWanderer",
-      niche: "Knitwear",
-      sales: "8.9k sales"
+      quote: "We connect through Etsy's official API with read-only access by default. You approve every permission on Etsy's own page, and can change or revoke it anytime.",
+      title: "You stay in control",
+      sub: "Secure OAuth · permission-based"
     },
     {
-      quote: "I save at least 10 hours a month drafting product descriptions with the AI assistant. It matches my brand tone perfectly.",
-      author: "Chloe Dubois",
-      shop: "WanderJewels",
-      niche: "Jewelry",
-      sales: "5.3k sales"
+      quote: "No guaranteed rankings and no vanity metrics — just clear, practical suggestions you decide whether to apply, for your own listings.",
+      title: "No inflated promises",
+      sub: "Practical guidance, your call"
     }
   ];
 
@@ -334,7 +338,7 @@
     },
     {
       q: "Will this violate Etsy's Terms of Service?",
-      a: "No. VieRank is a certified Etsy Integration Partner. We use the official Etsy API for all shop changes, ensuring your shop remains 100% compliant and safe.",
+      a: "No. VieRank uses the official Etsy API (OAuth v3) for every shop change and follows Etsy's API Terms, including its caching and data-handling rules. VieRank uses the Etsy API but is not endorsed or certified by Etsy.",
       cat: "Safety"
     },
     {
@@ -374,9 +378,38 @@
   ];
 
   let root: HTMLElement;
+  let scrollY = $state(0);
   onMount(() => {
     root.classList.add("mounted");
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    
+    // Auto-slide Testimonials every 6 seconds
+    const testimonialTimer = setInterval(() => {
+      testimonialIndex = (testimonialIndex + 1) % TESTIMONIALS.length;
+    }, 6000);
+    
+    // Parallax butterflies: rAF-throttled (one update per frame), and frozen entirely for
+    // reduced-motion users (scrollY stays 0 → butterflies hold their base position).
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let scrollTicking = false;
+    const handleScroll = () => {
+      if (prefersReduced || scrollTicking) return;
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        scrollY = window.scrollY;
+        scrollTicking = false;
+      });
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    if (prefersReduced) {
+      // No scroll-reveal animation for reduced-motion users — show all sections immediately
+      // (otherwise `.reveal` stays opacity:0 forever, since `.in-view` is never added).
+      root.querySelectorAll(".reveal").forEach((el) => el.classList.add("in-view"));
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }
+    
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -389,27 +422,18 @@
       { threshold: 0.1, rootMargin: "0px 0px -8% 0px" },
     );
     root.querySelectorAll(".reveal").forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(testimonialTimer);
+    };
   });
 </script>
 
+
 <div class="lp min-h-screen bg-white text-text-primary overflow-hidden" bind:this={root}>
   <!-- Navigation Header -->
-  <nav class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-border">
-    <div class="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
-      <a href="/" class="flex items-center gap-2.5 group">
-        <span class="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" style="background: var(--teal)">
-          <Sprout size={18} class="text-white" />
-        </span>
-        <span class="text-xl font-semibold tracking-tight">VieRank</span>
-      </a>
-      <div class="flex items-center gap-2">
-        <a href="/pricing" class="hidden sm:inline-flex px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Pricing</a>
-        <a href="/auth/login" class="px-3 py-2 text-sm font-medium text-text-primary hover:text-teal transition-colors">Log in</a>
-        <a href="/auth/signup" class="btn btn-primary btn-glow !py-2 !px-5 text-sm">Start free</a>
-      </div>
-    </div>
-  </nav>
+  <MarketingNav {loggedIn} />
 
   <!-- Live Keyword Trends Ticker -->
   <div class="ticker-wrap select-none border-b border-border bg-white">
@@ -427,26 +451,52 @@
   </div>
 
   <!-- Hero Section — Commitment with layered glow fields and a dark-glass live mockup -->
-  <section class="relative overflow-hidden pt-24 pb-28" style="background: var(--teal-dark)">
+  <section class="relative overflow-hidden pt-16 pb-20" style="background: var(--teal-dark)">
     <!-- Grid overlay and dot backdrop patterns -->
     <div class="absolute inset-0 grid-overlay opacity-[0.4]" aria-hidden="true"></div>
     <div class="absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle at 1px 1px, #fff 1px, transparent 0); background-size: 30px 30px;" aria-hidden="true"></div>
-    <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-20 blur-[120px]" style="background: var(--orange)" aria-hidden="true"></div>
-    <div class="absolute top-20 -left-40 w-96 h-96 rounded-full opacity-35 blur-[120px]" style="background: var(--teal-light)" aria-hidden="true"></div>
-    <div class="lp-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-20 blur-[130px]" style="background: radial-gradient(circle, var(--teal-light), transparent)" aria-hidden="true"></div>
+    <div class="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full opacity-30 blur-[140px]" style="background: var(--orange)" aria-hidden="true"></div>
+    <div class="absolute top-20 -left-40 w-[500px] h-[500px] rounded-full opacity-40 blur-[140px]" style="background: var(--teal-light)" aria-hidden="true"></div>
+    <div class="lp-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-25 blur-[140px]" style="background: radial-gradient(circle, var(--teal-light), transparent)" aria-hidden="true"></div>
+
+    <!-- Scroll-Parallax Background Butterflies -->
+    <div class="absolute pointer-events-none select-none hidden md:block" style="left: 6%; top: 18%; transform: translateY({scrollY * 0.18}px); opacity: 0.25; transition: transform 0.1s ease-out; color: white;">
+      <div class="bfly-wobble" style="--base-rot: 15deg; animation-duration: 6.5s;"><MascotLogo size={90} animate="always" /></div>
+    </div>
+    <div class="absolute pointer-events-none select-none hidden md:block" style="right: 8%; top: 40%; transform: translateY({scrollY * -0.12}px); opacity: 0.22; transition: transform 0.1s ease-out; color: white;">
+      <div class="bfly-wobble" style="--base-rot: -25deg; animation-duration: 7.5s;"><MascotLogo size={80} animate="always" /></div>
+    </div>
+    <div class="absolute pointer-events-none select-none hidden md:block" style="left: 45%; top: 60%; transform: translateY({scrollY * 0.08}px); opacity: 0.22; transition: transform 0.1s ease-out; color: white;">
+      <div class="bfly-wobble" style="--base-rot: 5deg; animation-duration: 5.5s;"><MascotLogo size={85} animate="always" /></div>
+    </div>
+
+    <!-- Orbit Flying Butterfly -->
+    <div class="absolute pointer-events-none select-none hidden md:block orbit-butterfly-container">
+      <div class="orbit-butterfly" style="color: var(--teal-light);">
+        <MascotLogo size={42} animate="always" />
+      </div>
+    </div>
+
 
     <div class="relative max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1.05fr_minmax(0,1fr)] gap-14 items-center">
       <!-- Copy Block -->
       <div>
-        <span class="rise rise-1 badge-estimated !bg-white/10 !border-white/20 !text-white/95 mb-7 px-3 py-1 inline-flex items-center gap-1.5 rounded-full text-xs font-medium tracking-wide">
+        <span class="rise rise-1 badge-estimated !bg-white/10 !border-white/20 !text-white/95 mb-4 px-3 py-1 inline-flex items-center gap-1.5 rounded-full text-xs font-medium tracking-wide">
           <Sparkles size={11} class="text-orange" /> Built exclusively for Etsy sellers
         </span>
-        <h1 class="rise rise-2 text-4xl md:text-[3.5rem] font-semibold leading-[1.05] tracking-tight text-white mb-6" style="text-wrap: balance">
+        <h1 class="rise rise-2 text-4xl md:text-[3.5rem] font-semibold leading-[1.05] tracking-tight text-white mb-4" style="text-wrap: balance">
           An honest hand with<br class="hidden sm:block" /> your Etsy listings.
         </h1>
-        <p class="rise rise-3 text-lg text-white/85 max-w-xl mb-9 leading-relaxed" style="text-wrap: pretty">
+        <p class="rise rise-3 text-lg text-white/85 max-w-xl mb-6 leading-relaxed" style="text-wrap: pretty">
           Write better titles, tags, and descriptions for <em>your own</em> listings — then see what to improve. No inflated numbers. Every estimate is labeled.
         </p>
+
+        <!-- Signature Metamorphosis Card (Hidden on Mobile < 768px for scroll ergonomics, visible on md and up) -->
+        <div class="rise rise-3 mb-6 hidden md:block">
+          <CocoonToButterfly />
+        </div>
+
+
         <div class="rise rise-4 flex flex-col sm:flex-row items-center gap-4">
           <a href="/auth/signup" class="btn btn-glow !bg-white !text-teal-dark hover:!bg-white/95 text-base !px-8 hover-lift font-semibold w-full sm:w-auto">
             Start free <ArrowRight size={17} />
@@ -460,15 +510,13 @@
           </button>
         </div>
         <div class="rise rise-5 mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center gap-y-3 gap-x-5 text-white/80">
-          <div class="flex items-center gap-0.5">
-            {#each Array(5) as _}
-              <Star size={13} class="text-orange" fill="currentColor" />
-            {/each}
-            <span class="text-xs font-bold font-mono ml-1.5">4.9/5 Rating</span>
+          <div class="flex items-center gap-1.5">
+            <BadgeCheck size={14} class="text-orange" />
+            <span class="text-xs font-bold">Every estimate honestly labeled</span>
           </div>
           <span class="text-white/30 text-xs hidden sm:block">•</span>
           <p class="text-xs font-medium leading-relaxed">
-            Trusted by top makers from <span class="font-bold text-white">SpeckledClay</span>, <span class="font-bold text-white">EarthyVibes</span>, and <span class="font-bold text-white">12,000+ Etsy shops</span>.
+            Built for Etsy sellers · connects via Etsy's official API · free to start.
           </p>
         </div>
       </div>
@@ -711,44 +759,51 @@
     </div>
   </section>
 
-  <!-- How It Works Section -->
-  <section id="how" class="relative max-w-5xl mx-auto px-6 py-24 scroll-mt-20 reveal z-10 border-t border-border">
-    <div class="lp glow-teal opacity-5" aria-hidden="true"></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-      <!-- Steps description on the left -->
-      <div>
-        <p class="section-kicker mb-1">How it works</p>
-        <h2 class="text-3xl font-semibold tracking-tight text-text-primary mb-2 leading-tight">Shop to optimized, in three steps</h2>
-        <p class="lead mb-10 max-w-xl text-sm">Built around your shop — not a dashboard of someone else's data.</p>
-        <div class="entry-list stagger space-y-4">
-          {#each STEPS as step (step.n)}
-            {@const Icon = step.icon}
-            <div class="entry !bg-bg-page/40 hover:!bg-bg-page/80 border border-border-light rounded-xl !p-5 flex items-start gap-4 transition-all hover:shadow-sm">
-              <span class="w-9 h-9 rounded-full bg-teal/10 flex items-center justify-center shrink-0">
-                <Icon size={16} class="text-teal" />
-              </span>
-              <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-semibold text-text-primary mb-1">{step.title}</h3>
-                <p class="text-xs text-text-secondary leading-relaxed">{step.body}</p>
+  <!-- How It Works Section with smooth transition background -->
+  <div class="bg-[#f4f8f6] border-t border-b border-border/40 relative z-10">
+    <section id="how" class="relative max-w-5xl mx-auto px-6 py-20 scroll-mt-20 reveal">
+      <div class="lp glow-teal opacity-5" aria-hidden="true"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <!-- Steps description on the left -->
+        <div>
+          <p class="section-kicker mb-1">How it works</p>
+          <h2 class="text-3xl font-semibold tracking-tight text-text-primary mb-2 leading-tight">Shop to optimized, in three steps</h2>
+          <p class="lead mb-10 max-w-xl text-sm">Built around your shop — not a dashboard of someone else's data.</p>
+          <div class="steps-connector relative">
+            <span class="connector-track" aria-hidden="true"></span>
+            <span class="connector-fill" aria-hidden="true"></span>
+            <div class="entry-list stagger space-y-4">
+            {#each STEPS as step (step.n)}
+              {@const Icon = step.icon}
+              <div class="entry relative z-10 !bg-white hover:!bg-white/95 border border-border-light rounded-xl !p-5 flex items-start gap-4 transition-all hover:shadow-sm">
+                <span class="w-9 h-9 rounded-full bg-teal/10 flex items-center justify-center shrink-0">
+                  <Icon size={16} class="text-teal" />
+                </span>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-semibold text-text-primary mb-1">{step.title}</h3>
+                  <p class="text-xs text-text-secondary leading-relaxed">{step.body}</p>
+                </div>
               </div>
+            {/each}
             </div>
-          {/each}
+          </div>
+        </div>
+
+        <!-- Illustration on the right -->
+        <div class="relative group animate-float">
+          <div class="absolute inset-0 bg-gradient-to-tr from-teal/10 to-orange/5 blur-2xl rounded-2xl" aria-hidden="true"></div>
+          <div class="relative rounded-2xl overflow-hidden border border-border bg-white shadow-lg p-2 transition-transform duration-300 group-hover:scale-[1.01]">
+            <img
+              src="/etsy_artisan_desk.png"
+              alt="VieRank Etsy artisan pottery workshop and shop analytics integration illustration"
+              class="w-full h-auto rounded-xl"
+            />
+          </div>
         </div>
       </div>
-      
-      <!-- Illustration on the right -->
-      <div class="relative group">
-        <div class="absolute inset-0 bg-gradient-to-tr from-teal/10 to-orange/5 blur-2xl rounded-2xl" aria-hidden="true"></div>
-        <div class="relative rounded-2xl overflow-hidden border border-border bg-white shadow-lg p-2 transition-transform duration-300 group-hover:scale-[1.01]">
-          <img
-            src="/etsy_artisan_desk.png"
-            alt="VieRank Etsy artisan pottery workshop and shop analytics integration illustration"
-            class="w-full h-auto rounded-xl"
-          />
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
+  </div>
+
 
   <!-- Device Freedom & No Extension Advantage Section -->
   <section class="max-w-5xl mx-auto px-6 py-20 reveal relative border-t border-border">
@@ -757,7 +812,7 @@
       <!-- Image on the left -->
       <div class="relative group">
         <div class="absolute inset-0 bg-gradient-to-tr from-teal/10 to-orange/5 blur-2xl rounded-2xl" aria-hidden="true"></div>
-        <div class="relative rounded-2xl overflow-hidden border border-border bg-white shadow-lg p-2 transition-transform duration-300 group-hover:scale-[1.01]">
+        <div class="relative rounded-2xl overflow-hidden border border-border bg-white shadow-lg p-2 hover-mockup">
           <img
             src="/etsy_seo_growth.png"
             alt="VieRank Premium Etsy Shop growth analytics dashboard layout illustration"
@@ -783,18 +838,19 @@
             <p class="text-xs text-text-secondary leading-relaxed">Optimize tags on your iPad or phone during creative breaks.</p>
           </div>
           <div class="premium-glass p-4 rounded-xl border border-white">
-            <span class="block text-[10px] text-text-muted uppercase font-bold mb-1">Official API Partner</span>
-            <p class="text-xs text-text-secondary leading-relaxed">Connects securely via OAuth without editing browser settings.</p>
+            <span class="block text-[10px] text-text-muted uppercase font-bold mb-1">Secure OAuth Access</span>
+            <p class="text-xs text-text-secondary leading-relaxed">Connects securely via Etsy's official OAuth without editing browser settings.</p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Keyword Mapping / Niche Intelligence Section -->
-  <section class="max-w-5xl mx-auto px-6 py-20 reveal relative border-t border-border">
-    <div class="glow-teal opacity-5" aria-hidden="true"></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+  <!-- Keyword Mapping / Niche Intelligence Section with smooth cream background -->
+  <div class="bg-[#faf9f6] border-t border-b border-border/40 relative z-10">
+    <section class="max-w-5xl mx-auto px-6 py-20 reveal relative">
+      <div class="glow-teal opacity-5" aria-hidden="true"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
       <!-- Content on the left -->
       <div class="space-y-6 order-2 md:order-1">
         <span class="inline-flex items-center gap-1.5 section-kicker !text-teal font-semibold">
@@ -821,7 +877,7 @@
       <!-- Image on the right -->
       <div class="relative group order-1 md:order-2">
         <div class="absolute inset-0 bg-gradient-to-tr from-teal/10 to-orange/5 blur-2xl rounded-2xl" aria-hidden="true"></div>
-        <div class="relative rounded-2xl overflow-hidden border border-border bg-white shadow-lg p-2 transition-transform duration-300 group-hover:scale-[1.01]">
+        <div class="relative rounded-2xl overflow-hidden border border-border bg-white shadow-lg p-2 hover-mockup">
           <img
             src="/etsy_keyword_map.png"
             alt="VieRank keyword clustering and niche search mapping dashboard illustration"
@@ -831,6 +887,7 @@
       </div>
     </div>
   </section>
+  </div>
 
   <!-- Interactive Showcase & Toolkit Section (WOW Factor!) -->
   <section class="relative bg-bg-page border-y border-border py-24">
@@ -845,23 +902,25 @@
         <p class="lead text-base">Your own listings come first. Tap a pillar below to preview how our workspace tools bring clarity to your storefront.</p>
       </div>
 
-      <!-- Tab selectors -->
-      <div class="flex border-b border-border mb-10 justify-center gap-8 md:gap-14">
-        {#each PILLARS as p (p.key)}
-          {@const PillarIcon = p.icon}
-          <button
-            type="button"
-            onclick={() => activePillarKey = p.key}
-            class="tab-trigger pb-4 text-sm font-medium text-text-secondary hover:text-text-primary transition-all flex items-center gap-2 {activePillarKey === p.key ? 'active' : ''}"
-          >
-            <PillarIcon size={16} class={activePillarKey === p.key ? 'text-teal' : 'text-text-muted'} />
-            {p.title}
-          </button>
-        {/each}
+      <!-- Tab selectors (Modern Pill Group) -->
+      <div class="flex justify-center mb-10">
+        <div class="inline-flex bg-[#edf4f0] border border-border/40 p-1 rounded-2xl shadow-inner">
+          {#each PILLARS as p (p.key)}
+            {@const PillarIcon = p.icon}
+            <button
+              type="button"
+              onclick={() => activePillarKey = p.key}
+              class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-2 {activePillarKey === p.key ? 'bg-[#006241] text-white shadow-md' : 'text-[#2d3a33] hover:bg-[#e1eae5]/80 hover:text-[#006241]'}"
+            >
+              <PillarIcon size={16} />
+              {p.title}
+            </button>
+          {/each}
+        </div>
       </div>
 
       <!-- Showcase Display -->
-      <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_minmax(0,1fr)] gap-12 items-center min-h-[380px]">
+      <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_minmax(0,1fr)] gap-12 items-start min-h-[380px]">
         <!-- Left details panel -->
         <div class="space-y-6">
           <div class="flex items-center gap-3">
@@ -870,9 +929,9 @@
             </span>
             <h3 class="text-2xl font-bold tracking-tight text-text-primary">{activePillar.title} Tools</h3>
           </div>
-          <p class="text-[15px] text-text-secondary leading-relaxed">{activePillar.blurb}</p>
+          <div class="h-[50px] flex items-center"><p class="text-[15px] text-text-secondary leading-relaxed">{activePillar.blurb}</p></div>
           
-          <ul class="space-y-3 pt-2">
+          <ul class="space-y-3 pt-2 min-h-[310px]">
             {#each activePillar.tools as t (t.name)}
               {@const TIcon = t.icon}
               <li class="premium-glass rounded-xl hover:bg-white hover:shadow-md transition-all">
@@ -886,13 +945,13 @@
           </ul>
         </div>
 
-        <!-- Right interactive mockup panel -->
-        <div class="relative z-10">
-          <div class="absolute inset-0 bg-gradient-to-br from-teal/5 to-orange/5 blur-xl rounded-2xl" aria-hidden="true"></div>
+        <!-- Right interactive mockup panel (Grid Stack to prevent layout jumps during Svelte transition overlap) -->
+        <div class="grid grid-cols-1 grid-rows-1 relative z-10 min-h-[400px]">
+          <div class="absolute inset-0 bg-gradient-to-br from-teal/5 to-orange/5 blur-xl rounded-2xl col-start-1 row-start-1" aria-hidden="true"></div>
           
           {#if activePillarKey === "Create"}
             <!-- Create Mockup with sub-tabs -->
-            <div class="showcase-card premium-glass rounded-2xl p-6 shadow-xl border border-white">
+            <div transition:fade={{ duration: 180 }} class="showcase-card premium-glass rounded-2xl p-6 shadow-xl border border-white col-start-1 row-start-1 h-full">
               <div class="flex items-center justify-between mb-4 pb-2 border-b border-border">
                 <span class="text-xs font-bold text-text-muted flex items-center gap-1.5"><Sparkles size={12} class="text-teal" /> AI Listing Composer</span>
                 <span class="badge-estimated !bg-teal/10 !border-teal/20 !text-teal text-[10px] px-2.5 py-0.5 rounded-full font-bold">96 Score</span>
@@ -948,7 +1007,7 @@
 
           {:else if activePillarKey === "Optimize"}
             <!-- Optimize Mockup with Before/After Split Slider -->
-            <div class="showcase-card premium-glass rounded-2xl p-6 shadow-xl border border-white space-y-4">
+            <div transition:fade={{ duration: 180 }} class="showcase-card premium-glass rounded-2xl p-6 shadow-xl border border-white space-y-4 col-start-1 row-start-1 h-full">
               <div class="flex items-center justify-between pb-2 border-b border-border">
                 <span class="text-xs font-bold text-text-muted flex items-center gap-1.5"><FileText size={12} class="text-teal" /> Interactive Listing Slider</span>
                 <span class="badge-estimated !bg-success/10 !border-success/20 !text-success text-[10px] px-2.5 py-0.5 rounded-full font-bold">Slide to Compare</span>
@@ -1028,7 +1087,7 @@
                       </div>
                     </div>
                     <div class="text-[9px] text-success font-medium flex items-center gap-1">
-                      <BadgeCheck size={10} /> Maximum search index matched. Reaching Page 1.
+                      <BadgeCheck size={10} /> Maximum search index matched · improves Page 1 potential.
                     </div>
                   </div>
                 </div>
@@ -1041,7 +1100,7 @@
 
           {:else}
             <!-- Research Mockup with Niche Quadrant Scatter Plot -->
-            <div class="showcase-card premium-glass rounded-2xl p-5 shadow-xl border border-white space-y-4">
+            <div transition:fade={{ duration: 180 }} class="showcase-card premium-glass rounded-2xl p-5 shadow-xl border border-white space-y-4 col-start-1 row-start-1 h-full">
               <div class="flex items-center justify-between pb-1.5 border-b border-border">
                 <span class="text-xs font-bold text-text-muted flex items-center gap-1.5"><Store size={12} class="text-teal" /> Niche Opportunity Matrix</span>
                 <span class="badge-estimated !bg-orange/10 !border-orange/20 !text-orange-dark inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full font-bold">Click a Bubble</span>
@@ -1250,8 +1309,9 @@
         <!-- Card 1 -->
         <div class="premium-glass p-6 rounded-2xl border border-white">
           <p class="text-[11px] text-text-muted font-bold uppercase tracking-wider mb-2">Time Saved</p>
-          <div class="text-3xl font-bold font-mono tracking-tight text-text-primary mb-1">
-            {hoursSaved}h<span class="text-xs font-normal text-text-secondary"> /mo</span>
+          <div class="text-4xl font-extrabold font-mono tracking-tight flex items-baseline mb-1">
+            <span class="bg-gradient-to-r from-[#006241] to-[#0a9663] bg-clip-text text-transparent">{hoursSaved}h</span>
+            <span class="text-xs font-normal text-text-secondary ml-1">/mo</span>
           </div>
           <p class="text-[11px] text-text-secondary leading-relaxed">Replaced by automated checks & drafts</p>
         </div>
@@ -1259,8 +1319,8 @@
         <!-- Card 2 -->
         <div class="premium-glass p-6 rounded-2xl border border-white">
           <p class="text-[11px] text-text-muted font-bold uppercase tracking-wider mb-2">SEO Traffic Boost</p>
-          <div class="text-3xl font-bold font-mono tracking-tight text-teal mb-1">
-            +{seoBoost}%
+          <div class="text-4xl font-extrabold font-mono tracking-tight flex items-baseline mb-1">
+            <span class="bg-gradient-to-r from-[#006241] to-[#0a9663] bg-clip-text text-transparent">+{seoBoost}%</span>
           </div>
           <p class="text-[11px] text-text-secondary leading-relaxed">Estimated increase in visibility metrics</p>
         </div>
@@ -1268,8 +1328,9 @@
         <!-- Card 3 -->
         <div class="premium-glass p-6 rounded-2xl border border-white">
           <p class="text-[11px] text-text-muted font-bold uppercase tracking-wider mb-2">Value Created</p>
-          <div class="text-3xl font-bold font-mono tracking-tight text-text-primary mb-1">
-            ${opportunityValue}<span class="text-xs font-normal text-text-secondary"> /mo</span>
+          <div class="text-4xl font-extrabold font-mono tracking-tight flex items-baseline mb-1">
+            <span class="bg-gradient-to-r from-[#b8860b] to-[#cba258] bg-clip-text text-transparent">${opportunityValue}</span>
+            <span class="text-xs font-normal text-text-secondary ml-1">/mo</span>
           </div>
           <p class="text-[11px] text-text-secondary leading-relaxed">Estimated search opportunity values</p>
         </div>
@@ -1278,8 +1339,9 @@
         <div class="premium-glass p-6 rounded-2xl border border-white flex flex-col justify-between">
           <div>
             <p class="text-[11px] text-text-muted font-bold uppercase tracking-wider mb-2">VieRank Cost</p>
-            <div class="text-3xl font-bold font-mono tracking-tight text-text-primary mb-1">
-              $9.99<span class="text-xs font-normal text-text-secondary"> /mo</span>
+            <div class="text-4xl font-extrabold font-mono tracking-tight flex items-baseline mb-1">
+              <span class="bg-gradient-to-r from-[#006241] to-[#0a9663] bg-clip-text text-transparent">$9.99</span>
+              <span class="text-xs font-normal text-text-secondary ml-1">/mo</span>
             </div>
           </div>
           <p class="text-[11px] text-text-secondary leading-relaxed pt-1">Return value: {Math.round(opportunityValue / 9.99)}x cost</p>
@@ -1309,7 +1371,7 @@
         </div>
         
         <!-- Plan 2 (Popular) -->
-        <div class="premium-glass p-7 rounded-2xl flex flex-col justify-between hover-lift border-2 border-teal relative shadow-lg">
+        <div class="premium-glass p-7 rounded-2xl flex flex-col justify-between hover-lift border-2 border-[#006241] relative shadow-xl md:scale-[1.04] md:-translate-y-2 z-10 bg-white/95">
           <span class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 text-white text-[10px] font-bold rounded-full uppercase tracking-wider bg-teal shadow-sm">Most popular</span>
           <div>
             <h3 class="font-bold text-lg text-text-primary mb-1">Business</h3>
@@ -1348,7 +1410,7 @@
     </div>
 
     <div class="overflow-x-auto rounded-2xl border border-border shadow-sm bg-white">
-      <table class="w-full text-left border-collapse text-sm">
+      <table class="comparison-table w-full text-left border-collapse text-sm">
         <thead>
           <tr class="bg-bg-page border-b border-border text-text-secondary font-semibold text-xs">
             <th class="p-4 md:p-5">Features & Services</th>
@@ -1362,7 +1424,7 @@
         <tbody class="divide-y divide-border-light text-[13px]">
           <tr>
             <td class="p-4 md:p-5 font-semibold text-text-primary">Monthly Pricing</td>
-            <td class="p-4 md:p-5 text-center font-bold text-teal bg-teal/5">$9.99</td>
+            <td class="p-4 md:p-5 text-center font-bold text-teal bg-teal/5">Free – $7.99+</td>
             <td class="p-4 md:p-5 text-center text-text-secondary">$29.99</td>
             <td class="p-4 md:p-5 text-center text-text-secondary">$29.00</td>
             <td class="p-4 md:p-5 text-center text-text-secondary">$9.99 - $29.99</td>
@@ -1377,7 +1439,10 @@
             <td class="p-4 md:p-5 text-center text-text-muted">—</td>
           </tr>
           <tr>
-            <td class="p-4 md:p-5 font-semibold text-text-primary">Direct Shop Auto-Optimization (No copy-paste)</td>
+            <td class="p-4 md:p-5 font-semibold text-text-primary">
+              Direct Shop Auto-Optimization (No copy-paste)
+              <span class="block text-[11px] font-normal text-text-muted mt-0.5">Once Etsy approves write access</span>
+            </td>
             <td class="p-4 md:p-5 text-center bg-teal/5"><Check size={16} class="mx-auto text-success" /></td>
             <td class="p-4 md:p-5 text-center text-text-muted">—</td>
             <td class="p-4 md:p-5 text-center text-text-muted">—</td>
@@ -1411,35 +1476,35 @@
         </tbody>
       </table>
     </div>
+    <p class="text-center text-[11px] text-text-muted mt-4 max-w-2xl mx-auto">
+      Comparison uses common third-party tool categories, not specific brands. Prices shown are as of Jul 2026, based on publicly listed plans and subject to change.
+    </p>
   </section>
 
   <!-- Testimonials Section -->
   <section class="max-w-4xl mx-auto px-6 py-20 reveal relative z-10">
     <div class="glow-gold opacity-5" aria-hidden="true"></div>
     <div class="text-center max-w-2xl mx-auto mb-12">
-      <p class="section-kicker mb-2">Success Stories</p>
-      <h2 class="text-3xl font-semibold tracking-tight text-text-primary">Loved by Etsy shop owners</h2>
+      <p class="section-kicker mb-2">What we stand for</p>
+      <h2 class="text-3xl font-semibold tracking-tight text-text-primary">Built on honesty, not hype</h2>
     </div>
 
     <!-- Testimonials slider container -->
     <div class="relative overflow-hidden premium-glass p-8 md:p-12 pb-16 md:pb-20 rounded-2xl border border-white max-w-3xl mx-auto">
       <div class="carousel-container min-h-[140px]">
-        <div class="carousel-track" style="transform: translateX(-{testimonialIndex * 100}%); width: {TESTIMONIALS.length * 100}%;">
+        <div class="carousel-track" style="transform: translateX(-{testimonialIndex * (100 / TESTIMONIALS.length)}%); width: {TESTIMONIALS.length * 100}%;">
           {#each TESTIMONIALS as item}
             <div class="w-full shrink-0 px-2 flex flex-col justify-between" style="width: {100 / TESTIMONIALS.length}%;">
               <blockquote class="text-[16px] md:text-[18px] text-text-primary italic font-medium leading-relaxed mb-6">
                 "{item.quote}"
               </blockquote>
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-teal-dark flex items-center justify-center font-bold text-white text-sm shrink-0">
-                  {item.author.split(' ').map(n=>n[0]).join('')}
+                <div class="w-10 h-10 rounded-xl bg-teal-dark flex items-center justify-center text-white shrink-0">
+                  <BadgeCheck size={18} />
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-text-primary">{item.author}</h4>
-                  <p class="text-[11px] text-text-secondary">
-                    Shop: <span class="text-teal font-semibold">{item.shop}</span> 
-                    • <span class="bg-teal/5 px-2 py-0.5 rounded text-teal-dark font-medium">{item.niche}</span> • {item.sales}
-                  </p>
+                  <h4 class="text-sm font-semibold text-text-primary">{item.title}</h4>
+                  <p class="text-[11px] text-text-secondary">{item.sub}</p>
                 </div>
               </div>
             </div>
@@ -1507,7 +1572,7 @@
             </button>
             
             {#if openFaqIndex === idx}
-              <div class="px-5 pb-5 text-sm text-text-secondary leading-relaxed border-t border-border-light pt-3 animate-fade-in bg-white/30">
+              <div transition:slide={{ duration: 240 }} class="px-5 pb-5 text-sm text-text-secondary leading-relaxed border-t border-border-light pt-3 bg-white/30">
                 {faq.a}
               </div>
             {/if}
@@ -1532,23 +1597,7 @@
   </section>
 
   <!-- Footer -->
-  <footer class="border-t border-border py-12 px-6 bg-white relative z-20">
-    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-2.5">
-        <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--teal)">
-          <Sprout size={15} class="text-white" />
-        </span>
-        <span class="text-lg font-semibold tracking-tight">VieRank</span>
-      </div>
-      <div class="flex items-center gap-6 text-sm text-text-muted font-medium">
-        <a href="/pricing" class="hover:text-text-primary transition-colors">Pricing</a>
-        <a href="/auth/login" class="hover:text-text-primary transition-colors">Log in</a>
-        <a href="/privacy" class="hover:text-text-primary transition-colors">Privacy</a>
-        <a href="/terms" class="hover:text-text-primary transition-colors">Terms</a>
-      </div>
-      <p class="text-xs text-text-muted font-medium">© 2026 VieRank. The term "Etsy" is a trademark of Etsy, Inc. This Application uses Etsy's API, but is not endorsed or certified by Etsy.</p>
-    </div>
-  </footer>
+  <MarketingFooter />
 
   <!-- Walkthrough Lightbox Modal -->
   {#if showVideoModal}
@@ -1593,4 +1642,46 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .orbit-butterfly-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .orbit-butterfly {
+    position: absolute;
+    offset-path: path("M -100 400 C 200 200, 500 550, 800 300 S 1100 450, 1300 350");
+    animation: fly-orbit 18s linear infinite;
+    transform-origin: center;
+    opacity: 0;
+  }
+  @keyframes fly-orbit {
+    0% { offset-distance: 0%; opacity: 0; }
+    5% { opacity: 0.22; }
+    90% { opacity: 0.22; }
+    100% { offset-distance: 100%; opacity: 0; }
+  }
+
+  .animate-float {
+    animation: float-anim 5.5s ease-in-out infinite;
+  }
+  @keyframes float-anim {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+
+  .hover-mockup {
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  }
+  .hover-mockup:hover {
+    transform: scale(1.02) translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 98, 65, 0.12);
+  }
+</style>
+
+
 

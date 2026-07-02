@@ -298,7 +298,7 @@ describe('completeJson', () => {
     expect(calls).toBe(2);
   });
 
-  it('returns null after the retry also fails (caller maps to LlmParseError)', async () => {
+  it('returns null after all retries also fail (caller maps to LlmParseError)', async () => {
     let calls = 0;
     const svc = {
       async complete() {
@@ -310,7 +310,7 @@ describe('completeJson', () => {
       },
     };
     expect(await completeJson(svc, { messages: [], schema })).toBeNull();
-    expect(calls).toBe(2);
+    expect(calls).toBe(3); // MAX_ATTEMPTS — each attempt is a fresh generation
   });
 
   it('returns null when JSON is valid but fails the zod schema', async () => {
@@ -330,15 +330,16 @@ describe('completeJson', () => {
 
 describe('prompt output schemas', () => {
   it('title: accepts exactly 5 valid titles, rejects >140 chars and wrong count', () => {
+    // The model now only returns `title`; chars/score are computed server-side (titleScore).
     const good = {
-      titles: Array.from({ length: 5 }, (_, i) => ({ title: `T${i}`, chars: 2, score: 90 })),
+      titles: Array.from({ length: 5 }, (_, i) => ({ title: `T${i}` })),
     };
     expect(titlePrompt.outputSchema.safeParse(good).success).toBe(true);
 
-    const tooLong = { titles: [{ title: 'x'.repeat(141), chars: 141, score: 50 }] };
+    const tooLong = { titles: [{ title: 'x'.repeat(141) }] };
     expect(titlePrompt.outputSchema.safeParse(tooLong).success).toBe(false);
 
-    const wrongCount = { titles: [{ title: 'a', chars: 1, score: 1 }] };
+    const wrongCount = { titles: [{ title: 'a' }] };
     expect(titlePrompt.outputSchema.safeParse(wrongCount).success).toBe(false);
   });
 
@@ -356,6 +357,51 @@ describe('prompt output schemas', () => {
 
     const overLong = { ...good, tags: [row('x'.repeat(21)), ...good.tags.slice(1)] };
     expect(tagPrompt.outputSchema.safeParse(overLong).success).toBe(false);
+  });
+
+  it('tag: normalizes level casing/synonyms and key-name drift (no-think model leniency)', () => {
+    // Drifted rows: capitalized/synonym levels + `volume` alias instead of `searchVolume`.
+    const drift = (tag: string) => ({ tag, competition: 'High', volume: 'Mid' });
+    const parsed = tagPrompt.outputSchema.safeParse({
+      tags: Array.from({ length: 13 }, (_, i) => drift(`tag${i}`)),
+      materials: [drift('silver'), drift('gold'), drift('steel'), drift('brass')],
+      styles: [drift('boho'), drift('modern'), drift('vintage')],
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.tags[0].competition).toBe('high');
+      expect(parsed.data.tags[0].searchVolume).toBe('medium');
+    }
+  });
+
+  it('tag: tolerates overflow by slicing to exactly 13/6/5', () => {
+    const row = (tag: string) => ({ tag, competition: 'low' as const, searchVolume: 'low' as const });
+    const parsed = tagPrompt.outputSchema.safeParse({
+      tags: Array.from({ length: 16 }, (_, i) => row(`tag${i}`)),
+      materials: Array.from({ length: 8 }, (_, i) => row(`m${i}`)),
+      styles: Array.from({ length: 7 }, (_, i) => row(`s${i}`)),
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.tags).toHaveLength(13);
+      expect(parsed.data.materials).toHaveLength(6);
+      expect(parsed.data.styles).toHaveLength(5);
+    }
+  });
+
+  it('title: normalizes key drift and slices overflow to 5', () => {
+    // `text` instead of `title`, an ignored stray `score`, and 7 rows → sliced to 5.
+    const drift = (t: string) => ({ text: t, score: '88' });
+    const parsed = titlePrompt.outputSchema.safeParse({
+      titles: Array.from({ length: 7 }, (_, i) => drift(`Title ${i}`)),
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.titles).toHaveLength(5);
+      expect(parsed.data.titles[0].title).toBe('Title 0');
+      // score is no longer part of the model output — only title survives.
+      expect(parsed.data.titles[0]).not.toHaveProperty('score');
+    }
   });
 
   it('tag: location defaults to Global', () => {
@@ -399,7 +445,7 @@ describe('createLlmKeywordSource', () => {
 
 // --- chat SSE deduct contract (BR-P2-03) -----------------------------------
 //
-// The route's manual-deduct logic (llm-tools.ts /rankhero-ai/chat) is: stream all deltas, and
+// The route's manual-deduct logic (llm-tools.ts /assistant/chat) is: stream all deltas, and
 // only after the upstream stream completes cleanly (its iterator finishes without throwing) call
 // spendCredits ONCE; if the stream throws mid-way, never deduct. These tests exercise that exact
 // rule against the REAL `llmService.stream` + a fake credits service, so the contract is covered
@@ -463,7 +509,7 @@ describe('chat SSE deduct contract', () => {
 // of receiving HTTP 200 + an in-stream `event: error`. The handler needs full D1 wiring to run
 // end-to-end, so this exercises the gate's exact decision (same source-of-truth predicate + body).
 
-/** Re-implements the route's pre-stream config gate (llm-tools.ts /rankhero-ai/chat step 0). */
+/** Re-implements the route's pre-stream config gate (llm-tools.ts /assistant/chat step 0). */
 function chatConfigGate(env: { LLM_API_KEY?: string; LLM_MODEL?: string }) {
   if (!env.LLM_API_KEY || !env.LLM_MODEL) {
     return {

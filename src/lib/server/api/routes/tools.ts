@@ -19,6 +19,8 @@ import etsyTools from './etsy-tools';
 import jobs from './jobs';
 import experiments from './experiments';
 import image from './image';
+import video from './video';
+import videoCaptions from './video-captions';
 
 const echoBody = z.object({
   text: z.string().min(1, 'text is required').max(2000),
@@ -49,7 +51,7 @@ router.post('/echo', requireAuth, requireCredits('echo'), async (c) => {
 });
 
 // Mount Phase 2 LLM tools (Engineer D's router) under the same /api/tools prefix.
-// Relative paths in llm-tools.ts (/title-generator, /rankhero-ai/chat, etc.) become
+// Relative paths in llm-tools.ts (/title-generator, /assistant/chat, etc.) become
 // /api/tools/* automatically since app.ts already mounts this router at /api/tools.
 router.route('/', llmTools);
 
@@ -65,5 +67,10 @@ router.route('/', jobs);
 // /experiments, /image-studio → /api/tools/* via the same mount).
 router.route('/', experiments);
 router.route('/', image);
+// AI Video Studio (VEO3 image-to-video) — /video-studio + /video-jobs/* → /api/tools/*.
+router.route('/', video);
+
+// Video Maker — AI on-video captions (/video-captions → /api/tools/* via the same mount).
+router.route('/', videoCaptions);
 
 export default router;

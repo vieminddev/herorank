@@ -73,6 +73,18 @@ function isRateLimitedAuthPath(pathname: string): boolean {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+  // Canonical host (301 www.* → apex). Both custom domains serve this app, but the Better Auth
+  // session cookie is host-only (no Domain attribute), so a cookie set on `vierank.com` is NOT
+  // sent to `www.vierank.com` (and vice-versa). Mixing the two hosts — e.g. the Google OAuth
+  // callback lands on the apex (BETTER_AUTH_URL) while a tab is still on www — logs the user out.
+  // Forcing one canonical host keeps the cookie consistent everywhere.
+  const host = event.url.host;
+  if (host.startsWith('www.')) {
+    const target = new URL(event.url);
+    target.host = host.slice(4);
+    return new Response(null, { status: 301, headers: { location: target.toString() } });
+  }
+
   const env = event.platform?.env;
 
   // No platform bindings (build/prerender, or `vite dev` without platformProxy) → no D1/KV.

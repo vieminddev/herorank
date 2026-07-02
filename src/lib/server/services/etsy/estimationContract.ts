@@ -27,6 +27,12 @@ export interface DemandScoreInput {
   aggregateReviewVelocity: number;
   /** Sum of num_favorers across top-N listings — engagement proxy. */
   favoritesSignal: number;
+  /**
+   * Sum of `views` across top-N listings — REAL traffic, the strongest demand signal (far better
+   * than faves, which are frequently 0). Optional for back-compat: absent → falls back to the
+   * faves/velocity blend only.
+   */
+  aggregateViews?: number;
 }
 export interface DemandScoreResult {
   score: number; // 0-100

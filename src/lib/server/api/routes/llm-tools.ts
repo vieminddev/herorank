@@ -15,7 +15,7 @@
 import { Hono } from 'hono';
 import { z, type ZodType } from 'zod';
 import type { AppEnv } from '../types';
-import { getDb, getEnv, getUser } from '../context';
+import { getDb, getEnv, getUser, getHistoryDb } from '../context';
 import { requireAuth } from '../middleware/requireAuth';
 import { requireCredits } from '../middleware/requireCredits';
 import { createCreditsRepo } from '../../repositories/creditsRepo';
@@ -29,6 +29,11 @@ import {
 } from '../../services/llmService';
 import { completeJson } from '../../services/llmJson';
 import { createLlmKeywordSource } from '../../services/keywordSource';
+import { createKeywordHistory } from '../../services/etsy/cache';
+import { applySignals } from '../../services/keywordSignals';
+import { scoreTitle, extractFocusTerms } from '../../services/titleScore';
+import { auditTags } from '../../services/tagAudit';
+import { auditDescription } from '../../services/descriptionAudit';
 import * as titlePrompt from '../../services/prompts/title';
 import * as descriptionPrompt from '../../services/prompts/description';
 import * as tagPrompt from '../../services/prompts/tag';
@@ -40,13 +45,34 @@ import * as chatgptOptimizerPrompt from '../../services/prompts/chatgptOptimizer
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Build the request-scoped llmService from env. timeoutMs overridable (chat uses 60s). */
-function llmFromEnv(c: import('hono').Context<AppEnv>, timeoutMs?: number): LlmService {
+/**
+ * No-thinking model for heavy structured-JSON tools. The default reasoning model emits a large
+ * `reasoning_content` trace we never use — it roughly doubles completion tokens and makes the
+ * gateway 502 under load on the biggest payload (chatgpt-optimizer). A no-thinking variant returns
+ * the same JSON in ~40% fewer tokens with no thinking trace. Overridable via `LLM_FAST_MODEL`.
+ */
+const FAST_MODEL_DEFAULT = 'gemini-2.5-flash-nothinking';
+
+/** The no-thinking model to use for structured-JSON tools (env override → default). */
+function fastModel(c: import('hono').Context<AppEnv>): string {
+  return getEnv(c).LLM_FAST_MODEL || FAST_MODEL_DEFAULT;
+}
+
+/**
+ * Build the request-scoped llmService from env. `timeoutMs` overridable (chat uses 60s);
+ * `modelOverride` swaps the chat model for this call (heavy JSON tools use the fast no-thinking
+ * model). Falls back to `LLM_MODEL` so an empty override still surfaces the LLM_CONFIG error.
+ */
+function llmFromEnv(
+  c: import('hono').Context<AppEnv>,
+  timeoutMs?: number,
+  modelOverride?: string
+): LlmService {
   const env = getEnv(c);
   return createLlmService({
     baseUrl: env.LLM_BASE_URL ?? 'https://vtoken.viemind.ai/v1',
     apiKey: env.LLM_API_KEY ?? '',
-    model: env.LLM_MODEL ?? '',
+    model: modelOverride || env.LLM_MODEL || '',
     timeoutMs,
   });
 }
@@ -138,7 +164,7 @@ router.post('/title-generator', requireAuth, requireCredits('title'), async (c) 
   if (!body.ok) return body.res;
 
   try {
-    const llm = llmFromEnv(c);
+    const llm = llmFromEnv(c, undefined, fastModel(c));
     const result = await completeJson(llm, {
       messages: titlePrompt.buildMessages(body.data),
       schema: titlePrompt.outputSchema,
@@ -148,9 +174,14 @@ router.post('/title-generator', requireAuth, requireCredits('title'), async (c) 
       const m = mapLlmError(new LlmError('LLM_PARSE', 'bad output'));
       return c.json({ error: m.error, message: m.message }, m.status);
     }
-    // Recompute `chars` from title.length — never trust the model (BR-P2-04).
-    const titles = result.titles.map((t) => ({ ...t, chars: t.title.length }));
-    return c.json({ titles });
+    // Grade every title with the deterministic, auditable scorer — the model only wrote the
+    // titles; `chars`, `score`, and the per-lever breakdown are all computed here (VieRank honesty
+    // USP). Sort strongest-first so the best draft is on top.
+    const focus = extractFocusTerms(body.data.description);
+    const titles = result.titles
+      .map((t) => scoreTitle(t.title, focus))
+      .sort((a, b) => b.score - a.score);
+    return c.json({ titles, focusTerms: focus });
   } catch (err) {
     const m = mapLlmError(err);
     return c.json({ error: m.error, message: m.message }, m.status);
@@ -163,7 +194,7 @@ router.post('/description-generator', requireAuth, requireCredits('description')
   if (!body.ok) return body.res;
 
   try {
-    const llm = llmFromEnv(c);
+    const llm = llmFromEnv(c, undefined, fastModel(c));
     const result = await completeJson(llm, {
       messages: descriptionPrompt.buildMessages(body.data),
       schema: descriptionPrompt.outputSchema,
@@ -173,7 +204,11 @@ router.post('/description-generator', requireAuth, requireCredits('description')
       const m = mapLlmError(new LlmError('LLM_PARSE', 'bad output'));
       return c.json({ error: m.error, message: m.message }, m.status);
     }
-    return c.json({ description: result.description });
+    // Audit the generated copy against Etsy's documented description rules (deterministic, traceable
+    // to the Etsy Seller Handbook) and expose the Google-snippet preview.
+    const focus = extractFocusTerms(body.data.productInfo);
+    const audit = auditDescription(result.description, focus);
+    return c.json({ description: result.description, audit });
   } catch (err) {
     const m = mapLlmError(err);
     return c.json({ error: m.error, message: m.message }, m.status);
@@ -186,7 +221,7 @@ router.post('/tag-generator', requireAuth, requireCredits('tag'), async (c) => {
   if (!body.ok) return body.res;
 
   try {
-    const llm = llmFromEnv(c);
+    const llm = llmFromEnv(c, undefined, fastModel(c));
     const result = await completeJson(llm, {
       messages: tagPrompt.buildMessages(body.data),
       schema: tagPrompt.outputSchema,
@@ -196,7 +231,10 @@ router.post('/tag-generator', requireAuth, requireCredits('tag'), async (c) => {
       const m = mapLlmError(new LlmError('LLM_PARSE', 'bad output'));
       return c.json({ error: m.error, message: m.message }, m.status);
     }
-    return c.json(result);
+    // Audit the 13 main tags against Etsy's documented rules (deterministic, traceable to the Etsy
+    // Seller Handbook — not an LLM guess). competition/searchVolume stay as labeled AI estimates.
+    const audit = auditTags(result.tags.map((t) => t.tag));
+    return c.json({ ...result, audit });
   } catch (err) {
     const m = mapLlmError(err);
     return c.json({ error: m.error, message: m.message }, m.status);
@@ -210,9 +248,12 @@ router.post('/keyword-generator', requireAuth, requireCredits('keyword'), async 
   if (!body.ok) return body.res;
 
   try {
-    const source = createLlmKeywordSource(llmFromEnv(c));
+    const source = createLlmKeywordSource(llmFromEnv(c, undefined, fastModel(c)));
     const result = await source.getKeywords(body.data);
-    return c.json(result);
+    // Etsy long-tail quality (all rows) + real-data overlay where our cron has measured the keyword.
+    const history = createKeywordHistory(getHistoryDb(c));
+    const realMap = await history.latestMany(result.keywords.map((k) => String(k.keyword)));
+    return c.json({ keywords: applySignals(result.keywords, realMap) });
   } catch (err) {
     const m = mapLlmError(err);
     return c.json({ error: m.error, message: m.message }, m.status);
@@ -259,7 +300,7 @@ router.post('/bulk-keywords', requireAuth, async (c) => {
     return typeof v === 'string' ? v : crypto.randomUUID();
   })();
 
-  const source = createLlmKeywordSource(llmFromEnv(c));
+  const source = createLlmKeywordSource(llmFromEnv(c, undefined, fastModel(c)));
   const results: Array<{ seed: string; keywords: Array<Record<string, unknown>> }> = [];
   let charged = 0;
   for (const seed of seeds) {
@@ -286,17 +327,24 @@ router.post('/bulk-keywords', requireAuth, async (c) => {
       502
     );
   }
-  return c.json({ results, charged, creditsRemaining: balance });
+  // Enrich every group with Etsy long-tail quality + real-data overlay (one lookup across all seeds).
+  const history = createKeywordHistory(getHistoryDb(c));
+  const allKeywords = results.flatMap((g) => g.keywords.map((k) => String(k.keyword)));
+  const realMap = await history.latestMany(allKeywords);
+  const enriched = results.map((g) => ({ seed: g.seed, keywords: applySignals(g.keywords, realMap) }));
+  return c.json({ results: enriched, charged, creditsRemaining: balance });
 });
 
 // --- chatgpt-optimizer (JSON, cost 2) ----------------------------------------
 // Restructure a listing for AI shopping assistants. Single LLM pass (no refine), 45s timeout.
+// Uses the no-thinking fast model: this is the heaviest JSON payload (6 fields), and the default
+// reasoning model's unused `reasoning_content` doubled completion tokens and 502'd under load.
 router.post('/chatgpt-optimizer', requireAuth, requireCredits('chatgpt-optimizer'), async (c) => {
   const body = await readBody(c, chatgptOptimizerPrompt.inputSchema);
   if (!body.ok) return body.res;
 
   try {
-    const llm = llmFromEnv(c, 45_000);
+    const llm = llmFromEnv(c, 45_000, fastModel(c));
     const result = await completeJson(llm, {
       messages: chatgptOptimizerPrompt.buildMessages(body.data),
       schema: chatgptOptimizerPrompt.outputSchema,
@@ -313,10 +361,10 @@ router.post('/chatgpt-optimizer', requireAuth, requireCredits('chatgpt-optimizer
   }
 });
 
-// --- rankhero-ai/chat (SSE, cost 2, MANUAL deduct) ---------------------------
-const CHAT_TOOL = 'rankhero-ai';
+// --- assistant/chat (SSE, cost 2, MANUAL deduct) ---------------------------
+const CHAT_TOOL = 'assistant';
 
-router.post('/rankhero-ai/chat', requireAuth, async (c) => {
+router.post('/assistant/chat', requireAuth, async (c) => {
   const body = await readBody(c, chatPrompt.inputSchema);
   if (!body.ok) return body.res;
 

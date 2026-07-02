@@ -36,3 +36,61 @@ export function escapeHtml(input: string): string {
 export function renderBold(input: string): string {
   return escapeHtml(input).replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
 }
+
+/**
+ * Render chat markdown safely: escape → `**bold**` → simple lists. Used by the VieRank Assistant,
+ * whose replies are list-heavy (tags, steps). Same XSS contract as `renderBold` — HTML is escaped
+ * FIRST, so the only markup emitted is `<strong>`, `<ul>/<ol>`, `<li>`, and `<br>` that THIS
+ * function produces; nothing from the model can inject live HTML.
+ *
+ * Lines starting with `-`, `*`, or `•` become a `<ul>`; `1.`/`2.`… become an `<ol>`; consecutive
+ * list lines group into one list. Other lines join with `<br>` (so the container does NOT need
+ * `white-space: pre-wrap`). The emitted tags carry no classes — style them via the container.
+ */
+export function renderChatMarkdown(input: string): string {
+  const escaped = escapeHtml(input).replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>');
+  const segments: string[] = [];
+  let textBuf: string[] = [];
+  let listType: 'ul' | 'ol' | null = null;
+  let listItems: string[] = [];
+
+  const flushText = () => {
+    if (textBuf.length) {
+      segments.push(textBuf.join('<br>'));
+      textBuf = [];
+    }
+  };
+  const flushList = () => {
+    if (listType) {
+      segments.push(`<${listType}>${listItems.join('')}</${listType}>`);
+      listType = null;
+      listItems = [];
+    }
+  };
+
+  for (const line of escaped.split('\n')) {
+    const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+    const ordered = line.match(/^\s*\d+\.\s+(.*)$/);
+    if (bullet) {
+      flushText();
+      if (listType !== 'ul') {
+        flushList();
+        listType = 'ul';
+      }
+      listItems.push(`<li>${bullet[1]}</li>`);
+    } else if (ordered) {
+      flushText();
+      if (listType !== 'ol') {
+        flushList();
+        listType = 'ol';
+      }
+      listItems.push(`<li>${ordered[1]}</li>`);
+    } else {
+      flushList();
+      textBuf.push(line);
+    }
+  }
+  flushText();
+  flushList();
+  return segments.join('');
+}

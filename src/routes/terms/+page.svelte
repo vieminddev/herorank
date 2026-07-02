@@ -1,6 +1,9 @@
 <script lang="ts">
-  import { Sprout, FileText, BadgeInfo, Scale, ShieldAlert, ArrowRight, Info } from "lucide-svelte";
+  import { FileText, BadgeInfo, Scale, ShieldAlert, ArrowRight, Info } from "lucide-svelte";
+  import MarketingNav from "$lib/components/marketing/MarketingNav.svelte";
+  import MarketingFooter from "$lib/components/marketing/MarketingFooter.svelte";
 </script>
+
 
 <svelte:head>
   <title>Terms of Service — VieRank</title>
@@ -8,22 +11,7 @@
 </svelte:head>
 
 <div class="lp min-h-screen bg-[#f7f9f8] text-text-primary overflow-hidden">
-  <!-- Navigation Header -->
-  <nav class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-border">
-    <div class="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
-      <a href="/" class="flex items-center gap-2.5 group">
-        <span class="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" style="background: var(--teal)">
-          <Sprout size={18} class="text-white" />
-        </span>
-        <span class="text-xl font-semibold tracking-tight">VieRank</span>
-      </a>
-      <div class="flex items-center gap-2">
-        <a href="/pricing" class="px-3 py-2 text-sm font-medium text-text-secondary hover:text-teal transition-colors">Pricing</a>
-        <a href="/auth/login" class="px-3 py-2 text-sm font-medium text-text-secondary hover:text-teal transition-colors">Log in</a>
-        <a href="/auth/signup" class="btn btn-primary btn-glow !py-2 !px-5 text-sm">Start free</a>
-      </div>
-    </div>
-  </nav>
+  <MarketingNav />
 
   <!-- Header Section -->
   <section class="relative overflow-hidden pt-20 pb-16 bg-white border-b border-border">
@@ -73,13 +61,16 @@
         </p>
         <ul class="list-disc pl-6 space-y-2">
           <li>
-            <strong>OAuth Consent:</strong> You explicitly grant VieRank permission to read and modify listings and shop details. You may disconnect or revoke this access at any time.
+            <strong>OAuth Consent:</strong> You grant VieRank read-only access to your listings and shop details. Write access (saving edits or creating drafts) is optional — requested only if you opt in, and used solely for changes you explicitly trigger. You may disconnect or revoke this access at any time.
           </li>
           <li>
             <strong>Compliance with Etsy Seller Policy:</strong> You remain solely responsible for the content of your listings, including complying with Etsy's policies on handmade goods, prohibited items, and intellectual property.
           </li>
           <li>
             <strong>No Endorsement:</strong> You acknowledge that VieRank is an independent integration partner and is not affiliated with, endorsed by, or certified by Etsy, Inc.
+          </li>
+          <li>
+            <strong>Data Roles:</strong> When you connect a third-party service such as Etsy, you are the data controller and VieRank acts as the data processor for any content we access from that service on your behalf. We process this data solely to provide the VieRank services you request, in accordance with these Terms, our Privacy Policy, and applicable privacy laws.
           </li>
         </ul>
       </div>
@@ -116,6 +107,9 @@
         <p class="font-semibold text-text-primary">
           We provide the Service "as is" and "as available". We do not guarantee listing sales increases, specific search position results, or uninterrupted API connection. We are not liable for any suspension, penalties, or damages applied to your Etsy shop by Etsy, Inc.
         </p>
+        <p class="p-4 bg-surface-subtle border border-border-light rounded-xl text-xs uppercase tracking-wide text-text-secondary leading-relaxed">
+          Disclaimer: This Application is solely provided by VieRank ("the Application Developer"). You acknowledge that Etsy, Inc. and its affiliates are not the Application Developer, do not provide the Application service, and make no warranties of any kind with respect to the Application or data accessed through it.
+        </p>
       </div>
 
       <!-- Section 5 -->
@@ -129,22 +123,5 @@
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="border-t border-border py-12 px-6 bg-white relative z-20">
-    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-2.5">
-        <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--teal)">
-          <Sprout size={15} class="text-white" />
-        </span>
-        <span class="text-lg font-semibold tracking-tight">VieRank</span>
-      </div>
-      <div class="flex items-center gap-6 text-sm text-text-muted font-medium">
-        <a href="/pricing" class="hover:text-text-primary transition-colors">Pricing</a>
-        <a href="/auth/login" class="hover:text-text-primary transition-colors">Log in</a>
-        <a href="/privacy" class="hover:text-text-primary transition-colors">Privacy</a>
-        <a href="/terms" class="text-teal hover:text-teal-dark transition-colors">Terms</a>
-      </div>
-      <p class="text-xs text-text-muted font-medium">© 2026 VieRank. The term "Etsy" is a trademark of Etsy, Inc. This Application uses Etsy's API, but is not endorsed or certified by Etsy.</p>
-    </div>
-  </footer>
+  <MarketingFooter />
 </div>

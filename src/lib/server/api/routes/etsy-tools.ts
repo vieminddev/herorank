@@ -19,7 +19,7 @@ import type { ZodType } from 'zod';
 import { z } from 'zod';
 import type { AppEnv } from '../types';
 import type { Env } from '../../env';
-import { getEnv, getUser, getDb } from '../context';
+import { getEnv, getUser, getDb, getHistoryDb } from '../context';
 import { requireAuth } from '../middleware/requireAuth';
 import { loadReviewRateProvider } from '../../services/calibration/reviewRateProvider';
 import { requireCredits } from '../middleware/requireCredits';
@@ -32,7 +32,9 @@ import {
   EtsyNotFoundError,
 } from '../../services/etsy/client';
 import { getEtsyContext, hasEtsyKey } from '../../services/etsy/provider';
-import { cacheKeys, TTL, normalize } from '../../services/etsy/cache';
+import { cacheKeys, TTL, normalize, createKeywordHistory } from '../../services/etsy/cache';
+import { dedupeReviews } from '../../services/etsy/reviews';
+import { forecastTrend } from '../../services/etsy/forecast';
 import { createAnalysesStore } from '../../services/etsy/analysesStore';
 import { getEstimation } from '../../services/etsy/estimationContract';
 import { loadTaxonomyResolver } from '../../services/etsy/taxonomyResolver';
@@ -43,6 +45,7 @@ import type {
   EtsyListing,
   EtsyReview,
   EtsyShop,
+  EtsyTaxonomyProperty,
   ListingAnalyzerResponse,
   ShopAnalyzerResponse,
   RankCheckResponse,
@@ -202,6 +205,178 @@ function gradeFromScores(scores: ListingAuditScores): string {
 }
 
 // ---------------------------------------------------------------------------
+// listing-analyzer enrichment (sales-optimization signals from the richer
+// listing object: real lifetime views, handling speed, attribute completeness,
+// and variation pricing). All shapes below are ADDITIVE to ListingAnalyzerResponse.
+// ---------------------------------------------------------------------------
+
+/** Real lifetime views + an ESTIMATED conversion rate (est. monthly sales ÷ lifetime views). */
+export interface ViewsInsight {
+  /** REAL cumulative lifetime views (not time-windowed). */
+  views: number;
+  /** Estimated monthly conversion = est. monthly sales ÷ lifetime views, as a %. Null when unknowable. */
+  conversionRatePct: number | null;
+  /** Honest note when conversion can't be computed (no views and/or no sales signal). */
+  note: string | null;
+}
+
+export type ShippingVerdict = 'fast' | 'average' | 'slow' | 'unknown';
+
+export interface ShippingInsight {
+  processingMin: number | null;
+  processingMax: number | null;
+  verdict: ShippingVerdict;
+  /** Human label, e.g. "1–3 business days". */
+  label: string;
+  note: string;
+}
+
+export interface AttributeCompleteness {
+  /** Catalog attribute names the listing actually fills. */
+  filledAttributes: string[];
+  /** Catalog attribute names NOT covered by the listing — the actionable SEO gaps. */
+  missingAttributes: string[];
+  /** Required catalog attributes still missing (highest-priority subset of missingAttributes). */
+  missingRequired: string[];
+  /** 0–100 completeness over the catalog's attributes. */
+  completenessPct: number;
+}
+
+export interface VariationInsight {
+  variationCount: number;
+  minPrice: string;
+  maxPrice: string;
+  /** maxPrice − minPrice, formatted. */
+  priceSpread: string;
+}
+
+/** Build the views + estimated-conversion insight. Guards divide-by-zero / no-signal honestly. */
+export function buildViewsInsight(views: number, monthlySales: number): ViewsInsight {
+  if (!Number.isFinite(views) || views <= 0) {
+    return { views: Math.max(0, Math.round(views || 0)), conversionRatePct: null, note: 'No lifetime view data available for this listing.' };
+  }
+  if (!Number.isFinite(monthlySales) || monthlySales <= 0) {
+    return { views, conversionRatePct: null, note: 'No sales signal (no recent reviews), so we can’t estimate a conversion rate yet.' };
+  }
+  // monthly sales over LIFETIME views — a rough order-of-magnitude estimate, not a true rate.
+  const pct = (monthlySales / views) * 100;
+  return { views, conversionRatePct: Math.round(pct * 100) / 100, note: null };
+}
+
+/** Map processing (handling) days to a ranking-relevant verdict. Etsy ranks faster handling higher. */
+export function buildShippingInsight(min?: number, max?: number): ShippingInsight | null {
+  const hasMin = typeof min === 'number' && Number.isFinite(min);
+  const hasMax = typeof max === 'number' && Number.isFinite(max);
+  if (!hasMin && !hasMax) return null;
+  const lo = hasMin ? (min as number) : (max as number);
+  const hi = hasMax ? (max as number) : (min as number);
+  const upper = Math.max(lo, hi);
+  let verdict: ShippingVerdict;
+  let note: string;
+  if (upper <= 3) {
+    verdict = 'fast';
+    note = 'Fast handling. Etsy tends to favor listings that ship quickly.';
+  } else if (upper <= 7) {
+    verdict = 'average';
+    note = 'Average handling. Tightening this toward 1–3 days can help ranking and conversion.';
+  } else {
+    verdict = 'slow';
+    note = 'Slow handling. Long processing times can hurt both ranking and buyer trust.';
+  }
+  const label = lo === hi ? `${lo} business day${lo === 1 ? '' : 's'}` : `${lo}–${hi} business days`;
+  return { processingMin: hasMin ? (min as number) : null, processingMax: hasMax ? (max as number) : null, verdict, label, note };
+}
+
+/** Normalize an attribute name for set comparison (case/space-insensitive). */
+function normAttr(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+/**
+ * Compare the category's attribute catalog against what the listing actually fills.
+ *
+ * "Filled" = any of: an inventory property_values entry with a non-empty value, OR a populated
+ * core attribute (materials / style / who_made / when_made) that maps to a catalog property by name.
+ * Returns the gap (catalog names not covered) so the FE can surface concrete, actionable SEO wins.
+ */
+export function buildAttributeCompleteness(
+  catalog: EtsyTaxonomyProperty[],
+  listing: EtsyListing
+): AttributeCompleteness | null {
+  if (!catalog.length) return null;
+
+  // Collect the NAMES of attributes this listing fills.
+  const filledNames = new Set<string>();
+  for (const product of listing.inventory?.products ?? []) {
+    for (const pv of product.property_values ?? []) {
+      const hasValue = (pv.values?.some((v) => v && v.trim().length > 0)) ?? false;
+      if (pv.property_name && hasValue) filledNames.add(normAttr(pv.property_name));
+    }
+  }
+  // Core attributes that map onto common catalog property names.
+  if (listing.materials?.length) filledNames.add(normAttr('Material'));
+  if (listing.style?.length) filledNames.add(normAttr('Style'));
+  if (listing.who_made) filledNames.add(normAttr('Who made it'));
+  if (listing.when_made) filledNames.add(normAttr('When made'));
+
+  // Etsy's taxonomy catalog repeats some display names (e.g. "Material" twice, three "Custom
+  // Property" slots). Dedupe by normalized display name so the gap list shows each attribute once —
+  // both for a cleaner UI and to keep the FE's keyed {#each} from receiving duplicate keys.
+  const filled: string[] = [];
+  const missing: string[] = [];
+  const missingRequired: string[] = [];
+  const seen = new Set<string>();
+  for (const prop of catalog) {
+    const display = prop.display_name || prop.name;
+    const dedupeKey = normAttr(display);
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    const covered = filledNames.has(normAttr(prop.name)) || filledNames.has(normAttr(display));
+    if (covered) {
+      filled.push(display);
+    } else {
+      missing.push(display);
+      if (prop.is_required) missingRequired.push(display);
+    }
+  }
+  const totalUnique = filled.length + missing.length;
+  const completenessPct = totalUnique ? Math.round((filled.length / totalUnique) * 100) : 0;
+  return { filledAttributes: filled, missingAttributes: missing, missingRequired, completenessPct };
+}
+
+/** Variation count + min/max/spread of enabled offering prices. */
+export function buildVariationInsight(listing: EtsyListing, currency: string): VariationInsight | null {
+  if (!listing.has_variations) return null;
+  const products = listing.inventory?.products?.filter((p) => !p.is_deleted) ?? [];
+  if (!products.length) return null;
+  const prices: number[] = [];
+  for (const p of products) {
+    for (const o of p.offerings ?? []) {
+      if (o.is_deleted || o.is_enabled === false) continue;
+      const v = priceValue(o.price);
+      if (v > 0) prices.push(v);
+    }
+  }
+  if (!prices.length) return null;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return {
+    variationCount: products.length,
+    minPrice: formatMoney(min, currency),
+    maxPrice: formatMoney(max, currency),
+    priceSpread: formatMoney(max - min, currency),
+  };
+}
+
+/** The additive enrichment block merged into the listing-analyzer response. */
+export interface ListingEnrichment {
+  views: ViewsInsight;
+  shipping: ShippingInsight | null;
+  attributes: AttributeCompleteness | null;
+  variations: VariationInsight | null;
+}
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
@@ -229,8 +404,9 @@ router.post('/listing-analyzer', requireAuth, requireCredits('listing-analyzer')
 
     const est = await getEstimation();
     // Etsy v3 `includes` enum does NOT accept "Tags" (tags are a default field on the listing);
-    // sending it returns 400 → 502. Valid values used here: Shop, Images, Videos.
-    const listing = await client.getListing(listingId, { includes: ['Shop', 'Images', 'Videos'] });
+    // sending it returns 400 → 502. Valid values used here: Shop, Images, Videos, Inventory.
+    // Inventory powers attribute-completeness + variation-price analysis below.
+    const listing = await client.getListing(listingId, { includes: ['Shop', 'Images', 'Videos', 'Inventory'] });
     const images = listing.images?.length ? listing.images : await client.getListingImages(listingId);
     const reviewsPage = await client.getReviewsByListing(listingId, { limit: 100 });
     const reviews = reviewsPage.results ?? [];
@@ -259,10 +435,29 @@ router.post('/listing-analyzer', requireAuth, requireCredits('listing-analyzer')
       categoryId: toTopLevel(listing.taxonomy_id),
     }, reviewProvider);
 
-    const payload: ListingAnalyzerResponse = {
+    // --- Sales-optimization enrichment (additive) ---------------------------
+    const currency = listing.price?.currency_code ?? 'USD';
+    const viewsInsight = buildViewsInsight(listing.views ?? 0, sales.monthlySales);
+    const shippingInsight = buildShippingInsight(listing.processing_min, listing.processing_max);
+    const variationInsight = buildVariationInsight(listing, currency);
+
+    // Attribute completeness needs the category's attribute catalog; best-effort (skip on error).
+    let attributeCompleteness: AttributeCompleteness | null = null;
+    if (listing.taxonomy_id != null) {
+      try {
+        const props = await client.getTaxonomyProperties(listing.taxonomy_id);
+        attributeCompleteness = buildAttributeCompleteness(props, listing);
+      } catch {
+        /* attribute analysis is best-effort — never fail the whole analysis */
+      }
+    }
+
+    const payload: ListingAnalyzerResponse & { enrichment: ListingEnrichment } = {
       cached: false,
       title: listing.title,
-      shop: listing.shop_id ? `Shop ${listing.shop_id}` : '—',
+      // Prefer the real shop name (from includes=Shop); fall back to the id placeholder only when
+      // it's genuinely missing. The FE downgrades a bare "Shop {id}" / "—" to "Your listing".
+      shop: listing.shop?.shop_name?.trim() || (listing.shop_id ? `Shop ${listing.shop_id}` : '—'),
       price: formatMoney(price, listing.price?.currency_code),
       date: formatDate(listing.created_timestamp),
       url: listing.url,
@@ -276,9 +471,16 @@ router.post('/listing-analyzer', requireAuth, requireCredits('listing-analyzer')
         faves: listing.num_favorers ?? 0,
       },
       estimated: { sales: true, revenue: true, scores: true },
+      enrichment: {
+        views: viewsInsight,
+        shipping: shippingInsight,
+        attributes: attributeCompleteness,
+        variations: variationInsight,
+      },
     };
 
-    await cache.put(key, payload, TTL.listing);
+    // Listing content: pin hard-TTL = soft so we never display data past Etsy's 6h cap.
+    await cache.put(key, payload, TTL.listing, { hardTtl: TTL.listing });
     await recordRun(env, getUser(c).id, 'listing-analyzer', String(listingId), {
       title: payload.title,
       grade: gradeFromScores(audit),
@@ -329,6 +531,10 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
     const listings = (listingsPage.results ?? []).slice(0, MAX_SHOP_LISTINGS);
     const reviewsPage = await client.getReviewsByShop(shopId, { limit: 100 });
     const reviews = reviewsPage.results ?? [];
+    // For DISPLAY (distribution + recent list) collapse Etsy's per-transaction duplication (one
+    // review on a multi-item order repeats per item). `reviews` stays raw for the sales/reviewRate
+    // math, where each transaction ≈ a sale and the duplication is the signal.
+    const displayReviews = dedupeReviews(reviews);
 
     // Shop-listings endpoint omits media; fetch images + videos for the displayed rows in ONE
     // batch call (best-effort — never fail the analysis if media can't be fetched). The fetched
@@ -422,7 +628,7 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
       : '—';
 
     const dist = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 } as Record<'1' | '2' | '3' | '4' | '5', number>;
-    for (const r of reviews) {
+    for (const r of displayReviews) {
       const k = String(Math.min(5, Math.max(1, Math.round(r.rating)))) as '1' | '2' | '3' | '4' | '5';
       dist[k]++;
     }
@@ -447,13 +653,16 @@ router.post('/shop-analyzer', requireAuth, requireCredits('shop-analyzer'), asyn
         totalSales,
         totalRevenue: formatMoney(totalSales * avgPrice, currency),
         salesPerListing: activeListings > 0 ? Math.round(totalSales / activeListings) : 0,
+        // True when totalSales is Etsy's REAL lifetime figure (transaction_sold_count), not the
+        // estimate — lets the FE drop the "Est." badge on Total Sales when it's genuine.
+        salesReal: shop.transaction_sold_count != null,
       },
       tags,
       categories,
       listings: listingRows,
       reviews: {
         distribution: dist,
-        recent: reviews.slice(0, 10).map((r) => ({
+        recent: displayReviews.slice(0, 10).map((r) => ({
           rating: r.rating,
           text: r.review ?? '',
           date: formatDate(r.created_timestamp),
@@ -544,8 +753,9 @@ router.post('/rank-check', requireAuth, requireCredits('rank-check'), async (c) 
       estimated: { position: true },
     };
 
-    // Short cache only for the competing-listings count / current page (history is per-user).
-    await cache.put(key, { competingListings: payload.competingListings }, TTL.rank);
+    // Cache the ordered SERP ids (the SHARED shape the rank-track cron reuses → 0 Etsy calls
+    // within 24h) plus the competing-listings count. Rank is derived data, not verbatim content.
+    await cache.put(key, { ordered, competingListings: payload.competingListings }, TTL.rank);
     return c.json(payload);
   } catch (err) {
     const m = mapEtsyError(err);
@@ -567,7 +777,14 @@ router.post('/niche-finder', requireAuth, requireCredits('niche-finder'), async 
 
   try {
     const cached = await cache.get<NicheFinderResponse>(key);
-    if (cached?.fresh) return c.json({ ...cached.payload, cached: true });
+    if (cached?.fresh) {
+      // Back-compat: old cached payloads predate the `opportunity` field — patch on the way out.
+      const niches = (cached.payload.niches ?? []).map((n) => ({
+        ...n,
+        opportunity: (n as unknown as Record<string, unknown>).opportunity ?? nicheOpLabel(n.demand, n.competition),
+      }));
+      return c.json({ ...cached.payload, niches, cached: true });
+    }
 
     const est = await getEstimation();
 
@@ -575,42 +792,55 @@ router.post('/niche-finder', requireAuth, requireCredits('niche-finder'), async 
     const taxonomy = await client.getSellerTaxonomyNodes();
     const candidates = deriveNicheCandidates(taxonomy, query);
 
-    const niches = [] as NicheFinderResponse['niches'];
-    for (const cand of candidates.slice(0, 8)) {
-      const page = await client.findActiveListings({ keywords: cand.keyword, sortOn: 'score', limit: 25 });
-      const sample = page.results ?? [];
-      const velocity = sample.reduce((a, l) => a + (l.num_favorers ?? 0), 0);
-      const faves = velocity;
-      const demand = est.demandScore({
-        resultCount: page.count ?? sample.length,
-        aggregateReviewVelocity: Math.round(velocity / 1000),
-        favoritesSignal: faves,
-      });
-      const competition = est.competitionLevel(page.count ?? sample.length);
-      const prices = sample.map((l) => priceValue(l.price)).filter((p) => p > 0);
-      const avgPrice = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+    // Parallel fetch — all 12 candidates run concurrently; rate-limiting is handled by the client.
+    const rawRows = await Promise.all(
+      candidates.slice(0, 12).map(async (cand) => {
+        const page = await client.findActiveListings({ keywords: cand.keyword, sortOn: 'score', limit: 25 });
+        const sample = page.results ?? [];
+        const resultCount = page.count ?? sample.length;
+        // Use separate signals: faves from num_favorers, views as the traffic signal (if present).
+        const faves = sample.reduce((a, l) => a + (l.num_favorers ?? 0), 0);
+        const views = sample.reduce((a, l) => a + (l.views ?? 0), 0);
+        const demand = est.demandScore({
+          resultCount,
+          aggregateReviewVelocity: 0, // not available in cross-shop search results
+          favoritesSignal: faves,
+          ...(views > 0 ? { aggregateViews: views } : {}),
+        });
+        const competition = est.competitionLevel(resultCount);
+        const prices = sample.map((l) => priceValue(l.price)).filter((p) => p > 0);
+        const avgPrice = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
 
-      // Record a snapshot + compute delta vs a prior period (cold start → '—').
-      const prior = await history.prior(cand.keyword, 6 * 86_400);
-      const trend = est.trendDelta(demand.score, prior ? prior.demandScore : null);
-      await history.insert({
-        keyword: cand.keyword,
-        categoryId: cand.categoryId,
-        demandScore: demand.score,
-        resultCount: page.count ?? sample.length,
-        competition,
-      });
+        const prior = await history.prior(cand.keyword, 6 * 86_400);
+        const trend = est.trendDelta(demand.score, prior ? prior.demandScore : null);
+        await history.insert({
+          keyword: cand.keyword,
+          categoryId: cand.categoryId,
+          demandScore: demand.score,
+          resultCount,
+          competition,
+        });
 
-      niches.push({
-        niche: cand.name,
-        competition,
-        demand: demand.label,
-        avgPrice: formatMoney(avgPrice),
-        listings: page.count ?? sample.length,
-        growth: trend.change,
-        estimated: { demand: true, growth: true },
-      });
-    }
+        return {
+          niche: cand.name,
+          competition,
+          demand: demand.label,
+          demandScore: demand.score,
+          avgPrice: formatMoney(avgPrice),
+          listings: resultCount,
+          growth: trend.change,
+          estimated: { demand: true, growth: true } as const,
+        };
+      })
+    );
+
+    // Sort by opportunity (demand desc, competition asc) then strip internal demandScore.
+    const niches: NicheFinderResponse['niches'] = rawRows
+      .sort((a, b) => nicheOpScore(b.demand, b.competition) - nicheOpScore(a.demand, a.competition))
+      .map(({ demandScore: _ds, ...row }) => ({
+        ...row,
+        opportunity: nicheOpLabel(row.demand, row.competition),
+      }));
 
     const payload: NicheFinderResponse = { cached: false, query, niches };
     await cache.put(key, payload, TTL.niche);
@@ -632,6 +862,8 @@ router.post('/best-sellers', requireAuth, requireCredits('best-sellers'), async 
   if (!body.ok) return body.res;
 
   const env = getEnv(c);
+  // `sample` = no live Etsy key on this deployment, so any cron-built numbers are from fixtures.
+  const sample = !hasEtsyKey(env);
   const { cache } = getEtsyContext(env);
   const categoryId = body.data.category ? normalize(body.data.category) : 'popular';
   const key = cacheKeys.bestsellers(categoryId);
@@ -640,12 +872,12 @@ router.post('/best-sellers', requireAuth, requireCredits('best-sellers'), async 
   // fallback to popular (BA rec option (a)), never an expensive on-demand build.
   const cached = await cache.get<BestSellersResponse>(key);
   if (cached) {
-    return c.json({ ...cached.payload, cached: cached.fresh, stale: !cached.fresh });
+    return c.json({ ...cached.payload, cached: cached.fresh, stale: !cached.fresh, sample });
   }
   if (categoryId !== 'popular') {
     const fallback = await cache.get<BestSellersResponse>(cacheKeys.bestsellers('popular'));
     if (fallback) {
-      return c.json({ ...fallback.payload, cached: fallback.fresh, fallback: true, category: body.data.category ?? null });
+      return c.json({ ...fallback.payload, cached: fallback.fresh, fallback: true, category: body.data.category ?? null, sample });
     }
   }
 
@@ -658,7 +890,7 @@ router.post('/best-sellers', requireAuth, requireCredits('best-sellers'), async 
     fallback: true,
     estimated: { sales: true, ranking: true },
   };
-  return c.json(payload);
+  return c.json({ ...payload, sample });
 });
 
 // --- etsy-trends (cost 1, Q11; cron-built cache) ----------------------------
@@ -669,13 +901,15 @@ router.post('/etsy-trends', requireAuth, requireCredits('etsy-trends'), async (c
   if (!body.ok) return body.res;
 
   const env = getEnv(c);
+  const sample = !hasEtsyKey(env);
   const { cache } = getEtsyContext(env);
   const key = cacheKeys.trends('all');
 
   const cached = await cache.get<EtsyTrendsResponse>(key);
   if (cached) {
     const filtered = applyTrendFilter(cached.payload, body.data.filter);
-    return c.json({ ...filtered, cached: cached.fresh, stale: !cached.fresh });
+    const enriched = await enrichWithForecasts(filtered, getHistoryDb(c));
+    return c.json({ ...enriched, cached: cached.fresh, stale: !cached.fresh, sample });
   }
 
   // Cron not run yet → empty, building-history state (BR-P3-10: no fabricated volumes).
@@ -685,7 +919,105 @@ router.post('/etsy-trends', requireAuth, requireCredits('etsy-trends'), async (c
     trends: [],
     buildingHistory: true,
   };
-  return c.json(payload);
+  return c.json({ ...payload, sample });
+});
+
+// --- whitespace-finder (cost 1; cron-built cache) ---------------------------
+// A pure re-ranking VIEW over the cron-built trends cache: surfaces the best business-idea
+// opportunities = high demand vs low supply/entry-velocity (the `whitespace` score, 0-100,
+// computed by the weekly cron). No live Etsy fetch, no estimation — cache read only.
+const whitespaceBody = z.object({
+  filter: z.string().optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+});
+
+router.post('/whitespace-finder', requireAuth, requireCredits('whitespace-finder'), async (c) => {
+  const body = await readBody(c, whitespaceBody);
+  if (!body.ok) return body.res;
+
+  const env = getEnv(c);
+  const sample = !hasEtsyKey(env);
+  const { cache } = getEtsyContext(env);
+  const cached = await cache.get<EtsyTrendsResponse>(cacheKeys.trends('all'));
+
+  if (!cached) {
+    // Cron has not built the trends snapshot yet (or, before the column existed, no whitespace).
+    return c.json({ cached: false, opportunities: [], buildingHistory: true, sample });
+  }
+
+  const filtered = applyTrendFilter(cached.payload, body.data.filter);
+  const opportunities = filtered.trends
+    .filter((r) => r.whitespace != null)
+    .sort((a, b) => (b.whitespace ?? 0) - (a.whitespace ?? 0))
+    .slice(0, body.data.limit ?? 25);
+
+  return c.json({
+    cached: cached.fresh,
+    stale: !cached.fresh,
+    filter: body.data.filter ?? null,
+    opportunities,
+    // True when the cache exists but no row carries a whitespace score yet (pre-cron-upgrade data).
+    buildingHistory: opportunities.length === 0,
+    sample,
+  });
+});
+
+// --- selling-now (cost 1; cron-built cache) ---------------------------------
+// A VIEW over the cron-built best-sellers cache ranked by REAL sales velocity (Δ
+// transaction_sold_count per week from shop_pulse). Shows what is ACTUALLY accelerating in
+// sales right now — measured, not estimated. Cache read only.
+const sellingNowBody = z.object({
+  category: z.string().optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+});
+
+router.post('/selling-now', requireAuth, requireCredits('selling-now'), async (c) => {
+  const body = await readBody(c, sellingNowBody);
+  if (!body.ok) return body.res;
+
+  const env = getEnv(c);
+  const sample = !hasEtsyKey(env);
+  const { cache } = getEtsyContext(env);
+  const categoryId = body.data.category ? normalize(body.data.category) : 'popular';
+  const cached =
+    (await cache.get<BestSellersResponse>(cacheKeys.bestsellers(categoryId))) ??
+    (await cache.get<BestSellersResponse>(cacheKeys.bestsellers('popular')));
+
+  if (!cached) {
+    return c.json({ cached: false, sellers: [], buildingVelocity: true, sample });
+  }
+
+  const limit = body.data.limit ?? 25;
+  // Prefer shops with REAL measured velocity (2+ weekly snapshots → confidence ≠ 'building').
+  const measured = cached.payload.shops
+    .filter((s) => s.soldPerWeek != null && s.soldVelocityConfidence !== 'building')
+    .sort((a, b) => (b.soldPerWeek ?? 0) - (a.soldPerWeek ?? 0))
+    .slice(0, limit);
+
+  if (measured.length > 0) {
+    return c.json({
+      cached: cached.fresh,
+      stale: !cached.fresh,
+      category: body.data.category ?? null,
+      sellers: measured,
+      buildingVelocity: false,
+      sample,
+    });
+  }
+
+  // No 2-snapshot velocity yet (needs a 2nd weekly cron run). Honest fallback: rank by the
+  // estimated annual sales the cache already carries, flagged so the UI explains velocity is accruing.
+  const fallback = [...cached.payload.shops]
+    .sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0))
+    .slice(0, limit);
+  return c.json({
+    cached: cached.fresh,
+    stale: !cached.fresh,
+    category: body.data.category ?? null,
+    sellers: fallback,
+    buildingVelocity: true, // real sales velocity needs ≥2 weekly snapshots; showing estimate meanwhile
+    sample,
+  });
 });
 
 // --- buyer-check (cost 2; REDEFINED → shop reputation, spec §4.7) -----------
@@ -720,21 +1052,86 @@ router.post('/buyer-check', requireAuth, requireCredits('buyer-check'), async (c
 
     const shop = await client.getShop(shopId);
     const reviewsPage = await client.getReviewsByShop(shopId, { limit: 100 });
-    const reviews = reviewsPage.results ?? [];
-    const total = shop.review_count ?? reviewsPage.count ?? reviews.length;
-    const rating = shop.review_average ?? avgRating(reviews);
-    const positive = reviews.length
-      ? Math.round((reviews.filter((r) => r.rating >= 4).length / reviews.length) * 100)
+    const rawReviews = reviewsPage.results ?? [];
+    const totalReviewCount = shop.review_count ?? reviewsPage.count ?? rawReviews.length;
+    // Paginate up to 4 additional pages (500 reviews total) when the shop has enough reviews.
+    if (rawReviews.length === 100 && totalReviewCount > 100) {
+      for (let page = 1; page <= 4; page++) {
+        const extra = await client.getReviewsByShop(shopId, { limit: 100, offset: page * 100 });
+        const batch = extra.results ?? [];
+        rawReviews.push(...batch);
+        if (batch.length < 100) break; // no more pages
+      }
+    }
+    // Keep raw for stats (each transaction ≈ a sale); dedupe for display (multi-item orders repeat).
+    const displayReviews = dedupeReviews(rawReviews);
+    const total = totalReviewCount;
+    const rating = shop.review_average ?? avgRating(rawReviews);
+    const positive = displayReviews.length
+      ? Math.round((displayReviews.filter((r) => r.rating >= 4).length / displayReviews.length) * 100)
       : 0;
     const ageYears = shop.created_timestamp
       ? Math.max(0, Math.floor((Date.now() / 1000 - shop.created_timestamp) / (365 * 86_400)))
       : 0;
 
     // Reputation risk (estimated): rating <4.0 or high negative ratio → higher risk.
-    const negRatio = reviews.length ? reviews.filter((r) => r.rating <= 2).length / reviews.length : 0;
+    const negRatio = displayReviews.length ? displayReviews.filter((r) => r.rating <= 2).length / displayReviews.length : 0;
     let riskLevel: BuyerCheckResponse['riskLevel'] = 'low';
     if (rating < 4.0 || negRatio > 0.2) riskLevel = 'high';
     else if (rating < 4.5 || negRatio > 0.1) riskLevel = 'medium';
+
+    // Rating trend — compare newest-N avg to overall (Etsy returns reviews newest-first).
+    const recentN = Math.min(10, displayReviews.length);
+    const recentSample = displayReviews.slice(0, recentN);
+    const recentAvg = recentN > 0
+      ? Math.round((recentSample.reduce((s, r) => s + r.rating, 0) / recentN) * 10) / 10
+      : rating;
+    const ratingDelta = Math.round((recentAvg - rating) * 10) / 10;
+    const ratingTrend = {
+      recentAvg,
+      delta: ratingDelta,
+      direction: (ratingDelta >= 0.3 ? 'improving' : ratingDelta <= -0.3 ? 'declining' : 'stable') as 'improving' | 'declining' | 'stable',
+      sampleSize: recentN,
+    };
+
+    // Complaint signal scan — keyword presence + recent-30d count.
+    const nowSec = Math.floor(Date.now() / 1000);
+    const thirtyDaysAgo = nowSec - 30 * 86400;
+    const COMPLAINT_PATTERNS = [
+      { key: 'shipping',      label: 'Shipping delays',    keywords: ['delay', 'slow ship', 'took forever', 'never arriv', 'package lost', 'still waiting', 'took weeks', 'took a month', 'shipping issue', 'late arrival', 'late shipping', 'spotty'] },
+      { key: 'quality',       label: 'Quality issues',     keywords: ['damaged', 'broken', 'poor quality', 'fell apart', 'cracked', 'scratched', 'defective', 'peeling', 'fading', 'falling off', 'not worth', 'cheaply made'] },
+      { key: 'accuracy',      label: 'Not as described',   keywords: ['not as described', 'not as pictured', 'wrong color', 'wrong size', 'wrong item', 'different from', 'mislead', 'not what i expected', 'inaccurate', 'false advertising'] },
+      { key: 'communication', label: 'Communication',      keywords: ['no response', 'unresponsive', 'no reply', 'ghosted', 'never respond', 'hard to reach', 'ignored my'] },
+    ] as const;
+    const complaints = COMPLAINT_PATTERNS.map(({ key, label, keywords }) => {
+      const matching = displayReviews.filter((r) => {
+        const text = (r.review ?? '').toLowerCase();
+        return keywords.some((kw) => text.includes(kw));
+      });
+      const count = matching.length;
+      const recentCount = matching.filter((r) => (r.created_timestamp ?? 0) > thirtyDaysAgo).length;
+      return { key, label, count, pct: displayReviews.length ? Math.round((count / displayReviews.length) * 100) : 0, recentCount };
+    }).filter((c) => c.count > 0).sort((a, b) => b.pct - a.pct);
+
+    // Authenticity signals — review text patterns.
+    const noTextCount = displayReviews.filter((r) => !(r.review ?? '').trim()).length;
+    const shortTextCount = displayReviews.filter((r) => { const t = (r.review ?? '').trim(); return t.length > 0 && t.length < 20; }).length;
+    const noTextPct = displayReviews.length ? Math.round((noTextCount / displayReviews.length) * 100) : 0;
+    const shortTextPct = displayReviews.length ? Math.round((shortTextCount / displayReviews.length) * 100) : 0;
+    let suspiciousBurst = false;
+    let burstCount = 0;
+    const fiveStarRevs = displayReviews.filter((r) => r.rating === 5);
+    for (let i = 0; i < fiveStarRevs.length; i++) {
+      const anchor = fiveStarRevs[i].created_timestamp ?? 0;
+      if (!anchor) continue;
+      const windowEnd = anchor - 7 * 86400;
+      const inWindow = fiveStarRevs.filter((r) => { const ts = r.created_timestamp ?? 0; return ts > 0 && ts <= anchor && ts >= windowEnd; });
+      if (inWindow.length >= 5) {
+        const avgLen = inWindow.reduce((s, r) => s + (r.review ?? '').trim().length, 0) / inWindow.length;
+        if (avgLen < 30) { suspiciousBurst = true; burstCount = Math.max(burstCount, inWindow.length); }
+      }
+    }
+    const authenticity = { noTextPct, shortTextPct, suspiciousBurst, ...(suspiciousBurst ? { burstCount } : {}) };
 
     const payload: BuyerCheckResponse = {
       cached: false,
@@ -745,12 +1142,18 @@ router.post('/buyer-check', requireAuth, requireCredits('buyer-check'), async (c
       positivePct: positive,
       accountAgeYears: ageYears,
       riskLevel,
-      reviews: reviews.slice(0, 10).map((r) => ({
+      reviews: displayReviews.map((r) => ({
         product: r.listing_id ? `Listing ${r.listing_id}` : shop.shop_name,
+        listingId: r.listing_id ?? undefined,
         rating: r.rating,
         text: r.review ?? '',
         date: formatDate(r.created_timestamp),
       })),
+      reviewsSampled: displayReviews.length,
+      rawFetched: rawReviews.length,
+      complaints,
+      ratingTrend,
+      authenticity,
       estimated: { riskLevel: true },
     };
 
@@ -789,7 +1192,9 @@ router.post('/listing-compare', requireAuth, requireCredits('listing-compare'), 
 
   try {
     const est = await getEstimation();
-    const fetched = await client.getListingsByListingIds(ids, { includes: ['Images'] });
+    // Videos must be in `includes` or the listing's `videos` field comes back null → the
+    // "Has video" comparison row would always show "No". Images power the thumbnail/count.
+    const fetched = await client.getListingsByListingIds(ids, { includes: ['Images', 'Videos'] });
     const byId = new Map(fetched.map((l) => [l.listing_id, l] as const));
 
     const rows = ids
@@ -815,6 +1220,7 @@ router.post('/listing-compare', requireAuth, requireCredits('listing-compare'), 
           price: formatMoney(price, listing.price?.currency_code),
           priceValue: price,
           faves: listing.num_favorers ?? 0,
+          tags: listing.tags ?? [],
           tagCount: listing.tags?.length ?? 0,
           titleLength: listing.title?.length ?? 0,
           imageCount: images.length,
@@ -950,13 +1356,34 @@ interface NicheCandidate {
   categoryId: number | null;
 }
 
+function nicheOpScore(demand: string, competition: string): number {
+  const d = demand === 'high' ? 3 : demand === 'medium' ? 2 : 1;
+  const c = competition === 'low' ? 3 : competition === 'medium' ? 2 : 1;
+  return d * 3 + c; // 4–12; demand weighted 3× so high-demand niches always rank above low-demand
+}
+
+function nicheOpLabel(demand: string, competition: string): import('$lib/server/services/etsy/types').OpportunityLabel {
+  if (demand === 'high' && competition === 'low') return 'sweet-spot';
+  if (demand === 'high' || (demand === 'medium' && competition === 'low')) return 'promising';
+  if (demand === 'low') return 'low-traffic';
+  return 'competitive';
+}
+
 /** Taxonomy-derived niche candidates (spec §4.4) — children of a matched node, else the query. */
 function deriveNicheCandidates(
   taxonomy: Awaited<ReturnType<EtsyClient['getSellerTaxonomyNodes']>>,
   query: string
 ): NicheCandidate[] {
   const q = normalize(query);
-  const match = (node: { name: string }) => normalize(node.name).includes(q) || q.includes(normalize(node.name));
+  // Word-level fuzzy match: any word in the query overlaps any word in the node name.
+  const words = (s: string) => s.split(/\s+/).filter(Boolean);
+  const match = (node: { name: string }) => {
+    const n = normalize(node.name);
+    if (n.includes(q) || q.includes(n)) return true;
+    const qWords = words(q);
+    const nWords = words(n);
+    return qWords.some((w) => w.length > 2 && nWords.some((nw) => nw.includes(w) || w.includes(nw)));
+  };
 
   for (const node of taxonomy) {
     if (match(node) && node.children?.length) {
@@ -968,15 +1395,40 @@ function deriveNicheCandidates(
       }
     }
   }
-  // No taxonomy match → use the query plus a few related terms as a thin fallback.
+  // No taxonomy match → synthesise diverse angle candidates so users still get useful results.
+  const modifiers = ['personalized', 'custom', 'handmade', 'vintage', 'minimalist', 'boho', 'gift', 'unique'];
   return [
     { name: query, keyword: query, categoryId: null },
-    { name: `personalized ${query}`, keyword: `personalized ${query}`, categoryId: null },
-    { name: `custom ${query}`, keyword: `custom ${query}`, categoryId: null },
+    ...modifiers.map((m) => ({ name: `${m} ${query}`, keyword: `${m} ${query}`, categoryId: null })),
   ];
 }
 
 /** Client-side-style filter (also done in FE) so the API response can pre-filter if asked. */
+/**
+ * Enrich each trend row with a predictive next-week `forecast` (the competitive differentiator).
+ * Reads each keyword's recorded demand series from D1 and runs the pure `forecastTrend`. Rows
+ * with <3 history points degrade honestly to a 'building' forecast. Failures are swallowed so a
+ * forecasting hiccup never breaks the (already-cached) trends table.
+ */
+async function enrichWithForecasts(
+  payload: EtsyTrendsResponse,
+  db: ReturnType<typeof getDb>
+): Promise<EtsyTrendsResponse> {
+  if (!payload.trends.length) return payload;
+  const history = createKeywordHistory(db);
+  const trends = await Promise.all(
+    payload.trends.map(async (row) => {
+      try {
+        const series = await history.series(row.keyword);
+        return { ...row, forecast: forecastTrend(series) };
+      } catch {
+        return row;
+      }
+    })
+  );
+  return { ...payload, trends };
+}
+
 function applyTrendFilter(payload: EtsyTrendsResponse, filter?: string): EtsyTrendsResponse {
   if (!filter) return { ...payload, filter: null };
   const f = filter.toLowerCase();

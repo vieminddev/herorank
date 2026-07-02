@@ -2,11 +2,14 @@
   import ToolPageLayout from "$lib/components/tools/ToolPageLayout.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import EstimatedBadge from "$lib/components/ui/EstimatedBadge.svelte";
+  import RealDataBadge from "$lib/components/ui/RealDataBadge.svelte";
   import ToolEmpty from "$lib/components/ui/ToolEmpty.svelte";
+  import Skeleton from "$lib/components/ui/Skeleton.svelte";
   import { Search, Copy, Check, LoaderCircle, CircleAlert } from "lucide-svelte";
   import { callTool } from "$lib/tools-client";
   import { invalidateAll } from "$app/navigation";
   import { page } from "$app/stores";
+  import SaveToListMenu from "$lib/components/tools/SaveToListMenu.svelte";
 
   type Level = "high" | "medium" | "low";
   type KeywordRow = {
@@ -15,6 +18,12 @@
     competition: Level;
     cpc: string;
     trend: string;
+    // Signals added by the backend (Etsy long-tail quality + real-data overlay).
+    longTail?: boolean;
+    broad?: boolean;
+    real?: boolean;
+    realDemand?: number | null;
+    realCompetition?: Level | null;
   };
 
   let seed = $state($page.url.searchParams.get("seed") ?? "");
@@ -54,6 +63,24 @@
   const toggleKw = (kw: string) => {
     selectedKws = selectedKws.includes(kw) ? selectedKws.filter((k) => k !== kw) : [...selectedKws, kw];
   };
+
+  // Rows to save: the ticked ones, or all results when nothing is ticked. Carries the
+  // AI-estimated metrics so the saved list's columns populate.
+  const saveRows = $derived(
+    (selectedKws.length ? keywords.filter((k) => selectedKws.includes(k.keyword)) : keywords).map((k) => ({
+      keyword: k.keyword,
+      volume: k.volume,
+      competition: k.competition,
+    })),
+  );
+
+  // Colour a trend string by its sign: rising green, falling red, flat muted.
+  const trendColor = (trend: string) => {
+    const t = trend.trim();
+    if (/^[+]/.test(t) || /^[1-9]/.test(t)) return "var(--teal-dark)";
+    if (/^-/.test(t) || /\bdown\b/i.test(t)) return "var(--danger)";
+    return "var(--text-muted)";
+  };
   const copyKws = () => {
     navigator.clipboard.writeText(selectedKws.join(", "));
     copied = true;
@@ -63,7 +90,7 @@
 
 <ToolPageLayout
   title="Keyword Finder"
-  description="See the words buyers actually type when they're after something like yours. Competition comes from the real number of live Etsy listings; search volume is an honest AI estimate."
+  description="See the words buyers actually type when they're after something like yours — tagged long-tail or broad per Etsy's guidance, with real measured demand shown wherever our Etsy index has it."
   icon={Search}
   credits={1}
 >
@@ -96,7 +123,37 @@
     </div>
   {/if}
 
-  {#if hasSearched && keywords.length}
+  {#if loading}
+    <div class="animate-fade-in">
+      <Skeleton width="40%" height="1.25rem" />
+      <div class="mt-5 overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="w-9"></th>
+              <th>Keyword</th>
+              <th class="text-right">Volume</th>
+              <th>Competition</th>
+              <th class="text-right">CPC</th>
+              <th class="text-right">Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each Array(8) as _, i (i)}
+              <tr>
+                <td></td>
+                <td><Skeleton width="70%" /></td>
+                <td><Skeleton width="60%" /></td>
+                <td><Skeleton width="50%" /></td>
+                <td><Skeleton width="50%" /></td>
+                <td><Skeleton width="50%" /></td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {:else if hasSearched && keywords.length}
     <div class="animate-fade-in">
       <div class="flex items-start justify-between gap-4 mb-5">
         <div>
@@ -104,41 +161,65 @@
           <h2 class="text-lg font-semibold tracking-tight text-text-primary mb-1">{keywords.length} to consider</h2>
           <p class="lead text-sm">Tick the ones that fit, then copy them across to your listing.</p>
         </div>
-        <button
-          type="button"
-          onclick={copyKws}
-          disabled={!selectedKws.length}
-          class="copy-link shrink-0 pt-1 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {#if copied}<Check size={13} class="text-success" /> Copied{:else}<Copy size={13} /> Copy{selectedKws.length ? ` (${selectedKws.length})` : ""}{/if}
-        </button>
+        <div class="flex items-center gap-4 shrink-0 pt-1">
+          <button
+            type="button"
+            onclick={copyKws}
+            disabled={!selectedKws.length}
+            class="copy-link disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {#if copied}<Check size={13} class="text-success" /> Copied{:else}<Copy size={13} /> Copy{selectedKws.length ? ` (${selectedKws.length})` : ""}{/if}
+          </button>
+          <SaveToListMenu
+            items={saveRows}
+            label={selectedKws.length ? "Save selected" : "Save all"}
+            disabled={!keywords.length}
+          />
+        </div>
       </div>
 
-      <p class="text-[0.8125rem] text-text-secondary mb-4 inline-flex items-center gap-2">
-        Volume, CPC and trend are <EstimatedBadge label="Estimated" tooltip="These signals are estimated, not official Etsy figures." />
+      <p class="text-[0.8125rem] text-text-secondary mb-2 inline-flex items-center gap-2 flex-wrap">
+        Volume, CPC and trend are <EstimatedBadge label="Estimated" method="Volume, CPC and trend are relative AI estimates, not official Etsy data." />
+        · rows we've measured show <RealDataBadge label="demand" tooltip="Real 0-100 demand measured by VieRank's Etsy index — not an estimate." />
+      </p>
+      <p class="text-[0.75rem] text-text-muted mb-4">
+        Tagged <span class="text-success font-medium">long-tail</span> / <span class="text-warning font-medium">broad</span> per
+        <a href="https://www.etsy.com/seller-handbook/article/22794885498" target="_blank" rel="noopener" class="copy-link !text-text-muted hover:!text-teal">Etsy's keyword guidance ↗</a> — specific long-tail phrases convert better than broad single words.
       </p>
 
       <div class="overflow-x-auto">
-        <table class="w-full">
+        <table class="data-table">
           <thead>
-            <tr class="border-b border-border">
-              <th class="w-9 py-2.5"></th>
-              <th class="text-left py-2.5 text-[0.8125rem] font-medium text-text-secondary">Keyword</th>
-              <th class="text-right py-2.5 text-[0.8125rem] font-medium text-text-secondary pr-4">Volume</th>
-              <th class="text-left py-2.5 text-[0.8125rem] font-medium text-text-secondary">Competition</th>
-              <th class="text-right py-2.5 text-[0.8125rem] font-medium text-text-secondary pr-4">CPC</th>
-              <th class="text-right py-2.5 text-[0.8125rem] font-medium text-text-secondary">Trend</th>
+            <tr>
+              <th class="w-9"></th>
+              <th>Keyword</th>
+              <th class="text-right">Volume</th>
+              <th>Competition</th>
+              <th class="text-right">CPC</th>
+              <th class="text-right">Trend</th>
             </tr>
           </thead>
           <tbody>
-            {#each keywords as kw (kw.keyword)}
-              <tr class="border-b border-border-light hover:bg-bg-page/50 transition-colors cursor-pointer" onclick={() => toggleKw(kw.keyword)}>
-                <td class="py-3"><input type="checkbox" checked={selectedKws.includes(kw.keyword)} onchange={() => toggleKw(kw.keyword)} onclick={(e) => e.stopPropagation()} class="w-4 h-4 rounded border-border accent-teal cursor-pointer" /></td>
-                <td class="py-3 text-[0.9375rem] text-text-primary">{kw.keyword}</td>
-                <td class="py-3 text-sm text-right text-text-primary tabular-nums pr-4">{kw.volume.toLocaleString()}</td>
-                <td class="py-3"><Badge level={kw.competition} /></td>
-                <td class="py-3 text-sm text-right text-text-secondary tabular-nums pr-4">{kw.cpc}</td>
-                <td class="py-3 text-sm text-right font-medium text-success tabular-nums">{kw.trend}</td>
+            {#each keywords as kw, i (kw.keyword + "-" + i)}
+              <tr class="cursor-pointer" onclick={() => toggleKw(kw.keyword)}>
+                <td><input type="checkbox" checked={selectedKws.includes(kw.keyword)} onchange={() => toggleKw(kw.keyword)} onclick={(e) => e.stopPropagation()} class="w-4 h-4 rounded border-border accent-teal cursor-pointer" /></td>
+                <td class="text-[0.9375rem] text-text-primary">
+                  <span class="inline-flex items-center gap-2 flex-wrap">
+                    {kw.keyword}
+                    {#if kw.broad}
+                      <span class="rounded text-[0.6875rem] font-medium text-warning bg-warning/10 px-1.5 py-0.5">broad</span>
+                    {:else if kw.longTail}
+                      <span class="rounded text-[0.6875rem] font-medium text-success bg-success/10 px-1.5 py-0.5">long-tail</span>
+                    {/if}
+                    {#if kw.real}
+                      <RealDataBadge label={`demand ${kw.realDemand}`} tooltip="Real 0-100 demand measured by VieRank's Etsy index — not an estimate." />
+                    {/if}
+                  </span>
+                </td>
+                <td class="text-right text-text-primary tabular-nums">{kw.volume.toLocaleString()}</td>
+                <td><Badge level={kw.real && kw.realCompetition ? kw.realCompetition : kw.competition} /></td>
+                <td class="text-right text-text-secondary tabular-nums">{kw.cpc}</td>
+                <td class="text-right font-medium tabular-nums" style="color: {trendColor(kw.trend)}">{kw.trend}</td>
               </tr>
             {/each}
           </tbody>

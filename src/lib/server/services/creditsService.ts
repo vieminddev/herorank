@@ -39,7 +39,16 @@ export class UnknownToolError extends Error {
 export interface CreditsService {
   getBalance(userId: string): Promise<number>;
   grantPlanCredits(userId: string, plan: PlanSlug, ref?: string): Promise<{ balance: number }>;
-  spendCredits(userId: string, tool: string, ref?: string): Promise<{ balance: number }>;
+  /**
+   * Spend credits for a tool invocation. `units` multiplies the tool's per-unit cost (default 1) —
+   * used by tools billed per output, e.g. AI Image Studio charges per image generated (5 × n).
+   */
+  spendCredits(userId: string, tool: string, ref?: string, units?: number): Promise<{ balance: number }>;
+  /**
+   * Refund `amount` credits to a user (e.g. an async job that was charged on submit then failed).
+   * Idempotent per `ref` (BR-010): the same failure ref refunds at most once. Returns the balance.
+   */
+  refundCredits(userId: string, amount: number, ref: string, reason?: string): Promise<{ balance: number }>;
 }
 
 /**
@@ -80,14 +89,16 @@ export function createCreditsService(repo: CreditsRepo): CreditsService {
 
     /**
      * Spend credits for a tool invocation. Atomic + race-safe (BR-008/009).
-     * Throws InsufficientCreditsError if balance < cost.
+     * `units` (default 1) multiplies the per-unit cost — for per-output billing (e.g. image studio
+     * charges 5 × number of images). Throws InsufficientCreditsError if balance < total cost.
      * Throws UnknownToolError if the tool is not priced.
      */
-    async spendCredits(userId, tool, ref) {
-      const cost = getToolCost(tool);
-      if (cost === undefined) {
+    async spendCredits(userId, tool, ref, units = 1) {
+      const unitCost = getToolCost(tool);
+      if (unitCost === undefined) {
         throw new UnknownToolError(tool);
       }
+      const cost = unitCost * Math.max(1, Math.floor(units));
 
       const reason = `spend:${tool}`;
       const spendRef = ref ?? tool;
@@ -97,6 +108,18 @@ export function createCreditsService(repo: CreditsRepo): CreditsService {
         throw new InsufficientCreditsError(result.balance);
       }
       return { balance: result.balance };
+    },
+
+    /**
+     * Refund credits (positive ledger row). Idempotent per `ref`: if the ref was already used,
+     * returns the current balance without refunding again — so a webhook retry can't double-refund.
+     */
+    async refundCredits(userId, amount, ref, reason = 'refund') {
+      const exists = await repo.hasLedgerRef(userId, ref);
+      if (exists) {
+        return { balance: await repo.sumLedger(userId) };
+      }
+      return repo.grant({ userId, plan: 'refund', amount, reason, ref });
     },
   };
 }

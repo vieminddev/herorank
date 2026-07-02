@@ -9,7 +9,7 @@
  * matching the convention in tests/credits.test.ts.
  */
 import { describe, it, expect } from 'vitest';
-import { escapeHtml, renderBold } from '../src/lib/sanitize';
+import { escapeHtml, renderBold, renderChatMarkdown } from '../src/lib/sanitize';
 
 describe('escapeHtml', () => {
   it('escapes the five HTML-significant characters', () => {
@@ -73,5 +73,43 @@ describe('renderBold', () => {
   it('escapes quotes and ampersands inside bold content', () => {
     const out = renderBold('**"a" & \'b\'**');
     expect(out).toBe('<strong>&quot;a&quot; &amp; &#39;b&#39;</strong>');
+  });
+});
+
+describe('renderChatMarkdown', () => {
+  it('joins plain lines with <br> (no pre-wrap needed)', () => {
+    expect(renderChatMarkdown('Hello\nWorld')).toBe('Hello<br>World');
+  });
+
+  it('groups consecutive dash/bullet lines into a single <ul>', () => {
+    expect(renderChatMarkdown('- a\n- b')).toBe('<ul><li>a</li><li>b</li></ul>');
+    expect(renderChatMarkdown('• a\n* b')).toBe('<ul><li>a</li><li>b</li></ul>');
+  });
+
+  it('groups numbered lines into an <ol>', () => {
+    expect(renderChatMarkdown('1. first\n2. second')).toBe('<ol><li>first</li><li>second</li></ol>');
+  });
+
+  it('mixes a heading line then a list', () => {
+    expect(renderChatMarkdown('Tags:\n- a\n- b')).toBe('Tags:<ul><li>a</li><li>b</li></ul>');
+  });
+
+  it('keeps bold inside list items', () => {
+    expect(renderChatMarkdown('- **a** b')).toBe('<ul><li><strong>a</strong> b</li></ul>');
+  });
+
+  it('switches list type when bullets follow numbers', () => {
+    expect(renderChatMarkdown('1. a\n- b')).toBe('<ol><li>a</li></ol><ul><li>b</li></ul>');
+  });
+
+  it('still escapes HTML (no live markup from the model)', () => {
+    expect(renderChatMarkdown('- <img src=x onerror=alert(1)>')).toBe(
+      '<ul><li>&lt;img src=x onerror=alert(1)&gt;</li></ul>'
+    );
+    expect(renderChatMarkdown('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  it('preserves blank lines between paragraphs as <br><br>', () => {
+    expect(renderChatMarkdown('a\n\nb')).toBe('a<br><br>b');
   });
 });

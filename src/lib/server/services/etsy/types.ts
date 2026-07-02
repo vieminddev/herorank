@@ -49,13 +49,63 @@ export interface EtsyListing {
   quantity?: number; // current stock, not units sold
   created_timestamp?: number; // epoch seconds
   shop_id?: number;
+  /** Present only when requested via includes=Shop — carries the human-readable shop name. */
+  shop?: { shop_id?: number; shop_name?: string };
   url?: string;
   state?: string;
   taxonomy_id?: number;
+  /** Lifetime view count — REAL, public on the listing object. Powers conversion + traffic signals. */
+  views?: number;
+  /** Etsy/shop "featured" rank; -1 = not featured. */
+  featured_rank?: number;
+  /** Min/max processing (handling) days before ship — a known Etsy ranking factor. */
+  processing_min?: number;
+  processing_max?: number;
+  /** Handmade-marketplace attributes (SEO + filter eligibility). */
+  who_made?: string; // 'i_did' | 'someone_else' | 'collective'
+  when_made?: string; // e.g. 'made_to_order', '2020_2025', 'vintage'
+  materials?: string[];
+  style?: string[];
+  /** True when the listing has variations (drives the inventory/offerings analysis). */
+  has_variations?: boolean;
+  is_personalizable?: boolean;
+  is_customizable?: boolean;
+  shop_section_id?: number;
+  /** Present only when requested via includes=Inventory — variation pricing/SKU + attributes. */
+  inventory?: EtsyInventory;
   /** Present only when requested via includes=Images. */
   images?: EtsyImage[];
   /** Present only when requested via includes=Videos — binary "has video" signal. */
   videos?: Array<{ video_id: number }>;
+}
+
+/** A single attribute value filled on a listing/product (e.g. Color → "Black & White"). */
+export interface EtsyPropertyValue {
+  property_id: number;
+  property_name?: string;
+  scale_id?: number | null;
+  scale_name?: string | null;
+  value_ids?: number[];
+  values?: string[];
+}
+
+/** A purchasable variation: its own price/quantity (offerings) + the attribute values it represents. */
+export interface EtsyInventoryProduct {
+  product_id?: number;
+  sku?: string;
+  is_deleted?: boolean;
+  offerings?: Array<{
+    offering_id?: number;
+    quantity?: number;
+    is_enabled?: boolean;
+    is_deleted?: boolean;
+    price?: EtsyMoney;
+  }>;
+  property_values?: EtsyPropertyValue[];
+}
+
+export interface EtsyInventory {
+  products?: EtsyInventoryProduct[];
 }
 
 /** A paginated listing search/scan result. `count` is the TOTAL matches (competition proxy). */
@@ -111,6 +161,28 @@ export interface EtsyTaxonomyNode {
   children?: EtsyTaxonomyNode[];
 }
 
+/** An attribute a category supports (e.g. "Primary color", "Gemstone type") + its allowed values. */
+export interface EtsyTaxonomyProperty {
+  property_id: number;
+  name: string;
+  display_name?: string;
+  /** Whether sellers must fill it. */
+  is_required?: boolean;
+  /** Allowed values (when the property is an enumerated list). */
+  possible_values?: Array<{ value_id?: number; name: string }>;
+  /** Measurement scales (e.g. Inches/Centimeters) for dimensional properties. */
+  scales?: Array<{ scale_id?: number; display_name: string }>;
+  supports_variations?: boolean;
+}
+
+/** How a shop organizes its catalog into navigable sections. */
+export interface EtsyShopSection {
+  shop_section_id: number;
+  title: string;
+  rank?: number;
+  active_listing_count?: number;
+}
+
 // ---------------------------------------------------------------------------
 // 2. EtsyClient interface (real + mock implement this) — spec §1.2
 // ---------------------------------------------------------------------------
@@ -130,7 +202,7 @@ export interface EtsyClient {
   findActiveListings(p: FindActiveListingsParams): Promise<EtsyListingPage>;
   getListing(
     listingId: number,
-    opts?: { includes?: ('Images' | 'Shop' | 'Tags' | 'Videos')[] }
+    opts?: { includes?: ('Images' | 'Shop' | 'Tags' | 'Videos' | 'Inventory' | 'User')[] }
   ): Promise<EtsyListing>;
   getListingsByListingIds(ids: number[], opts?: { includes?: string[] }): Promise<EtsyListing[]>;
   getListingImages(listingId: number): Promise<EtsyImage[]>;
@@ -149,6 +221,12 @@ export interface EtsyClient {
     p?: { limit?: number; offset?: number }
   ): Promise<EtsyReviewPage>;
   getSellerTaxonomyNodes(): Promise<EtsyTaxonomyNode[]>;
+  /** Attribute catalog a category supports (drives attribute-gap analysis). */
+  getTaxonomyProperties(taxonomyId: number): Promise<EtsyTaxonomyProperty[]>;
+  /** How a shop organizes its catalog into sections. */
+  getShopSections(shopId: number): Promise<EtsyShopSection[]>;
+  /** Listings a shop chose to feature (signal of its self-identified best-sellers). */
+  getFeaturedListings(shopId: number, p?: { limit?: number }): Promise<EtsyListingPage>;
 }
 
 // ---------------------------------------------------------------------------
@@ -250,9 +328,10 @@ export interface ShopAnalyzerResponse extends ToolMeta {
     reviewRate: string; // estimated
     monthlySales: number; // estimated
     monthlyRevenue: string; // estimated
-    totalSales: number; // estimated
-    totalRevenue: string; // estimated
+    totalSales: number; // REAL (transaction_sold_count) when salesReal, else estimated
+    totalRevenue: string; // estimated (totalSales × avg price)
     salesPerListing: number; // estimated
+    salesReal: boolean; // true → totalSales is Etsy's real lifetime count, not an estimate
   };
   tags: Array<{ name: string; count: number }>; // real (aggregated, top 60)
   categories: Array<{ name: string; count: number }>; // real (taxonomy-name mix, top 60)
@@ -287,6 +366,9 @@ export interface RankCheckResponse extends ToolMeta {
   estimated: { position: true };
 }
 
+/** Composite signal combining demand + competition into a single actionable label. */
+export type OpportunityLabel = 'sweet-spot' | 'promising' | 'competitive' | 'low-traffic';
+
 export interface NicheRow {
   niche: string;
   competition: CompetitionLabel; // real-ish (result-count)
@@ -294,6 +376,7 @@ export interface NicheRow {
   avgPrice: string; // real (computed)
   listings: number; // real (count)
   growth: string; // estimated; '—' until history
+  opportunity: OpportunityLabel; // derived from demand + competition
   estimated: { demand: true; growth: true };
 }
 
@@ -313,6 +396,12 @@ export interface BestSellerRow {
   listings: number;
   faves: number;
   sales: number; // estimated (review-velocity)
+  /** REAL lifetime sales (transaction_sold_count) — public, not estimated. */
+  soldCount?: number;
+  /** REAL sales velocity (Δ transaction_sold_count per week) from shop_pulse. null until 2+ snapshots. */
+  soldPerWeek?: number | null;
+  /** Confidence of soldPerWeek by snapshot span: 'building' (<2 pts) | 'low' | 'medium' | 'high'. */
+  soldVelocityConfidence?: 'building' | 'low' | 'medium' | 'high';
 }
 
 /** POST /api/tools/best-sellers — cron-built cache (Q11: cost 1). */
@@ -325,12 +414,36 @@ export interface BestSellersResponse extends ToolMeta {
   estimated: { sales: true; ranking: true };
 }
 
+/**
+ * Predictive trend forecast for a keyword (the competitive differentiator). Always a labelled
+ * FORECAST, never a guarantee — confidence scales with how much recorded history exists.
+ */
+export type TrendSignal = 'rising' | 'cooling' | 'steady' | 'volatile' | 'building';
+export interface TrendForecast {
+  signal: TrendSignal;
+  projectedIndex: number | null; // 0-100 projected next-week demand; null while 'building'
+  slopePerWeek: number; // demand-index points/week (linear-regression slope)
+  confidence: 'low' | 'medium' | 'high';
+  basedOn: number; // number of history points the forecast used
+}
+
 export interface TrendRow {
   keyword: string;
   category: string;
   demandIndex: number; // 0-100 — replaces fabricated "searches" (PM Q9)
   trend: TrendDirection;
   change: string; // '+12%' | '—'
+  /** Predictive next-week forecast (BR differentiator). Optional: enriched per-request. */
+  forecast?: TrendForecast;
+  /** Nhịp A pulse fields (cron-captured market snapshot). All optional/back-compat. */
+  priceMedian?: number | null; // cents
+  priceP25?: number | null;
+  priceP75?: number | null;
+  medianViews?: number | null;
+  hasVariationsPct?: number | null; // 0-100
+  newListings7d?: number | null; // sampled new-entrant velocity (saturation speed)
+  /** Whitespace opportunity score 0-100: high demand vs low supply/entry-velocity. */
+  whitespace?: number | null;
   estimated: { demandIndex: true; change: true };
 }
 
@@ -351,6 +464,11 @@ export interface BuyerCheckResponse extends ToolMeta {
   positivePct: number; // % reviews >= 4 stars (real)
   accountAgeYears: number; // real
   riskLevel: RiskLevel; // estimated
-  reviews: Array<{ product: string; rating: number; text: string; date: string }>;
+  reviews: Array<{ product: string; listingId?: number; rating: number; text: string; date: string }>;
+  reviewsSampled: number;
+  rawFetched?: number;
+  complaints: Array<{ key: string; label: string; count: number; pct: number; recentCount: number }>;
+  ratingTrend: { recentAvg: number; delta: number; direction: 'improving' | 'declining' | 'stable'; sampleSize: number };
+  authenticity: { noTextPct: number; shortTextPct: number; suspiciousBurst: boolean; burstCount?: number };
   estimated: { riskLevel: true };
 }

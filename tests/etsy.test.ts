@@ -287,7 +287,7 @@ describe('createEtsyCache', () => {
     const kv = makeKV();
     const cache = createEtsyCache(kv);
     const t0 = 1_000_000_000_000;
-    await cache.put('k', { v: 1 }, 100, t0); // soft 100s, hard 200s
+    await cache.put('k', { v: 1 }, 100, { now: t0 }); // soft 100s, hard 200s
     // 150s later → past soft, within hard → stale (still readable).
     const stale = await cache.get<{ v: number }>('k', t0 + 150_000);
     expect(stale?.fresh).toBe(false);
@@ -506,14 +506,50 @@ describe('refresh service functions', () => {
     expect(res.processed).toBe(1);
     expect(res.deferred).toBeGreaterThan(0);
   });
+
+  it('cron refresh paces every physical Etsy call through the RPS throttle (≤ 5 RPS)', async () => {
+    // End-to-end proof that the cron path (refreshTrends → client.findActiveListings) never bursts
+    // past env.ETSY_RPS: with rps=5 each physical request must start ≥ 200ms after the previous.
+    const { refreshTrends } = await import('../src/lib/server/services/etsy/refresh');
+    let nowMs = 0;
+    const startTimes: number[] = [];
+    const fetchImpl = (async () => {
+      startTimes.push(nowMs);
+      return new Response(JSON.stringify({ count: 10, results: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+    const client = createEtsyClient({
+      apiKey: 'k',
+      rps: 5, // → 200ms min spacing
+      fetchImpl,
+      sleepImpl: async (ms: number) => {
+        nowMs += ms;
+      },
+      nowImpl: () => nowMs,
+    });
+    const cache = createEtsyCache(makeKV());
+    const { db } = makeD1();
+    const history = createKeywordHistory(db);
+
+    const seeds = [{ name: 'Jewelry', taxonomyId: 1199, keywords: ['a', 'b', 'c', 'd'] }];
+    const res = await refreshTrends({ client, cache, history }, seeds);
+
+    expect(res.processed).toBe(4);
+    expect(startTimes).toEqual([0, 200, 400, 600]); // strictly ≤ 5 requests/sec
+  });
 });
 
 describe('etsy-tools router registration', () => {
+  // Dynamically imports the (very large) etsy-tools router — its first-time transform under full
+  // parallel-suite load can exceed the 5s default. Give it a realistic timeout; this is a
+  // module-transform cost, not a logic delay.
   it('default-exports a Hono router (mountable by tools.ts)', async () => {
     const mod = await import('../src/lib/server/api/routes/etsy-tools');
     expect(mod.default).toBeTruthy();
     expect(typeof mod.default.request).toBe('function');
-  });
+  }, 20000);
 });
 
 void normalize;

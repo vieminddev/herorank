@@ -1,6 +1,9 @@
 <script lang="ts">
   import { Sprout, ShieldCheck, Lock, Eye, Trash2, ArrowRight, Info } from "lucide-svelte";
+  import MarketingNav from "$lib/components/marketing/MarketingNav.svelte";
+  import MarketingFooter from "$lib/components/marketing/MarketingFooter.svelte";
 </script>
+
 
 <svelte:head>
   <title>Privacy Policy — VieRank</title>
@@ -8,22 +11,7 @@
 </svelte:head>
 
 <div class="lp min-h-screen bg-[#f7f9f8] text-text-primary overflow-hidden">
-  <!-- Navigation Header -->
-  <nav class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-border">
-    <div class="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
-      <a href="/" class="flex items-center gap-2.5 group">
-        <span class="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" style="background: var(--teal)">
-          <Sprout size={18} class="text-white" />
-        </span>
-        <span class="text-xl font-semibold tracking-tight">VieRank</span>
-      </a>
-      <div class="flex items-center gap-2">
-        <a href="/pricing" class="px-3 py-2 text-sm font-medium text-text-secondary hover:text-teal transition-colors">Pricing</a>
-        <a href="/auth/login" class="px-3 py-2 text-sm font-medium text-text-secondary hover:text-teal transition-colors">Log in</a>
-        <a href="/auth/signup" class="btn btn-primary btn-glow !py-2 !px-5 text-sm">Start free</a>
-      </div>
-    </div>
-  </nav>
+  <MarketingNav />
 
   <!-- Header Section -->
   <section class="relative overflow-hidden pt-20 pb-16 bg-white border-b border-border">
@@ -72,7 +60,7 @@
             <strong>Etsy Catalog Data:</strong> We access listing titles, descriptions, categories, tags, images, and prices to calculate optimization suggestions.
           </li>
           <li>
-            <strong>Anonymized Calibration Data:</strong> We retrieve transaction and review numbers to calibrate our global sales estimates. This data is aggregated and anonymized immediately; individual transactions are never saved.
+            <strong>Market & Calibration Data:</strong> We retrieve public, shop-level counters (such as sales and review counts) to calibrate our estimates and to build aggregate trend and sales-velocity history. We store these public shop-level metrics over time to power analytics features; we never save individual buyer transactions or personal buyer information.
           </li>
         </ul>
       </div>
@@ -87,13 +75,19 @@
         </p>
         <ul class="list-disc pl-6 space-y-2">
           <li>
-            <strong>Read-Only Scopes by Default:</strong> We request only the minimal permissions required to read and edit your listing drafts. We never request permission to edit your billing, financial, or payout data.
+            <strong>Minimal, Read-Only by Default:</strong> We request read-only access by default. Write access — to save listing edits or create drafts — is optional and only requested if you explicitly opt in, and is used only for changes you trigger. We never request permission to edit your billing, financial, or payout data.
           </li>
           <li>
             <strong>Token Encryption:</strong> Etsy OAuth refresh tokens are encrypted at rest using AES-256 before being stored in our database.
           </li>
           <li>
             <strong>No Selling of Data:</strong> We do not sell, rent, or trade your personal or shop data to third-party advertising companies. Your data is used exclusively to power the VieRank suite.
+          </li>
+          <li>
+            <strong>Data Roles:</strong> When you connect Etsy, you are the data controller and VieRank acts as the data processor for the shop content we access on your behalf. We process it solely to provide the services you request, in accordance with this Policy and applicable privacy laws.
+          </li>
+          <li>
+            <strong>Caching &amp; Retention:</strong> We cache Etsy data only as long as reasonably necessary to run the Service, and refresh it in line with Etsy's freshness requirements — listing content within 6 hours, and other Etsy content within 24 hours. Aggregated market metrics we derive are retained to power analytics features and are pruned under our retention schedule.
           </li>
         </ul>
       </div>
@@ -111,7 +105,7 @@
             <strong>Disconnect Anytime:</strong> You can disconnect your shop at any point under the **Settings > Connections** panel in your dashboard. Disconnecting instantly revokes the OAuth token and deletes local shop cache metadata.
           </li>
           <li>
-            <strong>Etsy Direct Revocation:</strong> You can also revoke our app access directly from your Etsy account settings under the "Apps" tab.
+            <strong>Etsy Direct Revocation:</strong> You can also revoke VieRank's access to your Etsy data at any time by visiting <a href="https://www.etsy.com/your/apps" class="text-teal font-semibold" target="_blank" rel="noopener noreferrer">etsy.com/your/apps</a>.
           </li>
           <li>
             <strong>Data Erasure (Account Deletion):</strong> You may request the full deletion of your account and all associated tokens and metadata. We commit to executing data erasure requests within 7 business days.
@@ -133,6 +127,44 @@
       </div>
 
       <!-- Section 5 -->
+      <div class="space-y-4">
+        <h2 class="text-lg font-bold text-text-primary flex items-center gap-2">
+          <ShieldCheck size={16} class="text-teal" /> 5. Third-Party Service Providers
+        </h2>
+        <p>
+          VieRank relies on a small set of trusted processors to run the Service. They only receive the
+          data needed for their function, and never your Etsy OAuth tokens:
+        </p>
+        <ul class="list-disc pl-6 space-y-2">
+          <li>
+            <strong>AI / model provider:</strong> when you use a generation or analysis tool (titles, tags,
+            descriptions, the VieRank Assistant), the text you submit — and for image/video tools, your
+            prompts and any reference images — is sent to our AI provider to produce the result. It is used
+            only to generate your output, not to train models on your behalf.
+          </li>
+          <li>
+            <strong>Payments — Stripe:</strong> billing and card processing. Your full card details go
+            directly to Stripe and are never stored on our servers.
+          </li>
+          <li>
+            <strong>Email — Resend:</strong> transactional emails (verification, password reset, alerts).
+          </li>
+          <li>
+            <strong>Sign-in with Google (optional):</strong> if you choose Google login, Google confirms
+            your identity; we receive only your email and basic profile.
+          </li>
+          <li>
+            <strong>Infrastructure — Cloudflare:</strong> hosting, database, and storage. Data is processed
+            on Cloudflare's edge network.
+          </li>
+        </ul>
+        <p>
+          We do not sell your data, and we require every provider to handle it under appropriate
+          confidentiality and data-protection terms.
+        </p>
+      </div>
+
+      <!-- Contact -->
       <div class="space-y-4 pt-6 border-t border-border-light">
         <h2 class="text-sm font-bold text-text-primary">Contact Us</h2>
         <p class="text-xs text-text-secondary leading-relaxed">
@@ -143,22 +175,5 @@
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="border-t border-border py-12 px-6 bg-white relative z-20">
-    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-2.5">
-        <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--teal)">
-          <Sprout size={15} class="text-white" />
-        </span>
-        <span class="text-lg font-semibold tracking-tight">VieRank</span>
-      </div>
-      <div class="flex items-center gap-6 text-sm text-text-muted font-medium">
-        <a href="/pricing" class="hover:text-text-primary transition-colors">Pricing</a>
-        <a href="/auth/login" class="hover:text-text-primary transition-colors">Log in</a>
-        <a href="/privacy" class="text-teal hover:text-teal-dark transition-colors">Privacy</a>
-        <a href="/terms" class="hover:text-text-primary transition-colors">Terms</a>
-      </div>
-      <p class="text-xs text-text-muted font-medium">© 2026 VieRank. The term "Etsy" is a trademark of Etsy, Inc. This Application uses Etsy's API, but is not endorsed or certified by Etsy.</p>
-    </div>
-  </footer>
+  <MarketingFooter />
 </div>

@@ -8,8 +8,9 @@
  * Token security (BR-P4-OAUTH-03): tokens are stored ENCRYPTED. This repo takes a `TokenCipher`
  * (from `crypto.ts`) and encrypts on write / decrypts on read — callers never touch ciphertext.
  *
- * 1 shop/user (v1, PM decision): `connected_shops.user_id` is the PRIMARY KEY, so upsert
- * (INSERT … ON CONFLICT(user_id) DO UPDATE) enforces exactly one connected shop per user.
+ * Multi-shop (migration 0015): a user can connect MANY Etsy shops. The table is keyed on
+ * (user_id, etsy_shop_id) with an `is_primary` flag (the default shop a tool uses when none is
+ * selected). `upsertShop` adds/updates a shop; the first shop a user connects becomes primary.
  */
 import type { D1Database } from '@cloudflare/workers-types';
 import type { TokenCipher } from './crypto';
@@ -38,6 +39,7 @@ export interface ConnectedShop {
   scopes: string;
   connectedAt: number;
   lastCalibratedAt: number | null;
+  isPrimary: boolean;
 }
 
 export interface ConnectedShopUpsert {
@@ -58,20 +60,29 @@ export interface ConnectedShopRepo {
   pruneStates(olderThanSec?: number): Promise<void>;
 
   // connected_shops
+  /** Add/refresh a shop. The user's FIRST shop becomes primary; reconnecting a shop keeps its flag. */
   upsertShop(input: ConnectedShopUpsert): Promise<void>;
-  /** Decrypted shop for a user, or null if not connected. */
-  getShop(userId: string): Promise<ConnectedShop | null>;
-  /** All decrypted shops for a user (Etsy-write flow `connected`; supports ?shopId selection). */
+  /** A specific shop (when `etsyShopId` given) or the user's PRIMARY shop, or null if none connected. */
+  getShop(userId: string, etsyShopId?: number): Promise<ConnectedShop | null>;
+  /** The user's primary (default) shop, or null. */
+  getPrimary(userId: string): Promise<ConnectedShop | null>;
+  /** All decrypted shops for a user (primary first). */
   listForUser(userId: string): Promise<ConnectedShop[]>;
   /** Decrypted shop by its Etsy shop id (Etsy-write flow `resolveShop`), or null. */
   getShopByEtsyId(etsyShopId: number): Promise<ConnectedShop | null>;
   /** All connected shops (decrypted) — used by the calibration job. */
   listShops(): Promise<ConnectedShop[]>;
-  deleteShop(userId: string): Promise<void>;
-  markCalibrated(userId: string, at: number): Promise<void>;
-  /** Persist refreshed tokens (encrypts) after a proactive refresh. */
+  /** Make `etsyShopId` the user's primary (clears the previous primary). */
+  setPrimary(userId: string, etsyShopId: number): Promise<void>;
+  /** Disconnect ONE shop; if it was primary, promote the most recent remaining shop. */
+  deleteShop(userId: string, etsyShopId: number): Promise<void>;
+  /** Disconnect ALL of a user's shops (GDPR delete). */
+  deleteAllForUser(userId: string): Promise<void>;
+  markCalibrated(userId: string, etsyShopId: number, at: number): Promise<void>;
+  /** Persist refreshed tokens (encrypts) after a proactive refresh, for one shop. */
   updateTokens(input: {
     userId: string;
+    etsyShopId: number;
     accessToken: string;
     refreshToken: string;
     tokenExpiresAt: number;
@@ -90,7 +101,17 @@ export function createConnectedShopRepo(db: D1Database, cipher: TokenCipher): Co
       scopes: row.scopes,
       connectedAt: row.connected_at,
       lastCalibratedAt: row.last_calibrated_at,
+      isPrimary: row.is_primary === 1,
     };
+  }
+
+  // Primary first; fall back to the most recently connected shop if none is flagged primary.
+  async function primaryFor(userId: string): Promise<ConnectedShop | null> {
+    const row = await db
+      .prepare(SHOP_SELECT + ' WHERE user_id = ? ORDER BY is_primary DESC, connected_at DESC LIMIT 1')
+      .bind(userId)
+      .first<RawShopRow>();
+    return row ? decryptRow(row) : null;
   }
 
   return {
@@ -124,13 +145,19 @@ export function createConnectedShopRepo(db: D1Database, cipher: TokenCipher): Co
     async upsertShop(input) {
       const accessEnc = await cipher.encrypt(input.accessToken);
       const refreshEnc = await cipher.encrypt(input.refreshToken);
+      // The user's first shop is primary; additional shops default to non-primary. Reconnecting an
+      // existing shop keeps its current is_primary (ON CONFLICT doesn't touch the flag).
+      const existing = await db
+        .prepare('SELECT COUNT(*) AS n FROM connected_shops WHERE user_id = ? AND is_primary = 1')
+        .bind(input.userId)
+        .first<{ n: number }>();
+      const isPrimary = (existing?.n ?? 0) === 0 ? 1 : 0;
       await db
         .prepare(
           'INSERT INTO connected_shops ' +
-            '(user_id, etsy_shop_id, shop_name, access_token_enc, refresh_token_enc, token_expires_at, scopes) ' +
-            'VALUES (?, ?, ?, ?, ?, ?, ?) ' +
-            'ON CONFLICT(user_id) DO UPDATE SET ' +
-            'etsy_shop_id = excluded.etsy_shop_id, ' +
+            '(user_id, etsy_shop_id, shop_name, access_token_enc, refresh_token_enc, token_expires_at, scopes, is_primary) ' +
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?) ' +
+            'ON CONFLICT(user_id, etsy_shop_id) DO UPDATE SET ' +
             'shop_name = excluded.shop_name, ' +
             'access_token_enc = excluded.access_token_enc, ' +
             'refresh_token_enc = excluded.refresh_token_enc, ' +
@@ -144,22 +171,30 @@ export function createConnectedShopRepo(db: D1Database, cipher: TokenCipher): Co
           accessEnc,
           refreshEnc,
           input.tokenExpiresAt,
-          input.scopes
+          input.scopes,
+          isPrimary
         )
         .run();
     },
 
-    async getShop(userId) {
-      const row = await db
-        .prepare(SHOP_SELECT + ' WHERE user_id = ?')
-        .bind(userId)
-        .first<RawShopRow>();
-      return row ? decryptRow(row) : null;
+    async getShop(userId, etsyShopId) {
+      if (etsyShopId !== undefined) {
+        const row = await db
+          .prepare(SHOP_SELECT + ' WHERE user_id = ? AND etsy_shop_id = ?')
+          .bind(userId, etsyShopId)
+          .first<RawShopRow>();
+        return row ? decryptRow(row) : null;
+      }
+      return primaryFor(userId);
+    },
+
+    async getPrimary(userId) {
+      return primaryFor(userId);
     },
 
     async listForUser(userId) {
       const res = await db
-        .prepare(SHOP_SELECT + ' WHERE user_id = ?')
+        .prepare(SHOP_SELECT + ' WHERE user_id = ? ORDER BY is_primary DESC, connected_at DESC')
         .bind(userId)
         .all<RawShopRow>();
       const rows = res.results ?? [];
@@ -180,26 +215,59 @@ export function createConnectedShopRepo(db: D1Database, cipher: TokenCipher): Co
       return Promise.all(rows.map(decryptRow));
     },
 
-    async deleteShop(userId) {
-      await db.prepare('DELETE FROM connected_shops WHERE user_id = ?').bind(userId).run();
-    },
-
-    async markCalibrated(userId, at) {
+    async setPrimary(userId, etsyShopId) {
+      // Two steps so the partial-unique (one primary/user) index is never transiently violated.
+      await db.prepare('UPDATE connected_shops SET is_primary = 0 WHERE user_id = ?').bind(userId).run();
       await db
-        .prepare('UPDATE connected_shops SET last_calibrated_at = ? WHERE user_id = ?')
-        .bind(at, userId)
+        .prepare('UPDATE connected_shops SET is_primary = 1 WHERE user_id = ? AND etsy_shop_id = ?')
+        .bind(userId, etsyShopId)
         .run();
     },
 
-    async updateTokens({ userId, accessToken, refreshToken, tokenExpiresAt }) {
+    async deleteShop(userId, etsyShopId) {
+      const target = await db
+        .prepare('SELECT is_primary FROM connected_shops WHERE user_id = ? AND etsy_shop_id = ?')
+        .bind(userId, etsyShopId)
+        .first<{ is_primary: number }>();
+      await db
+        .prepare('DELETE FROM connected_shops WHERE user_id = ? AND etsy_shop_id = ?')
+        .bind(userId, etsyShopId)
+        .run();
+      // If the deleted shop was primary, promote the most recently connected remaining shop.
+      if (target?.is_primary === 1) {
+        const next = await db
+          .prepare('SELECT etsy_shop_id FROM connected_shops WHERE user_id = ? ORDER BY connected_at DESC LIMIT 1')
+          .bind(userId)
+          .first<{ etsy_shop_id: number }>();
+        if (next) {
+          await db
+            .prepare('UPDATE connected_shops SET is_primary = 1 WHERE user_id = ? AND etsy_shop_id = ?')
+            .bind(userId, next.etsy_shop_id)
+            .run();
+        }
+      }
+    },
+
+    async deleteAllForUser(userId) {
+      await db.prepare('DELETE FROM connected_shops WHERE user_id = ?').bind(userId).run();
+    },
+
+    async markCalibrated(userId, etsyShopId, at) {
+      await db
+        .prepare('UPDATE connected_shops SET last_calibrated_at = ? WHERE user_id = ? AND etsy_shop_id = ?')
+        .bind(at, userId, etsyShopId)
+        .run();
+    },
+
+    async updateTokens({ userId, etsyShopId, accessToken, refreshToken, tokenExpiresAt }) {
       const accessEnc = await cipher.encrypt(accessToken);
       const refreshEnc = await cipher.encrypt(refreshToken);
       await db
         .prepare(
           'UPDATE connected_shops SET access_token_enc = ?, refresh_token_enc = ?, token_expires_at = ? ' +
-            'WHERE user_id = ?'
+            'WHERE user_id = ? AND etsy_shop_id = ?'
         )
-        .bind(accessEnc, refreshEnc, tokenExpiresAt, userId)
+        .bind(accessEnc, refreshEnc, tokenExpiresAt, userId, etsyShopId)
         .run();
     },
   };
@@ -219,8 +287,9 @@ interface RawShopRow {
   scopes: string;
   connected_at: number;
   last_calibrated_at: number | null;
+  is_primary: number;
 }
 
 const SHOP_SELECT =
   'SELECT user_id, etsy_shop_id, shop_name, access_token_enc, refresh_token_enc, ' +
-  'token_expires_at, scopes, connected_at, last_calibrated_at FROM connected_shops';
+  'token_expires_at, scopes, connected_at, last_calibrated_at, is_primary FROM connected_shops';

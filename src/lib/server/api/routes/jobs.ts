@@ -27,7 +27,7 @@ import type { ZodType } from 'zod';
 import { z } from 'zod';
 import type { Queue } from '@cloudflare/workers-types';
 import type { AppEnv } from '../types';
-import { getEnv, getUser, getDb } from '../context';
+import { getEnv, getUser, getDb, getHistoryDb } from '../context';
 import { requireAuth } from '../middleware/requireAuth';
 import { normalize } from '../../services/etsy/cache';
 import { createTrackedListingsStore, createRankHistoryStore } from '../../services/jobs/jobsStore';
@@ -176,7 +176,7 @@ router.get('/rank-history', requireAuth, async (c) => {
     return c.json({ error: 'VALIDATION', message: 'listing and keyword are required.' }, 400);
   }
 
-  const rows = await createRankHistoryStore(getDb(c)).history(listingId, keyword, 90);
+  const rows = await createRankHistoryStore(getHistoryDb(c)).history(listingId, keyword, 90);
   return c.json({
     listingId,
     keyword: normalize(keyword),
@@ -225,15 +225,15 @@ router.post('/shop-analysis-deep', requireAuth, async (c) => {
   if (queue) {
     await queue.send(message);
   } else {
-    // BR-P4-Q-03: no queue binding (plain vite dev) → process inline via waitUntil, never 500.
+    // BR-P4-Q-03: no queue binding → process inline via waitUntil, never 500.
     const exec = c.executionCtx;
-    const work = processDeepAnalysisJob(env, message);
+    const work = processDeepAnalysisJob(env, message).catch((err) =>
+      console.error('[jobs] inline deep-analysis failed:', err)
+    );
     if (exec && typeof exec.waitUntil === 'function') {
       exec.waitUntil(work);
-    } else {
-      // No execution context (some test harnesses) — fire and forget without blocking the 202.
-      void work.catch((err) => console.error('[jobs] inline deep-analysis failed:', err));
     }
+    // else: no execution context (some test harnesses) — fire and forget without blocking the 202.
   }
 
   return c.json({ jobId: String(jobId), status: 'queued' }, 202);

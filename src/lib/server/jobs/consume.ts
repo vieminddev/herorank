@@ -10,7 +10,8 @@ import type { Env } from '../env';
 import type { DeepShopAnalysisJob } from './types';
 import { getEtsyClient } from '../services/etsy/provider';
 import { createEtsyCache } from '../services/etsy/cache';
-import { createUsageCounter, DEFAULT_ETSY_DAILY_CAP } from '../services/etsy/usageCounter';
+import { createUsageCounter } from '../services/etsy/usageCounter';
+import { etsyLimitsFromEnv } from '../services/etsy/limits';
 import { runDeepShopAnalysis, ShopNotFoundError, DeepAnalysisQuotaError } from '../services/jobs/deepShopAnalysis';
 import { createAnalysesJobStore } from '../services/jobs/analysesJobStore';
 import { createCreditsRepo } from '../repositories/creditsRepo';
@@ -31,15 +32,28 @@ export async function processDeepAnalysisJob(
   const db = env.DB;
   const kv = env.KV;
   const jobs = createAnalysesJobStore(db);
-  const cap = parseInt(String(env.ETSY_DAILY_CAP ?? String(DEFAULT_ETSY_DAILY_CAP)), 10);
+  const limits = etsyLimitsFromEnv(env);
   const client = getEtsyClient(env);
   const cache = createEtsyCache(kv);
-  const usage = createUsageCounter(db, { cap });
+  const usage = createUsageCounter(db, { cap: limits.dailyCap, hardLimit: limits.rpd });
   const jobId = parseInt(job.jobId, 10);
 
   try {
+    // Idempotency (R4): a queue retry of an already-terminal job must NOT re-run the analysis or
+    // re-charge. 'done' and 'failed' are terminal → return their outcome immediately. 'deferred',
+    // 'queued', and 'running' fall through and (re)run — deferred jobs are meant to be retried, and
+    // a crash mid-'running' should resume. The spend ref is per-job idempotent regardless (belt-
+    // and-braces against double-charge); skipping the re-run also avoids wasted Etsy calls. Kept
+    // inside the try so a status-read failure marks the job failed instead of leaving it stuck.
+    const existing = await jobs.getById(jobId);
+    if (existing?.status === 'done') return { result: 'done' };
+    if (existing?.status === 'failed') return { result: 'failed', error: existing.error };
+
+    // maxPages 10 → up to 1000 listings + 1000 reviews (covers virtually every shop). Each page is
+    // one sequential Etsy call; the queue consumer has ample wall-clock vs. the request path that
+    // forces the quick analyzer's ~100-item cap. db passed so calibration factors load (BR-P4-CAL-01).
     const result = await runDeepShopAnalysis(
-      { client, cache, usage, maxPages: 3 },
+      { client, cache, usage, db, maxPages: 10 },
       job.shop
     );
 

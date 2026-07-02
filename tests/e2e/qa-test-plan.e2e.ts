@@ -129,7 +129,7 @@ test.describe('VieRank QA Checklist Automated Tests', () => {
     await signUpAndGoToDashboard(page, context);
 
     // Navigate to listing analyzer
-    await page.goto('/tools/etsy/listing-analyzer');
+    await page.goto('/tools/listing-analyzer');
     
     // Check initial state
     await page.locator('[data-testid="listing-input"]').fill('4511075902');
@@ -144,7 +144,7 @@ test.describe('VieRank QA Checklist Automated Tests', () => {
     await signUpAndGoToDashboard(page, context);
     
     // Tag generator
-    await page.goto('/tools/etsy/tag-generator');
+    await page.goto('/tools/tag-generator');
     await page.locator('[data-testid="tag-keyword"]').fill('ceramic mug plaster mold');
     await page.locator('[data-testid="tag-submit"]').click();
     
@@ -161,7 +161,7 @@ test.describe('VieRank QA Checklist Automated Tests', () => {
     const beforeCredits = parseInt(await creditSpan.textContent() ?? '0', 10);
 
     // Go to Profit Calculator
-    await page.goto('/tools/etsy/profit-calculator');
+    await page.goto('/tools/profit-calculator');
     
     // Change some input and check
     const priceInput = page.locator('input[type="number"]').first();

@@ -9,7 +9,10 @@
 import type { Env } from '../env';
 import type { AnalysisQueueMessage } from './types';
 import { createAnalysesJobStore } from '../services/jobs/analysesJobStore';
-import { logEvent } from '../observability/log';
+import { logError } from '../observability/log';
+
+/** Terminal failure reason written to the job + the DLQ alert when retries are exhausted. */
+const DLQ_FAILURE_REASON = 'Job reached maximum retries (DLQ)';
 
 export async function handleDLQ(
   batch: MessageBatch<AnalysisQueueMessage>,
@@ -24,13 +27,13 @@ export async function handleDLQ(
       // F-04: only mark failed if not already done (don't overwrite successful results).
       const existing = await jobs.getById(jobId);
       if (existing && existing.status !== 'done') {
-        await jobs.update(jobId, { status: 'failed', error: 'Job exhausted all retries (DLQ)' });
+        await jobs.update(jobId, { status: 'failed', error: DLQ_FAILURE_REASON });
       }
 
-      logEvent('error', {
-        event: 'dlq_consumed',
-        jobId: msg.body.jobId,
-        userId: msg.body.userId,
+      logError(new Error(DLQ_FAILURE_REASON), {
+        event: 'dlq',
+        job_id: msg.body.jobId,
+        user_id: msg.body.userId,
         shop: msg.body.shop,
         kind: msg.body.kind,
       });

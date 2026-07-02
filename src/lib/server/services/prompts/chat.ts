@@ -1,5 +1,5 @@
 /**
- * rankhero-ai chat prompt + input schema (Engineer D, BA spec §2.5).
+ * assistant chat prompt + input schema (Engineer D, BA spec §2.5).
  *
  * The route ALWAYS prepends `systemPrompt` server-side and never trusts a client-supplied
  * system message (clients may only send 'user'/'assistant' turns). The initial assistant

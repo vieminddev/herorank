@@ -78,10 +78,36 @@ export function demandScore(input: DemandScoreInput): DemandScoreResult {
   const fNorm = normLog(input.favoritesSignal, normScales.faves);
   const rNorm = normLog(input.resultCount, normScales.resultCount);
 
-  const raw =
-    demandWeights.velocity * vNorm +
-    demandWeights.faves * fNorm +
-    demandWeights.resultCount * rNorm;
+  // REAL traffic (`views`) is the strongest demand signal — when present it dominates the blend.
+  // We give views a fixed weight (demandWeights.views) and renormalize the original three weights
+  // to fill the REMAINING (1 - views) budget, preserving their relative proportions. When views
+  // is absent/undefined/non-positive we fall back to the ORIGINAL three-way blend EXACTLY, so the
+  // function is fully backward compatible (no behaviour change for existing callers).
+  const hasViews =
+    input.aggregateViews !== undefined &&
+    Number.isFinite(input.aggregateViews) &&
+    (input.aggregateViews as number) > 0;
+
+  let raw: number;
+  if (hasViews) {
+    const viewsW = clamp(demandWeights.views, 0, 1);
+    const baseSum = demandWeights.velocity + demandWeights.faves + demandWeights.resultCount;
+    // Scale the three originals so (views + scaled-three) sums to 1.0; baseSum is 1.0 in the
+    // shipped config, but this stays correct under any Phase-4 reweighting.
+    const scale = baseSum > 0 ? (1 - viewsW) / baseSum : 0;
+    const xNorm = normLog(input.aggregateViews as number, normScales.views);
+
+    raw =
+      viewsW * xNorm +
+      demandWeights.velocity * scale * vNorm +
+      demandWeights.faves * scale * fNorm +
+      demandWeights.resultCount * scale * rNorm;
+  } else {
+    raw =
+      demandWeights.velocity * vNorm +
+      demandWeights.faves * fNorm +
+      demandWeights.resultCount * rNorm;
+  }
 
   const score = clamp(Math.round(raw), 0, 100);
   const label =

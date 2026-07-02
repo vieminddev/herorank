@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="hd">
+      <span class="brand"><span class="dot"></span> VieRank</span>
+      <span id="status" class="status">…</span>
+    </header>
+
+    <main class="bd">
+      <p class="lead">See VieRank's listing SEO score &amp; keyword competition right on Etsy — every estimate honestly labeled.</p>
+
+      <label class="lbl" for="token">Extension token</label>
+      <input id="token" type="text" placeholder="vrk_…" autocomplete="off" spellcheck="false" />
+      <p class="hint">Copy it from VieRank → <b>Settings → Browser Extension</b>.</p>
+
+      <details class="adv">
+        <summary>Advanced</summary>
+        <label class="lbl" for="apiBase">VieRank URL</label>
+        <input id="apiBase" type="text" placeholder="http://localhost:3001" autocomplete="off" spellcheck="false" />
+        <p class="hint">Where your VieRank runs (default localhost for dev).</p>
+      </details>
+
+      <div class="actions">
+        <button id="save" class="btn btn-primary">Save &amp; connect</button>
+        <a id="open" class="btn btn-ghost" target="_blank">Open VieRank</a>
+      </div>
+      <p id="msg" class="msg"></p>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

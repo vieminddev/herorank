@@ -3,7 +3,7 @@
  *
  * Two call shapes, mirroring the backend contract (BA spec §3):
  *   - `callTool(name, input)`  → POST /api/tools/<name>  (JSON request/response)
- *   - `streamChat(messages, …)` → POST /api/tools/rankhero-ai/chat (SSE stream)
+ *   - `streamChat(messages, …)` → POST /api/tools/assistant/chat (SSE stream)
  *
  * Error handling per spec §3 / §1.4:
  *   - 401  → not authenticated: redirect to /auth/login (session expired mid-session).
@@ -37,55 +37,170 @@ export type ToolResult<T> = ToolSuccess<T> | ToolFailure;
 const GENERIC_ERROR = 'Something went wrong. Please try again.';
 
 /**
+ * Only a true network drop (status 0 — request never reached the server) is retried here.
+ * Upstream LLM gateway errors (502/503/504) are retried server-side inside the LLM service,
+ * closer to the source — retrying them again from the client would multiply latency on slow
+ * failures (a 24s-then-502 call × client retries = minutes of waiting). Tool endpoints deduct
+ * credits ONLY on success, so retrying a never-charged failure cannot double-bill.
+ */
+const RETRYABLE_STATUS = new Set([0]);
+const MAX_ATTEMPTS = 2;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
  * Call a JSON tool endpoint. On 401 redirects to login and never resolves (navigation
- * supersedes); otherwise resolves to a typed success/failure the page renders.
+ * supersedes); otherwise resolves to a typed success/failure the page renders. Transient
+ * network/gateway failures are retried up to {@link MAX_ATTEMPTS} times with backoff so a
+ * flaky LLM upstream doesn't surface as a user-facing error on the first hiccup.
  */
 export async function callTool<T>(tool: string, input: unknown): Promise<ToolResult<T>> {
-  let res: Response;
-  try {
-    res = await fetch(`/api/tools/${tool}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(input),
-    });
-  } catch {
-    // Network failure (offline / DNS / abort). Never charged — request never reached server.
-    return { ok: false, status: 0, error: 'NETWORK', message: GENERIC_ERROR };
-  }
+  let lastFailure: ToolFailure = { ok: false, status: 0, error: 'NETWORK', message: GENERIC_ERROR };
 
-  if (res.status === 401) {
-    await goto('/auth/login');
-    // Returned for type-completeness; the navigation above has already taken over.
-    return { ok: false, status: 401, error: 'UNAUTHENTICATED', message: 'Please sign in again.' };
-  }
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(`/api/tools/${tool}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+    } catch {
+      // Network failure (offline / DNS / abort). Never charged — request never reached server.
+      lastFailure = { ok: false, status: 0, error: 'NETWORK', message: GENERIC_ERROR };
+      if (attempt < MAX_ATTEMPTS) {
+        await sleep(500 * attempt);
+        continue;
+      }
+      return lastFailure;
+    }
 
-  // Parse body defensively — a 5xx may not be JSON.
-  let body: Record<string, unknown> | null = null;
-  try {
-    body = (await res.json()) as Record<string, unknown>;
-  } catch {
-    body = null;
-  }
+    if (res.status === 401) {
+      await goto('/auth/login');
+      // Returned for type-completeness; the navigation above has already taken over.
+      return { ok: false, status: 401, error: 'UNAUTHENTICATED', message: 'Please sign in again.' };
+    }
 
-  if (!res.ok) {
+    // Parse body defensively — a 5xx may not be JSON.
+    let body: Record<string, unknown> | null = null;
+    try {
+      body = (await res.json()) as Record<string, unknown>;
+    } catch {
+      body = null;
+    }
+
+    if (!res.ok) {
+      const failure: ToolFailure = {
+        ok: false,
+        status: res.status,
+        error: typeof body?.error === 'string' ? body.error : 'ERROR',
+        message: typeof body?.message === 'string' ? body.message : GENERIC_ERROR,
+        balance: typeof body?.balance === 'number' ? body.balance : undefined,
+      };
+      // Retry only transient gateway errors; surface 4xx (credits/validation/auth) immediately.
+      if (RETRYABLE_STATUS.has(res.status) && attempt < MAX_ATTEMPTS) {
+        lastFailure = failure;
+        await sleep(500 * attempt);
+        continue;
+      }
+      return failure;
+    }
+
+    const { creditsRemaining, ...data } = (body ?? {}) as Record<string, unknown> & {
+      creditsRemaining?: number;
+    };
+
     return {
-      ok: false,
-      status: res.status,
-      error: typeof body?.error === 'string' ? body.error : 'ERROR',
-      message: typeof body?.message === 'string' ? body.message : GENERIC_ERROR,
-      balance: typeof body?.balance === 'number' ? body.balance : undefined,
+      ok: true,
+      data: data as T,
+      creditsRemaining: typeof creditsRemaining === 'number' ? creditsRemaining : 0,
     };
   }
 
-  const { creditsRemaining, ...data } = (body ?? {}) as Record<string, unknown> & {
-    creditsRemaining?: number;
-  };
+  return lastFailure;
+}
 
-  return {
-    ok: true,
-    data: data as T,
-    creditsRemaining: typeof creditsRemaining === 'number' ? creditsRemaining : 0,
-  };
+// --- Image Studio: async job-based generation (Engineer F) -------------------
+//
+// image-studio is async (VEO3 images can take minutes when the media server is busy). `callTool`
+// submits and returns jobIds; this wrapper polls each `/image-jobs/:id` until it settles, then
+// returns the finished images as asset URLs — preserving the old `{ images }` shape so callers are
+// unchanged. A submit-time failure (credits/validation) is surfaced as-is (and is NOT charged).
+async function pollImageJob(id: string, initialStatus: string): Promise<string> {
+  if (initialStatus !== 'pending') return initialStatus;
+  const deadline = Date.now() + 12 * 60 * 1000; // generous: VEO3 can be slow when busy
+  while (Date.now() < deadline) {
+    await sleep(3000);
+    try {
+      const res = await fetch(`/api/tools/image-jobs/${id}`);
+      if (res.ok) {
+        const body = (await res.json()) as { status?: string };
+        if (body.status && body.status !== 'pending') return body.status;
+      }
+    } catch {
+      // transient network blip — keep polling
+    }
+  }
+  return 'error'; // client-side timeout (the server job may still finish + bill/refund)
+}
+
+export interface ImageQueueInfo {
+  seconds: number;
+  message: string | null;
+}
+
+/** URL of a finished image job's asset (R2-backed, persistent). */
+export const imageJobAssetUrl = (id: string) => `/api/tools/image-jobs/${id}/asset`;
+
+/** Poll a set of image jobs (by id) until each settles — used to RESUME a batch after a reload. */
+export async function pollImageJobs(
+  ids: string[]
+): Promise<{ id: string; status: string; url: string | null }[]> {
+  return Promise.all(
+    ids.map(async (id) => {
+      let initial = 'pending';
+      try {
+        const r = await fetch(`/api/tools/image-jobs/${id}`);
+        if (r.ok) initial = ((await r.json()) as { status?: string }).status ?? 'pending';
+        else if (r.status === 404) initial = 'error';
+      } catch {
+        /* keep going */
+      }
+      const status = initial === 'pending' ? await pollImageJob(id, 'pending') : initial;
+      return { id, status, url: status === 'done' ? imageJobAssetUrl(id) : null };
+    })
+  );
+}
+
+export async function generateImages(
+  input: unknown,
+  opts?: {
+    onQueued?: (eta: ImageQueueInfo | null, pendingCount: number) => void;
+    onSubmitted?: (jobIds: string[]) => void;
+  }
+): Promise<ToolResult<{ images: { url: string }[] }>> {
+  const submit = await callTool<{
+    batchId: string;
+    jobs: { id: string; status: string }[];
+    eta: ImageQueueInfo | null;
+  }>('image-studio', input);
+  if (!submit.ok) return submit;
+  const jobs = submit.data.jobs ?? [];
+  // Hand the jobIds to the caller immediately so it can persist the batch (survive a reload).
+  if (opts?.onSubmitted) opts.onSubmitted(jobs.map((j) => j.id));
+  // Tell the UI how many images are queued on the (possibly busy) media server + the ETA, so it can
+  // show "server busy, ~N min" while we keep polling.
+  if (opts?.onQueued) {
+    const pending = jobs.filter((j) => j.status === 'pending').length;
+    opts.onQueued(submit.data.eta ?? null, pending);
+  }
+  const statuses = await Promise.all(jobs.map((j) => pollImageJob(j.id, j.status)));
+  const images = jobs
+    .filter((_, i) => statuses[i] === 'done')
+    .map((j) => ({ url: `/api/tools/image-jobs/${j.id}/asset` }));
+  if (images.length === 0) {
+    return { ok: false, status: 502, error: 'IMAGE_FAILED', message: 'Image generation failed. Please try again.' };
+  }
+  return { ok: true, data: { images }, creditsRemaining: submit.creditsRemaining };
 }
 
 // --- Phase 4: jobs (tracking + rank history + async deep analysis) (Engineer E) ---
@@ -320,6 +435,16 @@ export async function joinVideoWaitlist(email: string): Promise<ToolResult<{ joi
   return { ok: true, data: { joined: true }, creditsRemaining: 0 };
 }
 
+// --- Video Maker: AI on-video captions (cost 1) ---
+
+/** POST /api/tools/video-captions — generate short on-video captions/CTAs from a description. */
+export function generateVideoCaptions(input: {
+  description: string;
+  shopName?: string;
+}): Promise<ToolResult<{ captions: string[] }>> {
+  return callTool<{ captions: string[] }>('video-captions', input);
+}
+
 // --- Streaming chat (SSE) ---
 
 export interface ChatMessage {
@@ -348,15 +473,23 @@ export interface StreamHandlers {
  *   event: error\ndata: {"error":"...","message":"..."}\n\n
  *   data: [DONE]\n\n
  */
-export async function streamChat(messages: ChatMessage[], handlers: StreamHandlers): Promise<void> {
+export async function streamChat(
+  messages: ChatMessage[],
+  handlers: StreamHandlers,
+  signal?: AbortSignal
+): Promise<void> {
   let res: Response;
   try {
-    res = await fetch('/api/tools/rankhero-ai/chat', {
+    res = await fetch('/api/tools/assistant/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ messages }),
+      signal,
     });
   } catch {
+    // A user-initiated abort (Stop) cancels the connection → the server's stream is cancelled and
+    // never reaches the post-[DONE] deduct, so the turn isn't charged. Don't surface it as an error.
+    if (signal?.aborted) return;
     handlers.onError({ status: 0, error: 'NETWORK', message: GENERIC_ERROR });
     return;
   }
@@ -404,6 +537,7 @@ export async function streamChat(messages: ChatMessage[], handlers: StreamHandle
     // Flush any trailing event without a terminating blank line.
     if (buffer.trim()) dispatchEvent(buffer, handlers);
   } catch {
+    if (signal?.aborted) return; // user pressed Stop — connection cancelled, no charge, no error
     handlers.onError({ status: 0, error: 'STREAM', message: GENERIC_ERROR });
   } finally {
     reader.releaseLock();

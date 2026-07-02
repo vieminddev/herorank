@@ -33,6 +33,14 @@ export interface DemandWeights {
   velocity: number; // weight on aggregateReviewVelocity (best real demand signal)
   faves: number; // weight on favoritesSignal (engagement proxy)
   resultCount: number; // weight on resultCount (market-exists / size proxy)
+  /**
+   * Weight on aggregateViews (REAL traffic) — only applied WHEN the views signal is present.
+   * Views are the strongest demand signal, so this weight dominates: when views are available
+   * the blend renormalizes to {views, velocity, faves, resultCount}; when absent it falls back
+   * EXACTLY to the original {velocity, faves, resultCount} (this weight ignored). MUST be set so
+   * the four weights sum to 1.0 for the views-present path.
+   */
+  views: number;
 }
 
 /**
@@ -44,6 +52,7 @@ export interface NormScales {
   velocity: number; // aggregate recent-review count across top-N that reads as max demand
   faves: number; // aggregate num_favorers across top-N that reads as max engagement
   resultCount: number; // active-listing count that reads as a fully-served (max-size) market
+  views: number; // aggregate lifetime `views` across top-N that reads as max (saturated) traffic
 }
 
 // --- demandScore label thresholds (score 0-100 → low/medium/high) -----------
@@ -139,6 +148,10 @@ export const ESTIMATION_CONFIG: EstimationConfig = {
     velocity: 0.55, // best REAL demand signal (reviews tied to transactions)
     faves: 0.25, // engagement proxy
     resultCount: 0.2, // market-exists / size proxy only (not demand itself)
+    // views-present 4-way blend (sums to 1.0 WITH the three below renormalized in demandScore):
+    // views dominates as the strongest REAL traffic signal. {views 0.50, velocity 0.30,
+    // faves 0.10, resultCount 0.10}. See demandScore for the renormalization.
+    views: 0.5,
   },
 
   // log-scale saturation points (norm(x) ≈ 100 at SCALE). Tuned to typical Etsy magnitudes.
@@ -146,6 +159,9 @@ export const ESTIMATION_CONFIG: EstimationConfig = {
     velocity: 500, // ~500 aggregate recent reviews across top-N ⇒ saturated demand
     faves: 50000, // ~50k aggregate favorers across top-N ⇒ saturated engagement
     resultCount: 50000, // ~50k active listings ⇒ a fully-served (saturated) market
+    // Lifetime views are far larger than faves: ~1M aggregate views across the top-N sample
+    // reads as fully-saturated traffic (log scale handles the long tail below it).
+    views: 1_000_000,
   },
 
   // score → label cutoffs (spec §3.1: high >=67, medium >=34, else low)

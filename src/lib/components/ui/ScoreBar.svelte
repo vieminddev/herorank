@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   let { score, max = 100, label, color }: {
     score: number;
     max?: number;
@@ -8,6 +10,15 @@
   } = $props();
 
   const percentage = $derived(Math.min(100, Math.max(0, (score / max) * 100)));
+
+  // Animate the fill from 0 → percentage on mount (jumps instantly under reduced-motion).
+  let mounted = $state(false);
+  onMount(() => {
+    const reduce = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { mounted = true; return; }
+    requestAnimationFrame(() => (mounted = true));
+  });
+  const shown = $derived(mounted ? percentage : 0);
 
   const colorMap: Record<string, string> = {
     teal: "bg-teal",
@@ -34,7 +45,7 @@
   <div class="score-bar">
     <div
       class="score-bar-fill {color ? fillClass : band}"
-      style="width: {percentage}%"
+      style="width: {shown}%; transition: width 0.7s var(--ease-out);"
     ></div>
   </div>
 </div>

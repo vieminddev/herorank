@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Bell, LoaderCircle } from "lucide-svelte";
+  import PageHeader from "$lib/components/layout/PageHeader.svelte";
   import { onMount } from "svelte";
 
   type Notification = {
@@ -68,53 +69,58 @@
   };
 </script>
 
-<div class="max-w-2xl mx-auto py-8 px-4">
-  <div class="flex items-center justify-between mb-6">
-    <div class="flex items-center gap-3">
-      <span class="w-10 h-10 rounded-xl bg-teal/8 text-teal flex items-center justify-center">
-        <Bell size={20} />
-      </span>
-      <div>
-        <h1 class="text-xl font-semibold tracking-tight text-text-primary">Alerts</h1>
-        <p class="text-sm text-text-muted">{unread} unread</p>
+<div class="max-w-5xl mx-auto animate-fade-in">
+  <PageHeader title="Alerts" description={`${unread} unread alert${unread === 1 ? "" : "s"}`} icon={Bell}>
+    {#snippet action()}
+      {#if unread > 0}
+        <button type="button" class="btn btn-secondary !py-2 !px-4 text-xs font-bold" onclick={markAllRead}>
+          Mark all read
+        </button>
+      {/if}
+    {/snippet}
+  </PageHeader>
+
+  <div class="max-w-3xl">
+    {#if loading}
+      <div class="flex items-center gap-2 text-text-muted text-sm py-8 justify-center card bg-white border border-border rounded-xl">
+        <LoaderCircle size={16} class="animate-spin text-teal" /> Loading alerts…
       </div>
-    </div>
-    {#if unread > 0}
-      <button type="button" class="copy-link" onclick={markAllRead}>Mark all read</button>
+    {:else if error}
+      <div class="card p-5 bg-white border border-danger/20 rounded-xl text-center">
+        <p class="text-sm text-danger">{error}</p>
+      </div>
+    {:else if notifications.length}
+      <div class="card p-4 bg-white border border-border rounded-xl shadow-sm">
+        <div class="entry-list">
+          {#each notifications as n (n.id)}
+            <button
+              type="button"
+              onclick={() => markRead(n.id)}
+              class="entry items-start text-left w-full !bg-transparent hover:!bg-bg-page {n.read_at ? '' : '!bg-teal/[0.02]'}"
+            >
+              <span
+                class={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${n.read_at ? "bg-transparent border border-border" : "bg-teal"}`}
+                aria-hidden="true"
+              ></span>
+              <div class="flex-1 min-w-0">
+                <p class={`text-[0.9375rem] leading-snug ${n.read_at ? "font-normal text-text-secondary" : "font-bold text-text-primary"}`}>
+                  {n.title}
+                </p>
+                {#if n.body}
+                  <p class="entry-meta mt-1 text-xs text-text-secondary leading-relaxed">{n.body}</p>
+                {/if}
+              </div>
+              <span class="text-[11px] text-text-muted shrink-0 tabular-nums ml-2">{formatDate(n.created_at)}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <div class="card p-8 bg-white border border-dashed border-border rounded-xl text-center text-text-secondary">
+        <Bell size={24} class="mx-auto text-text-muted mb-2" />
+        <p class="text-sm font-semibold text-text-primary">All caught up</p>
+        <p class="text-xs text-text-muted mt-1">No alerts at the moment. We will notify you here of any SEO issues.</p>
+      </div>
     {/if}
   </div>
-
-  {#if loading}
-    <div class="flex items-center gap-2 text-text-muted text-sm">
-      <LoaderCircle size={15} class="animate-spin" /> Loading…
-    </div>
-  {:else if error}
-    <p class="text-sm text-danger">{error}</p>
-  {:else if notifications.length}
-    <div class="entry-list">
-      {#each notifications as n (n.id)}
-        <button
-          type="button"
-          onclick={() => markRead(n.id)}
-          class="entry items-start text-left w-full"
-        >
-          <span
-            class={`w-2 h-2 rounded-full shrink-0 mt-2 ${n.read_at ? "bg-transparent" : "bg-teal"}`}
-            aria-hidden="true"
-          ></span>
-          <div class="flex-1 min-w-0">
-            <p class={`text-[0.9375rem] ${n.read_at ? "font-normal text-text-secondary" : "font-medium text-text-primary"}`}>
-              {n.title}
-            </p>
-            {#if n.body}
-              <p class="entry-meta mt-0.5 leading-relaxed">{n.body}</p>
-            {/if}
-          </div>
-          <span class="text-xs text-text-muted shrink-0 tabular-nums">{formatDate(n.created_at)}</span>
-        </button>
-      {/each}
-    </div>
-  {:else}
-    <p class="text-sm text-text-muted">You're all caught up — no alerts yet.</p>
-  {/if}
 </div>

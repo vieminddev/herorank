@@ -22,14 +22,22 @@
  *   POST /listing/:id/update        — edit title/description/tags (snapshots first). Write-gated.
  *   POST /listing/:id/restore       — restore a prior snapshot. Write-gated.
  */
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppEnv } from '../types';
 import { getDb, getEnv, getUser } from '../context';
 import { requireAuth } from '../middleware/requireAuth';
 import { requireCredits } from '../middleware/requireCredits';
 import { getEstimation } from '../../services/etsy/estimationContract';
-import { connected, createUserEtsyClient, isWriteEnabled } from '../../services/etsy/etsyWriteClient';
+import {
+  connected,
+  createUserEtsyClient,
+  isWriteEnabled,
+  type RawListing,
+} from '../../services/etsy/etsyWriteClient';
+import { getEtsyClientForUser } from '../../services/etsy/provider';
+import { createEtsyCache } from '../../services/etsy/cache';
+import { loadTaxonomyResolver } from '../../services/etsy/taxonomyResolver';
 import { createLlmService } from '../../services/llmService';
 import { LlmError } from '../../services/llmService';
 import { completeJson } from '../../services/llmJson';
@@ -42,6 +50,18 @@ const NOT_CONNECTED = {
   error: 'NOT_CONNECTED',
   message: 'Connect your Etsy shop to see real data.',
 } as const;
+
+/** Returned when a connected shop's OAuth token is dead (401/403) → the user must reconnect. */
+const REAUTH = {
+  error: 'ETSY_REAUTH',
+  message: 'Your Etsy connection has expired. Reconnect your shop to see live data.',
+} as const;
+
+/** True when an Etsy client error carries a trailing 401/403 status (auth/token failure). */
+function isReauthError(err: unknown): boolean {
+  const s = Number(String(err instanceof Error ? err.message : '').match(/(\d{3})\s*$/)?.[1]);
+  return s === 401 || s === 403;
+}
 
 const router = new Hono<AppEnv>();
 
@@ -59,7 +79,8 @@ router.get('/overview', requireAuth, async (c) => {
       shopId: ctx.shop.etsyShopId,
       sinceEpochSec: nowSec() - 90 * DAY,
     });
-  } catch {
+  } catch (err) {
+    if (isReauthError(err)) return c.json(REAUTH, 502);
     return c.json(
       { error: 'ETSY_UNAVAILABLE', message: 'Could not reach Etsy for your shop data. Please try again.' },
       502
@@ -131,7 +152,8 @@ router.get('/audit', requireAuth, async (c) => {
   let listings;
   try {
     listings = await client.listOwnListings({ shopId: ctx.shop.etsyShopId, limit: 50 });
-  } catch {
+  } catch (err) {
+    if (isReauthError(err)) return c.json(REAUTH, 502);
     return c.json(
       { error: 'ETSY_UNAVAILABLE', message: 'Could not load your listings from Etsy.' },
       502
@@ -184,7 +206,8 @@ router.get('/receipts-pending-review', requireAuth, async (c) => {
       shopId: ctx.shop.etsyShopId,
       sinceEpochSec: nowSec() - 60 * DAY,
     });
-  } catch {
+  } catch (err) {
+    if (isReauthError(err)) return c.json(REAUTH, 502);
     return c.json(
       { error: 'ETSY_UNAVAILABLE', message: 'Could not reach Etsy for your orders. Please try again.' },
       502
@@ -344,6 +367,35 @@ const WRITE_PENDING = {
     'Editing listings is awaiting Etsy write-access approval. It will switch on automatically once granted.',
 } as const;
 
+/**
+ * Map an own-listing write failure to a clear, seller-facing JSON error. `updateOwnListing`
+ * throws `Error('etsy update <status>')`, so we recover Etsy's HTTP status from the message and
+ * distinguish rate-limits (429) and rejected fields (4xx) from generic outages.
+ */
+function writeError(c: Context<AppEnv>, err: unknown, action: 'update' | 'restore' | 'create') {
+  const msg = err instanceof Error ? err.message : '';
+  const status = Number(msg.match(/(\d{3})\s*$/)?.[1]);
+  if (status === 429) {
+    return c.json(
+      { error: 'RATE_LIMIT', message: 'Etsy is rate-limiting writes right now. Please wait a moment and try again.' },
+      429
+    );
+  }
+  if (status === 400 || status === 409 || status === 422) {
+    return c.json(
+      {
+        error: 'VALIDATION',
+        message: 'Etsy rejected the change — a field (title, tags, or description) is invalid. Adjust it and try again.',
+      },
+      422
+    );
+  }
+  return c.json(
+    { error: 'ETSY_UNAVAILABLE', message: `Etsy rejected the ${action}. Please try again.` },
+    502
+  );
+}
+
 router.get('/write-status', requireAuth, async (c) => {
   return c.json({ writeEnabled: isWriteEnabled(getEnv(c)) });
 });
@@ -358,7 +410,17 @@ router.get('/listing/:id', requireAuth, async (c) => {
   let listing;
   try {
     listing = await client.getOwnListing(listingId);
-  } catch {
+  } catch (err) {
+    // A 401/403 from Etsy means the OAuth token is dead (refresh failed) → the user must
+    // reconnect. Surface that distinctly so the FE can offer a reconnect path, not a dead
+    // "try again". Status stays 502 (not 401) so the client's auth-redirect doesn't fire.
+    const status = Number(String(err instanceof Error ? err.message : '').match(/(\d{3})\s*$/)?.[1]);
+    if (status === 401 || status === 403) {
+      return c.json(
+        { error: 'ETSY_REAUTH', message: 'Your Etsy connection has expired. Reconnect your shop to keep editing.' },
+        502
+      );
+    }
     return c.json({ error: 'ETSY_UNAVAILABLE', message: 'Could not load that listing from Etsy.' }, 502);
   }
   if (!listing) return c.json({ error: 'NOT_FOUND', message: 'Listing not found in your shop.' }, 404);
@@ -416,9 +478,43 @@ router.post('/listing/:id/update', requireAuth, async (c) => {
 
     await client.updateOwnListing({ shopId: ctx.shop.etsyShopId, listingId, ...parsed.data });
     return c.json({ ok: true, listingId });
-  } catch {
-    return c.json({ error: 'ETSY_UNAVAILABLE', message: 'Etsy rejected the update. Please try again.' }, 502);
+  } catch (err) {
+    return writeError(c, err, 'update');
   }
+});
+
+/**
+ * GET /listing/:id/backup/:backupId — return a backup snapshot for the restore PREVIEW.
+ * Lets the seller see exactly what `Restore` will bring back (title/description/tags) before
+ * confirming the write. Read-only, but lives with the restore flow it serves.
+ */
+router.get('/listing/:id/backup/:backupId', requireAuth, async (c) => {
+  const listingId = Number(c.req.param('id'));
+  const backupId = Number(c.req.param('backupId'));
+  if (!Number.isInteger(listingId) || !Number.isInteger(backupId)) {
+    return c.json({ error: 'VALIDATION', message: 'Bad id' }, 400);
+  }
+
+  const row = await getDb(c)
+    .prepare('SELECT snapshot_json FROM listing_backups WHERE id = ? AND user_id = ? AND listing_id = ?')
+    .bind(backupId, getUser(c).id, listingId)
+    .first<{ snapshot_json: string }>();
+  if (!row) return c.json({ error: 'NOT_FOUND', message: 'Backup not found.' }, 404);
+
+  let snap: { title?: string; description?: string; tags?: string[] };
+  try {
+    snap = JSON.parse(row.snapshot_json);
+  } catch {
+    return c.json({ error: 'CORRUPT_BACKUP', message: 'That backup could not be read.' }, 422);
+  }
+  return c.json({
+    backupId,
+    snapshot: {
+      title: snap.title ?? '',
+      description: snap.description ?? '',
+      tags: Array.isArray(snap.tags) ? snap.tags : [],
+    },
+  });
 });
 
 router.post('/listing/:id/restore', requireAuth, async (c) => {
@@ -450,9 +546,173 @@ router.post('/listing/:id/restore', requireAuth, async (c) => {
     const snap = JSON.parse(row.snapshot_json);
     await client.updateOwnListing({ shopId: ctx.shop.etsyShopId, listingId, ...snap });
     return c.json({ ok: true, listingId, restoredFrom: backupId });
-  } catch {
-    return c.json({ error: 'ETSY_UNAVAILABLE', message: 'Etsy rejected the restore. Please try again.' }, 502);
+  } catch (err) {
+    return writeError(c, err, 'restore');
   }
+});
+
+// ---------------------------------------------------------------------------
+// Create-draft listing: meta + taxonomy search + create (write-gated)
+// ---------------------------------------------------------------------------
+
+/** First defined `readiness_state_id` across the shop's listings (mandatory for new physical listings). */
+function firstReadiness(raw: RawListing[]): number | undefined {
+  for (const l of raw) if (typeof l.readiness_state_id === 'number') return l.readiness_state_id;
+  return undefined;
+}
+
+/**
+ * GET /listing/create-meta — everything the Builder's "Create draft" form needs in one call:
+ * the shop's shipping profiles (dropdown), the categories it already uses (quick-pick chips), and
+ * a resolved readiness_state_id (server-side; not user-facing).
+ */
+router.get('/create-listing/meta', requireAuth, async (c) => {
+  const ctx = await connected(c);
+  if (!ctx) return c.json(NOT_CONNECTED, 404);
+  const client = createUserEtsyClient({ clientId: ctx.clientId, accessToken: ctx.accessToken });
+  const shopId = ctx.shop.etsyShopId;
+
+  let shippingProfiles: Array<{ id: number; title: string }> = [];
+  let raw: RawListing[] = [];
+  try {
+    [shippingProfiles, raw] = await Promise.all([
+      client.getShippingProfiles(shopId),
+      client.listOwnListingsRaw({ shopId, limit: 50 }),
+    ]);
+  } catch (err) {
+    if (isReauthError(err)) return c.json(REAUTH, 502);
+    return c.json({ error: 'ETSY_UNAVAILABLE', message: 'Could not load your shop settings from Etsy.' }, 502);
+  }
+
+  // Distinct taxonomy ids the shop already uses → names via the public taxonomy resolver.
+  const env = getEnv(c);
+  const taxoIds = [
+    ...new Set(
+      raw
+        .map((l) => (typeof l.taxonomy_id === 'number' ? l.taxonomy_id : null))
+        .filter((x): x is number => x != null)
+    ),
+  ];
+  let shopCategories: Array<{ taxonomyId: number; name: string }> = taxoIds.map((id) => ({
+    taxonomyId: id,
+    name: `Category ${id}`,
+  }));
+  try {
+    const resolver = await loadTaxonomyResolver(getEtsyClientForUser(env), createEtsyCache(env.KV));
+    shopCategories = taxoIds.map((id) => ({ taxonomyId: id, name: resolver.nameOf(id) ?? `Category ${id}` }));
+  } catch {
+    /* keep the id-only fallback names */
+  }
+
+  return c.json({
+    shippingProfiles,
+    shopCategories,
+    readinessStateId: firstReadiness(raw) ?? null,
+    writeEnabled: isWriteEnabled(env),
+  });
+});
+
+/** GET /create-listing/taxonomy-search?q= — search Etsy's seller taxonomy for the category picker. */
+router.get('/create-listing/taxonomy-search', requireAuth, async (c) => {
+  const q = (c.req.query('q') ?? '').trim();
+  if (q.length < 2) return c.json({ results: [] });
+  try {
+    const env = getEnv(c);
+    const resolver = await loadTaxonomyResolver(getEtsyClientForUser(env), createEtsyCache(env.KV));
+    return c.json({ results: resolver.search(q, 20) });
+  } catch {
+    return c.json({ results: [] });
+  }
+});
+
+const createBody = z.object({
+  title: z.string().min(1).max(140),
+  description: z.string().min(1).max(20_000),
+  tags: z.array(z.string().min(1).max(20)).max(13).optional(),
+  price: z.number().positive().max(1_000_000),
+  quantity: z.number().int().positive().max(999).default(1),
+  taxonomyId: z.number().int().positive(),
+  shippingProfileId: z.number().int().positive(),
+  imageUrls: z.array(z.string()).max(10).optional(),
+});
+
+/**
+ * POST /listing/create — create a DRAFT listing on the connected shop from Builder output.
+ * Write-gated. readiness_state_id is resolved server-side from an existing listing. Images are
+ * uploaded best-effort (a failed image never fails the draft). Returns the new listing + Etsy URL.
+ */
+router.post('/create-listing', requireAuth, async (c) => {
+  if (!isWriteEnabled(getEnv(c))) return c.json(WRITE_PENDING, 503);
+
+  let raw: unknown;
+  try {
+    raw = await c.req.json();
+  } catch {
+    return c.json({ error: 'VALIDATION', message: 'Invalid JSON body' }, 400);
+  }
+  const parsed = createBody.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: 'VALIDATION', message: parsed.error.issues[0]?.message ?? 'Invalid body' }, 400);
+  }
+
+  const ctx = await connected(c);
+  if (!ctx) return c.json(NOT_CONNECTED, 404);
+  const client = createUserEtsyClient({ clientId: ctx.clientId, accessToken: ctx.accessToken });
+  const shopId = ctx.shop.etsyShopId;
+
+  // readiness_state_id is mandatory for physical listings — copy from an existing listing.
+  let readinessStateId: number | undefined;
+  try {
+    readinessStateId = firstReadiness(await client.listOwnListingsRaw({ shopId, limit: 20 }));
+  } catch (err) {
+    if (isReauthError(err)) return c.json(REAUTH, 502);
+  }
+
+  let created: { listingId: number; url: string | null; state: string };
+  try {
+    created = await client.createDraftListing({
+      shopId,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      tags: parsed.data.tags,
+      price: parsed.data.price,
+      quantity: parsed.data.quantity,
+      taxonomyId: parsed.data.taxonomyId,
+      shippingProfileId: parsed.data.shippingProfileId,
+      readinessStateId,
+    });
+  } catch (err) {
+    return writeError(c, err, 'create');
+  }
+
+  // Best-effort image upload — resolve relative builder URLs against this request's origin.
+  let imagesUploaded = 0;
+  if (parsed.data.imageUrls?.length) {
+    const origin = new URL(c.req.url).origin;
+    let rank = 1;
+    for (const u of parsed.data.imageUrls.slice(0, 10)) {
+      try {
+        const abs = u.startsWith('http') ? u : new URL(u, origin).toString();
+        const r = await fetch(abs);
+        if (!r.ok) continue;
+        const bytes = await r.arrayBuffer();
+        if (await client.uploadListingImage(shopId, created.listingId, bytes, rank)) {
+          imagesUploaded += 1;
+          rank += 1;
+        }
+      } catch {
+        /* skip a bad image; the draft still stands */
+      }
+    }
+  }
+
+  return c.json({
+    ok: true,
+    listingId: created.listingId,
+    url: created.url,
+    state: created.state,
+    imagesUploaded,
+  });
 });
 
 export default router;

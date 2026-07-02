@@ -59,3 +59,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dev server + scan scratch logs
+.dev-server.log
+.dev-server.err.log
+scripts/out/_*.log

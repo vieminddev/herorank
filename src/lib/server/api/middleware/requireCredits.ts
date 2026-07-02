@@ -19,19 +19,42 @@
  * Deducting AFTER the handler means a failing tool (4xx/5xx) does not cost the user credits.
  */
 import { createMiddleware } from 'hono/factory';
+import type { Context } from 'hono';
 import type { AppEnv } from '../types';
 import { getDb, getUser } from '../context';
 import { createCreditsRepo } from '../../repositories/creditsRepo';
 import { createCreditsService, InsufficientCreditsError } from '../../services/creditsService';
 import { getToolCost } from '../../services/toolCosts';
 
-export function requireCredits(tool: string) {
+/**
+ * Options for {@link requireCredits}.
+ * `units` resolves how many units to charge for THIS request (the per-unit cost is multiplied by it).
+ * Used by per-output tools — e.g. AI Image Studio bills 5 × number of images. The resolver reads the
+ * already-parsed request body; it must be safe (return a sane default) when the body is missing/invalid,
+ * because a failing handler is never charged anyway. Defaults to 1 unit when omitted.
+ */
+export interface RequireCreditsOptions {
+  units?: (c: Context<AppEnv>) => number | Promise<number>;
+}
+
+export function requireCredits(tool: string, opts?: RequireCreditsOptions) {
   return createMiddleware<AppEnv>(async (c, next) => {
-    const cost = getToolCost(tool);
-    if (cost === undefined) {
+    const unitCost = getToolCost(tool);
+    if (unitCost === undefined) {
       // Misconfiguration (route charges an unpriced tool) — fail loud, do not run handler.
       return c.json({ error: 'INTERNAL', message: `Unpriced tool: ${tool}` }, 500);
     }
+
+    // Resolve billable units (per-output tools); clamp to ≥1 whole unit. Total cost = unitCost × units.
+    let units = 1;
+    if (opts?.units) {
+      try {
+        units = Math.max(1, Math.floor(await opts.units(c)));
+      } catch {
+        units = 1;
+      }
+    }
+    const cost = unitCost * units;
 
     const user = getUser(c);
     const repo = createCreditsRepo(getDb(c));
@@ -71,7 +94,7 @@ export function requireCredits(tool: string) {
 
     let remaining: number;
     try {
-      const result = await credits.spendCredits(user.id, tool, spendRef);
+      const result = await credits.spendCredits(user.id, tool, spendRef, units);
       remaining = result.balance;
       // O1 (EDGE flag): expose deduction to logger middleware (reads 'creditsDelta' key).
       (c as unknown as { set: (k: string, v: unknown) => void }).set('creditsDelta', -cost);

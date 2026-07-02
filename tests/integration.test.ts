@@ -93,12 +93,12 @@ vi.mock('../src/lib/server/services/etsy/provider', async (importActual) => {
 // Tool costs mock matching the hermetic pattern from jobs.test.ts.
 vi.mock('../src/lib/server/services/toolCosts', () => ({
   TOOL_COSTS: {
-    echo: 1, tag: 1, title: 1, keyword: 1, description: 2, 'rankhero-ai': 2,
+    echo: 1, tag: 1, title: 1, keyword: 1, description: 2, 'assistant': 2,
     'listing-analyzer': 3, 'shop-analyzer': 3, 'rank-check': 2, 'niche-finder': 2,
     'best-sellers': 1, 'etsy-trends': 1, 'buyer-check': 2, 'shop-analysis-deep': 8,
   } as Record<string, number>,
   getToolCost: (tool: string) => ({
-    echo: 1, tag: 1, title: 1, keyword: 1, description: 2, 'rankhero-ai': 2,
+    echo: 1, tag: 1, title: 1, keyword: 1, description: 2, 'assistant': 2,
     'listing-analyzer': 3, 'shop-analyzer': 3, 'rank-check': 2, 'niche-finder': 2,
     'best-sellers': 1, 'etsy-trends': 1, 'buyer-check': 2, 'shop-analysis-deep': 8,
   } as Record<string, number>)[tool],
@@ -179,22 +179,17 @@ function makeD1() {
       }
       return { changes: 1 };
     }
-    // Spend: credits ledger INSERT from SELECT with balance guard + ref-dedup (F-01).
-    // NOTE: matched BEFORE the grant branch because the spend INSERT also contains `NOT EXISTS`
-    // (the F-01 ref guard) — the `credits_balance >=` predicate is what disambiguates it.
-    // bind order: (uid, delta, reason, ref, cost, uid, cost, uid, refExists)
-    if (s.startsWith('INSERT INTO credits_ledger') && s.includes('SELECT') && s.includes('credits_balance >=')) {
-      const [uid, delta, reason, ref, , , cost, , refExists] = args as [string, number, string, string | null, number, string, number, string, string | null];
-      const sub = subs.find((x) => x.user_id === uid);
-      // F-01 NOT EXISTS guard: a non-null ref already in the ledger blocks the insert (models
-      // both the SQL NOT EXISTS and the partial unique index — duplicate non-null ref => no row).
-      const dup = refExists != null && ledger.some((l) => l.user_id === uid && l.ref === refExists);
+    // Spend: creditsRepo.spend runs `INSERT ... VALUES ... ON CONFLICT (user_id, ref) DO NOTHING`
+    // (the balance guard is done in JS via sumLedger before this). Matched BEFORE the plain-grant
+    // VALUES branch because the spend INSERT also contains `VALUES` — `ON CONFLICT` disambiguates.
+    // Models the partial unique index: a duplicate non-null ref inserts no row (changes 0).
+    // bind order: (uid, delta, reason, ref, balanceAfter, createdAt)
+    if (s.startsWith('INSERT INTO credits_ledger') && s.includes('ON CONFLICT')) {
+      const [uid, delta, reason, ref, balanceAfter] = args as [string, number, string, string | null, number];
+      const dup = ref != null && ledger.some((l) => l.user_id === uid && l.ref === ref);
       if (dup) return { changes: 0 };
-      if (sub && sub.credits_balance >= cost) {
-        ledger.push({ id: ledgerSeq++, user_id: uid, delta, reason, ref, balance_after: sub.credits_balance + delta, created_at: Date.now() });
-        return { changes: 1 };
-      }
-      return { changes: 0 };
+      ledger.push({ id: ledgerSeq++, user_id: uid, delta, reason, ref, balance_after: balanceAfter, created_at: Date.now() });
+      return { changes: 1 };
     }
     // Grant: credits ledger INSERT … VALUES (real grant() is a plain VALUES insert, not SELECT).
     if (s.startsWith('INSERT INTO credits_ledger') && s.includes('VALUES')) {
@@ -521,7 +516,7 @@ describe('(c) Chat SSE — deduct after [DONE]', () => {
     // No LLM_API_KEY in env → pre-stream 503 JSON (spec §3.5 fix, Phase 2 BUG-01).
     const { request } = await buildIntegrationApp({ DB: fake.db, KV: makeKV() } as unknown as Env);
 
-    const res = await request('/api/tools/rankhero-ai/chat', {
+    const res = await request('/api/tools/assistant/chat', {
       method: 'POST',
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hi' }] }),
     });
@@ -542,7 +537,7 @@ describe('(c) Chat SSE — deduct after [DONE]', () => {
     const env = { DB: fake.db, KV: makeKV(), LLM_API_KEY: 'sk-test', LLM_MODEL: 'gpt-mock' };
     const { request } = await buildIntegrationApp(env as unknown as Env);
 
-    const res = await request('/api/tools/rankhero-ai/chat', {
+    const res = await request('/api/tools/assistant/chat', {
       method: 'POST',
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hi' }] }),
     });
@@ -781,8 +776,8 @@ describe('creditsDelta wiring (O1 fix — requireCredits sets creditsDelta)', ()
 // ---------------------------------------------------------------------------
 // per-job spend ref — S10 fix verify
 // ---------------------------------------------------------------------------
-describe('per-job spend ref (S10 fix — consume.ts uses job:{jobId} as ledger ref)', () => {
-  it('deep-analysis spend row has ref=job:{jobId}, not the constant tool name', async () => {
+describe('per-job spend ref (S10 fix — consume.ts uses a per-job ledger ref)', () => {
+  it('deep-analysis spend row has a per-job ref containing job:{jobId}, not the constant tool name', async () => {
     const fake = makeD1();
     fake.seedCredits('u1', 100);
     const { createAnalysesJobStore } = await import('../src/lib/server/services/jobs/analysesJobStore');
@@ -796,10 +791,12 @@ describe('per-job spend ref (S10 fix — consume.ts uses job:{jobId} as ledger r
       { kind: 'shop-analysis-deep', jobId: String(jobId), userId: 'u1', shop: 'TestShop', requestedAt: Date.now() }
     );
 
-    // The spend ledger row must have ref = `job:{jobId}` (not 'shop-analysis-deep').
+    // The spend ledger row must have a per-job ref (contains `job:{jobId}`), NOT the bare constant
+    // tool name 'shop-analysis-deep' — consume.ts namespaces it as `spend:{tool}:job:{jobId}`.
     const spends = fake.ledger.filter((l) => l.reason === 'spend:shop-analysis-deep');
     expect(spends.length).toBe(1);
-    expect(spends[0].ref).toBe(`job:${jobId}`);
+    expect(spends[0].ref).toContain(`job:${jobId}`);
+    expect(spends[0].ref).not.toBe('shop-analysis-deep');
     // ref is per-job — a second job would have a different ref.
     const jobId2 = await jobs.enqueue('u1', 'SecondShop');
     await processDeepAnalysisJob(
@@ -808,7 +805,7 @@ describe('per-job spend ref (S10 fix — consume.ts uses job:{jobId} as ledger r
     );
     const spends2 = fake.ledger.filter((l) => l.reason === 'spend:shop-analysis-deep');
     expect(spends2.length).toBe(2);
-    expect(spends2[1].ref).toBe(`job:${jobId2}`);
+    expect(spends2[1].ref).toContain(`job:${jobId2}`);
     // Two different jobs → two different refs.
     expect(spends2[0].ref).not.toBe(spends2[1].ref);
   });

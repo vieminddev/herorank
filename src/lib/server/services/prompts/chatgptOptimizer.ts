@@ -41,6 +41,24 @@ function normalizeAttributes(v: unknown): unknown {
   return v;
 }
 
+/**
+ * Coerce each checklist entry to the required `{label, done}` shape. Models frequently name the
+ * text field `item`/`task`/`text`/`action` instead of `label` (and may return a bare string), so
+ * accept any of those rather than failing schema validation on a cosmetic key difference.
+ */
+function normalizeChecklist(v: unknown): unknown {
+  if (!Array.isArray(v)) return v;
+  return v.map((entry) => {
+    if (typeof entry === 'string') return { label: entry, done: false };
+    if (entry && typeof entry === 'object') {
+      const e = entry as Record<string, unknown>;
+      const label = e.label ?? e.item ?? e.task ?? e.text ?? e.action ?? e.name;
+      return { label, done: Boolean(e.done) };
+    }
+    return entry;
+  });
+}
+
 export const inputSchema = z.object({
   /** The current listing — title + description pasted together is fine. */
   listing: z.string().min(10).max(6000),
@@ -61,8 +79,11 @@ export const outputSchema = z.object({
   qa: clampArr(z.object({ question: clampStr(1, 250), answer: clampStr(1, 800) }), 3, 8),
   /** A concise, factual description rewritten for AI readability. */
   optimizedDescription: clampStr(1, 4000),
-  /** Actionable checklist of what to add/fix to be AI-recommendable. */
-  checklist: clampArr(z.object({ label: clampStr(1, 250), done: z.boolean() }), 3, 10),
+  /** Actionable checklist of what to add/fix to be AI-recommendable. Accepts `item`/`task`/etc. */
+  checklist: z.preprocess(
+    normalizeChecklist,
+    clampArr(z.object({ label: clampStr(1, 250), done: z.boolean() }), 3, 10)
+  ),
 });
 export type ChatgptOptimizerOutput = z.infer<typeof outputSchema>;
 
@@ -75,7 +96,7 @@ Unlike classic Etsy SEO (keyword density), AI assistants reward listings that ar
 3. "conversationalKeywords": 3-10 natural-language phrases buyers ASK AN AI, not search keywords (e.g. "a personalized housewarming gift under $40", "handmade mug for a tea lover").
 4. "qa": 3-8 question/answer pairs an assistant could answer straight from the listing (shipping, personalization, materials, sizing, gifting).
 5. "optimizedDescription": a concise, scannable, factual rewrite (short paragraphs or implied bullets) prioritizing facts an AI needs.
-6. "checklist": 3-10 concrete actions to make the listing more AI-recommendable; set "done": true for items the current listing ALREADY satisfies, false for gaps to fix.
+6. "checklist": an ARRAY of 3-10 objects, each {"label": "...", "done": true|false} — use the key "label" (NOT "item" or "task") for the action text; set "done": true for items the current listing ALREADY satisfies, false for gaps to fix.
 
 Be honest and grounded in the provided listing. Return ONLY a JSON object with exactly these keys.`;
 

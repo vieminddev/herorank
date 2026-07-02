@@ -209,26 +209,18 @@ function makeD1() {
       }
       return { changes: row ? 1 : 0 };
     }
-    // --- credits spend batch (creditsRepo.spend) ---
-    // Statement 1: INSERT INTO credits_ledger SELECT ... WHERE credits_balance >= cost
-    if (s.startsWith('INSERT INTO credits_ledger') && s.includes('SELECT')) {
-      const [uid, delta, reason, ref, , , cost] = args as [string, number, string, string | null, number, string, number];
-      const sub = subs.find((x) => x.user_id === uid);
-      if (sub && sub.credits_balance >= cost) {
-        ledger.push({ id: ledgerSeq++, user_id: uid, delta, reason, ref, balance_after: sub.credits_balance + delta });
-        return { changes: 1 };
+    // --- credits spend (creditsRepo.spend) ---
+    // creditsRepo.spend guards the balance in JS (sumLedger) then runs:
+    //   INSERT INTO credits_ledger (...) VALUES (...) ON CONFLICT (user_id, ref) DO NOTHING
+    // We model the partial unique index here: a non-null ref already in the ledger inserts no row
+    // (changes 0 → idempotent no-op); otherwise the spend row lands.
+    if (s.startsWith('INSERT INTO credits_ledger') && s.includes('ON CONFLICT')) {
+      const [uid, delta, reason, ref, balanceAfter] = args as [string, number, string, string | null, number];
+      if (ref != null && ledger.some((l) => l.user_id === uid && l.ref === ref)) {
+        return { changes: 0 };
       }
-      return { changes: 0 };
-    }
-    // Statement 2: UPDATE subscriptions SET credits_balance = credits_balance - cost WHERE >= cost
-    if (s.startsWith('UPDATE subscriptions') && s.includes('credits_balance = credits_balance - ?')) {
-      const [cost, uid] = args as [number, string];
-      const sub = subs.find((x) => x.user_id === uid);
-      if (sub && sub.credits_balance >= cost) {
-        sub.credits_balance -= cost;
-        return { changes: 1 };
-      }
-      return { changes: 0 };
+      ledger.push({ id: ledgerSeq++, user_id: uid, delta, reason, ref, balance_after: balanceAfter });
+      return { changes: 1 };
     }
     return { changes: 0 };
   }
@@ -446,9 +438,13 @@ describe('runDeepShopAnalysis', () => {
       'TestShop'
     );
     expect(result.name).toBeTruthy();
-    expect(result.analyzedListings).toBeGreaterThan(0);
+    // Render-compatible with the quick analyzer: the page assigns `shop = result` and reads these.
+    expect(result.listings.length).toBeGreaterThan(0);
+    expect(result.stats).toBeTruthy();
+    expect(typeof result.stats.monthlyRevenue).toBe('string');
+    expect(result.reviews.distribution).toBeTruthy();
+    expect(result.about).toBeTruthy();
     expect(result.estimated.sales).toBe(true);
-    expect(typeof result.estimatedMonthlyRevenue).toBe('string');
   });
 
   it('throws ShopNotFoundError when the shop does not resolve', async () => {

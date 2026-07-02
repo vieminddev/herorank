@@ -21,7 +21,9 @@ import type {
   EtsyReview,
   EtsyReviewPage,
   EtsyShop,
+  EtsyShopSection,
   EtsyTaxonomyNode,
+  EtsyTaxonomyProperty,
 } from './types';
 
 import listingFixture from './__fixtures__/listing.json';
@@ -58,6 +60,46 @@ export interface MockEtsyFixtures {
   reviewsShop?: EtsyReviewPage;
   reviewsListing?: EtsyReviewPage;
   taxonomy?: EtsyTaxonomyNode[];
+  taxonomyProperties?: EtsyTaxonomyProperty[];
+  shopSections?: EtsyShopSection[];
+  featured?: EtsyListingPage;
+}
+
+/** Representative attribute catalog so the mock path exercises attribute-gap analysis. */
+const MOCK_TAXONOMY_PROPERTIES: EtsyTaxonomyProperty[] = [
+  { property_id: 200, name: 'Primary color', display_name: 'Primary color', is_required: false, possible_values: [{ name: 'Black' }, { name: 'White' }, { name: 'Blue' }] },
+  { property_id: 201, name: 'Material', display_name: 'Material', is_required: false, possible_values: [{ name: 'Ceramic' }, { name: 'Cotton' }, { name: 'Wood' }] },
+  { property_id: 202, name: 'Occasion', display_name: 'Occasion', is_required: false, possible_values: [{ name: 'Birthday' }, { name: 'Wedding' }, { name: 'Anniversary' }] },
+  { property_id: 203, name: 'Holiday', display_name: 'Holiday', is_required: false, possible_values: [{ name: 'Christmas' }, { name: 'Halloween' }] },
+];
+
+const MOCK_SHOP_SECTIONS: EtsyShopSection[] = [
+  { shop_section_id: 1, title: 'Best Sellers', rank: 1, active_listing_count: 24 },
+  { shop_section_id: 2, title: 'New Arrivals', rank: 2, active_listing_count: 12 },
+  { shop_section_id: 3, title: 'On Sale', rank: 3, active_listing_count: 8 },
+];
+
+/** Ensure mock listings carry the newer optimization fields so tools render non-empty in dev. */
+function enrichListing(l: EtsyListing): EtsyListing {
+  return {
+    views: 540,
+    featured_rank: -1,
+    processing_min: 1,
+    processing_max: 3,
+    has_variations: true,
+    is_personalizable: false,
+    inventory: l.inventory ?? {
+      products: [
+        {
+          product_id: 1,
+          sku: 'MOCK-1',
+          offerings: [{ offering_id: 1, quantity: 25, is_enabled: true, price: l.price }],
+          property_values: [{ property_id: 200, property_name: 'Primary color', values: ['Black'] }],
+        },
+      ],
+    },
+    ...l,
+  };
 }
 
 export function createMockEtsyClient(overrides: MockEtsyFixtures = {}): EtsyClient {
@@ -73,14 +115,17 @@ export function createMockEtsyClient(overrides: MockEtsyFixtures = {}): EtsyClie
     materializeReviews(reviewsListingFixtureRaw as { count: number; results: RawReview[] });
   const taxonomy =
     overrides.taxonomy ?? ((taxonomyFixture as { results: EtsyTaxonomyNode[] }).results);
+  const taxonomyProperties = overrides.taxonomyProperties ?? MOCK_TAXONOMY_PROPERTIES;
+  const shopSections = overrides.shopSections ?? MOCK_SHOP_SECTIONS;
+  const featured = overrides.featured ?? listingPage;
 
   return {
     async findActiveListings(): Promise<EtsyListingPage> {
-      return listingPage;
+      return { ...listingPage, results: listingPage.results.map(enrichListing) };
     },
     async getListing(listingId): Promise<EtsyListing> {
       // Return the canonical fixture but reflect the requested id so callers can correlate.
-      return { ...listing, listing_id: listingId };
+      return enrichListing({ ...listing, listing_id: listingId });
     },
     async getListingsByListingIds(ids): Promise<EtsyListing[]> {
       return ids.map((id) => ({ ...listing, listing_id: id }));
@@ -105,6 +150,15 @@ export function createMockEtsyClient(overrides: MockEtsyFixtures = {}): EtsyClie
     },
     async getSellerTaxonomyNodes(): Promise<EtsyTaxonomyNode[]> {
       return taxonomy;
+    },
+    async getTaxonomyProperties(): Promise<EtsyTaxonomyProperty[]> {
+      return taxonomyProperties;
+    },
+    async getShopSections(): Promise<EtsyShopSection[]> {
+      return shopSections;
+    },
+    async getFeaturedListings(): Promise<EtsyListingPage> {
+      return { ...featured, results: featured.results.map(enrichListing) };
     },
   };
 }

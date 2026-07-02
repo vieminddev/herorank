@@ -12,6 +12,7 @@
     Pencil,
     Trash2,
     X,
+    CircleAlert,
   } from "lucide-svelte";
   import { onMount } from "svelte";
 
@@ -40,16 +41,45 @@
   let newKeyword = $state("");
   let copied = $state(false);
 
+  // Transient toast for write failures (and successes worth confirming). Auto-dismisses.
+  let toast = $state<{ kind: "error" | "success"; text: string } | null>(null);
+  let toastTimer: ReturnType<typeof setTimeout> | undefined;
+  const showToast = (kind: "error" | "success", text: string) => {
+    toast = { kind, text };
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (toast = null), 4000);
+  };
+
+  // In-flight guards so double-clicks can't fire duplicate writes.
+  let busy = $state(false);
+  // Inline delete confirmation (replaces native confirm()).
+  let confirmingDelete = $state(false);
+
   const api = (path: string, init?: RequestInit) =>
     fetch(`/api/collections${path}`, { credentials: "same-origin", ...init });
+
+  /** Pull a human message out of an error JSON body, falling back to a default. */
+  const errMessage = async (res: Response, fallback: string) => {
+    try {
+      const body = (await res.json()) as { message?: string };
+      return typeof body?.message === "string" && body.message ? body.message : fallback;
+    } catch {
+      return fallback;
+    }
+  };
 
   const loadLists = async () => {
     loading = true;
     error = null;
     try {
       const res = await api("");
-      const body = (await res.json()) as { lists?: ListSummary[] };
-      lists = body.lists ?? [];
+      if (!res.ok) {
+        error = "Couldn't load your lists. Please try again.";
+        lists = [];
+      } else {
+        const body = (await res.json()) as { lists?: ListSummary[] };
+        lists = body.lists ?? [];
+      }
     } catch {
       error = "Couldn't load your lists. Please try again.";
     }
@@ -61,29 +91,43 @@
   const createList = async (e: SubmitEvent) => {
     e.preventDefault();
     const name = newName.trim();
-    if (!name) return;
-    const res = await api("", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) {
+    if (!name || busy) return;
+    busy = true;
+    try {
+      const res = await api("", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        showToast("error", await errMessage(res, "Couldn't create that list. Please try again."));
+        return;
+      }
       const body = (await res.json()) as { list?: ListSummary };
       newName = "";
       await loadLists();
-      if (body.list) openList(body.list.id);
+      if (body.list) await openList(body.list.id);
+    } catch {
+      showToast("error", "Couldn't create that list. Please try again.");
+    } finally {
+      busy = false;
     }
   };
 
   const openList = async (id: number) => {
     detailLoading = true;
     renaming = false;
+    confirmingDelete = false;
     try {
       const res = await api(`/${id}`);
       if (res.ok) {
         const body = (await res.json()) as { list: ListWithItems };
         selected = body.list;
+      } else {
+        showToast("error", await errMessage(res, "Couldn't open that list. Please try again."));
       }
+    } catch {
+      showToast("error", "Couldn't open that list. Please try again.");
     } finally {
       detailLoading = false;
     }
@@ -96,54 +140,90 @@
   };
 
   const saveRename = async () => {
-    if (!selected) return;
+    if (!selected || busy) return;
     const name = renameValue.trim();
     if (!name) return;
-    const res = await api(`/${selected.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) {
+    busy = true;
+    try {
+      const res = await api(`/${selected.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        showToast("error", await errMessage(res, "Couldn't rename the list. Please try again."));
+        return;
+      }
       selected = { ...selected, name };
       renaming = false;
       await loadLists();
+    } catch {
+      showToast("error", "Couldn't rename the list. Please try again.");
+    } finally {
+      busy = false;
     }
   };
 
   const deleteList = async () => {
-    if (!selected) return;
-    if (!confirm(`Delete "${selected.name}" and its keywords?`)) return;
-    const res = await api(`/${selected.id}`, { method: "DELETE" });
-    if (res.ok) {
+    if (!selected || busy) return;
+    busy = true;
+    try {
+      const res = await api(`/${selected.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        showToast("error", await errMessage(res, "Couldn't delete the list. Please try again."));
+        return;
+      }
+      confirmingDelete = false;
       selected = null;
       await loadLists();
+    } catch {
+      showToast("error", "Couldn't delete the list. Please try again.");
+    } finally {
+      busy = false;
     }
   };
 
   const addKeyword = async (e: SubmitEvent) => {
     e.preventDefault();
-    if (!selected) return;
+    if (!selected || busy) return;
     const keyword = newKeyword.trim();
     if (!keyword) return;
-    const res = await api(`/${selected.id}/items`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ items: [{ keyword }] }),
-    });
-    if (res.ok) {
+    busy = true;
+    try {
+      const res = await api(`/${selected.id}/items`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ items: [{ keyword }] }),
+      });
+      if (!res.ok) {
+        showToast("error", await errMessage(res, "Couldn't add that keyword. Please try again."));
+        return;
+      }
       newKeyword = "";
       await openList(selected.id);
       await loadLists();
+    } catch {
+      showToast("error", "Couldn't add that keyword. Please try again.");
+    } finally {
+      busy = false;
     }
   };
 
   const removeItem = async (itemId: number) => {
-    if (!selected) return;
-    const res = await api(`/${selected.id}/items/${itemId}`, { method: "DELETE" });
-    if (res.ok) {
+    if (!selected || busy) return;
+    busy = true;
+    try {
+      const res = await api(`/${selected.id}/items/${itemId}`, { method: "DELETE" });
+      if (!res.ok) {
+        showToast("error", await errMessage(res, "Couldn't remove that keyword. Please try again."));
+        return;
+      }
       await openList(selected.id);
       await loadLists();
+    } catch {
+      showToast("error", "Couldn't remove that keyword. Please try again.");
+    } finally {
+      busy = false;
     }
   };
 
@@ -200,6 +280,23 @@
     {/if}
   {/snippet}
 
+  {#if toast}
+    <div
+      class="mb-5 flex items-start gap-3 p-3.5 rounded-lg border animate-fade-in {toast.kind === 'error' ? 'bg-danger/5 border-danger/20' : 'panel-tint'}"
+      role="status"
+    >
+      {#if toast.kind === "error"}
+        <CircleAlert size={16} class="text-danger flex-shrink-0 mt-0.5" />
+      {:else}
+        <Check size={16} class="text-success flex-shrink-0 mt-0.5" />
+      {/if}
+      <p class="text-sm text-text-primary flex-1">{toast.text}</p>
+      <button type="button" class="copy-link shrink-0" onclick={() => (toast = null)} aria-label="Dismiss">
+        <X size={14} />
+      </button>
+    </div>
+  {/if}
+
   {#if loading}
     <div class="flex items-center gap-2 text-text-muted text-sm">
       <LoaderCircle size={15} class="animate-spin" /> Loading…
@@ -238,10 +335,28 @@
               {#if copied}<Check size={13} class="text-success" /> Copied{:else}<Copy size={13} /> Copy all{/if}
             </button>
             <button type="button" class="copy-link" onclick={startRename}><Pencil size={13} /> Rename</button>
-            <button type="button" class="copy-link !text-danger" onclick={deleteList}><Trash2 size={13} /> Delete</button>
+            {#if !confirmingDelete}
+              <button type="button" class="copy-link !text-danger" onclick={() => (confirmingDelete = true)}>
+                <Trash2 size={13} /> Delete
+              </button>
+            {/if}
           </div>
         {/if}
       </div>
+
+      {#if confirmingDelete}
+        <div class="panel-tint p-3.5 mb-5 flex items-center justify-between gap-4 animate-fade-in" role="alertdialog" aria-label="Confirm delete">
+          <p class="text-sm text-text-primary">
+            Delete <span class="font-medium">{selected.name}</span> and its {selected.items.length} keyword{selected.items.length === 1 ? "" : "s"}? This can't be undone.
+          </p>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" class="btn btn-secondary" onclick={() => (confirmingDelete = false)} disabled={busy}>Cancel</button>
+            <button type="button" class="btn btn-primary !bg-danger !border-danger" onclick={deleteList} disabled={busy}>
+              {#if busy}<LoaderCircle size={14} class="animate-spin" /> Deleting…{:else}Delete{/if}
+            </button>
+          </div>
+        </div>
+      {/if}
 
       <form onsubmit={addKeyword} class="flex gap-2 mb-6">
         <input bind:value={newKeyword} placeholder="Add a keyword" class="field flex-1" maxlength="140" />
@@ -256,22 +371,31 @@
         </div>
       {:else if selected.items.length}
         <div class="overflow-x-auto">
-          <table class="w-full">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Keyword</th>
+                <th class="text-right">Results</th>
+                <th>Competition</th>
+                <th class="w-9"><span class="sr-only">Remove</span></th>
+              </tr>
+            </thead>
             <tbody>
               {#each selected.items as item (item.id)}
-                <tr class="border-b border-border-light group">
-                  <td class="py-2.5 text-[0.9375rem] text-text-primary">{item.keyword}</td>
-                  <td class="py-2.5 text-sm text-right text-text-primary tabular-nums pr-4">
-                    {item.result_count != null ? item.result_count.toLocaleString() : ""}
+                <tr class="group">
+                  <td class="text-[0.9375rem] text-text-primary">{item.keyword}</td>
+                  <td class="text-right text-text-primary tabular-nums">
+                    {item.result_count != null ? item.result_count.toLocaleString() : "—"}
                   </td>
-                  <td class="py-2.5">
-                    {#if item.competition}<Badge level={item.competition} />{/if}
+                  <td>
+                    {#if item.competition}<Badge level={item.competition} />{:else}<span class="text-text-muted">—</span>{/if}
                   </td>
-                  <td class="py-2.5 text-right">
+                  <td class="text-right">
                     <button
                       type="button"
-                      class="copy-link !text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                      class="copy-link !text-danger opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-40"
                       onclick={() => removeItem(item.id)}
+                      disabled={busy}
                       aria-label="Remove keyword"
                     >
                       <X size={14} />
@@ -297,6 +421,25 @@
       icon={ListChecks}
       title="Your keyword lists will appear here"
       hint="Create a list on the left, then add the keywords worth keeping. Build one per product or season and copy them into a listing when you're ready."
-    />
+    >
+      {#snippet preview()}
+        <div class="flex items-center gap-2 mb-2">
+          <FolderOpen size={15} class="text-text-muted" />
+          <p class="text-[0.9375rem] font-medium text-text-primary">Holiday necklaces</p>
+          <span class="text-[0.75rem] text-text-muted">3 keywords</span>
+        </div>
+        <table class="w-full">
+          <tbody>
+            {#each [{ k: "christmas necklace gift", v: 27100, c: "high" }, { k: "personalized snowflake necklace", v: 6600, c: "medium" }, { k: "stocking stuffer jewelry", v: 3200, c: "low" }] as r (r.k)}
+              <tr class="border-b border-border-light">
+                <td class="py-2 text-[0.9375rem] text-text-primary">{r.k}</td>
+                <td class="py-2 text-sm text-right text-text-primary tabular-nums pr-4">{r.v.toLocaleString()}</td>
+                <td class="py-2"><Badge level={r.c as "low" | "medium" | "high"} /></td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      {/snippet}
+    </ToolEmpty>
   {/if}
 </ToolPageLayout>

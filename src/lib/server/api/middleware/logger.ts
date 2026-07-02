@@ -24,7 +24,7 @@ import { logEvent, newRequestId, type AnalyticsBinding } from '../../observabili
 
 /** Extract a coarse tool/operation name from the request path for metrics grouping. */
 function toolFromPath(path: string): string | undefined {
-  // /api/tools/echo, /api/tools/llm/..., /api/tools/etsy/... → last segment after /tools/
+  // /api/tools/echo, /api/tools/llm/..., /api/tools/... → last segment after /tools/
   const m = path.match(/^\/api\/tools\/(.+)$/);
   if (m) return m[1].split('/').pop();
   // /api/llm-tools/x or /api/etsy-tools/x style (if mounted) → last segment

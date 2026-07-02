@@ -19,9 +19,13 @@ import type { UsageCounter } from './types';
 import { QuotaExceededError } from './client';
 import { logEvent } from '$lib/server/observability/log';
 
-/** Etsy's hard daily API limit (external constraint, not configurable). */
+/**
+ * Default assumed Etsy hard daily API limit when no RPD is configured. The real ceiling is
+ * env.ETSY_RPD (see `limits.ts`) — pass it as `config.hardLimit` so the quota-warning fires
+ * relative to YOUR plan. Kept as a constant default for back-compat (callers that omit hardLimit).
+ */
 export const ETSY_HARD_DAILY_LIMIT = 10_000;
-/** Fraction of ETSY_HARD_DAILY_LIMIT at which we emit a quota-warning alert. */
+/** Fraction of the hard daily limit at which we emit a quota-warning alert. */
 const QUOTA_WARN_THRESHOLD = 0.8;
 
 export const DEFAULT_ETSY_DAILY_CAP = 8000;
@@ -36,10 +40,15 @@ interface UsageRow {
 }
 
 export interface UsageCounterConfig {
-  /** Hard daily cap (env.ETSY_DAILY_CAP). Default 8000. */
+  /** Internal hard daily cap (derived from env.ETSY_RPD, or legacy env.ETSY_DAILY_CAP). */
   cap?: number;
-  /** Sub-cap applied to cron callers so cron never starves users (env.ETSY_CRON_CAP). */
+  /** Sub-cap applied to cron callers so cron never starves users (derived/env.ETSY_CRON_CAP). */
   subCap?: number;
+  /**
+   * Etsy's real per-day ceiling (env.ETSY_RPD). The quota-warning alert fires at 80% of THIS,
+   * not of the internal cap. Defaults to ETSY_HARD_DAILY_LIMIT (10k) for back-compat.
+   */
+  hardLimit?: number;
   /** Injectable clock for tests. */
   now?: () => Date;
 }
@@ -47,6 +56,7 @@ export interface UsageCounterConfig {
 export function createUsageCounter(db: D1Database, config: UsageCounterConfig = {}): UsageCounter {
   const cap = config.cap ?? DEFAULT_ETSY_DAILY_CAP;
   const effectiveCap = config.subCap !== undefined ? Math.min(config.subCap, cap) : cap;
+  const hardLimit = config.hardLimit ?? ETSY_HARD_DAILY_LIMIT;
   const now = config.now ?? (() => new Date());
 
   async function readCount(day: string): Promise<number> {
@@ -79,16 +89,16 @@ export function createUsageCounter(db: D1Database, config: UsageCounterConfig = 
 
       const usedToday = row?.count ?? current + n;
 
-      // O4: Alert when the shared daily counter crosses 80% of Etsy's hard 10k/day limit.
-      // Use ETSY_HARD_DAILY_LIMIT (10k), NOT the internal effectiveCap (8k), so the alert
-      // fires relative to Etsy's real ceiling. Best-effort: logEvent never throws.
-      const warnAt = Math.floor(ETSY_HARD_DAILY_LIMIT * QUOTA_WARN_THRESHOLD);
+      // O4: Alert when the shared daily counter crosses 80% of Etsy's real daily ceiling.
+      // Use `hardLimit` (env.ETSY_RPD), NOT the internal effectiveCap, so the alert fires
+      // relative to Etsy's real ceiling. Best-effort: logEvent never throws.
+      const warnAt = Math.floor(hardLimit * QUOTA_WARN_THRESHOLD);
       if (usedToday >= warnAt && current < warnAt) {
         // Only emit once per crossing (current was below threshold, usedToday is now above).
         logEvent('warn', {
           event: 'etsy_quota_warning',
           used_today: usedToday,
-          hard_limit: ETSY_HARD_DAILY_LIMIT,
+          hard_limit: hardLimit,
           threshold_pct: Math.round(QUOTA_WARN_THRESHOLD * 100),
           cap: effectiveCap,
           day,

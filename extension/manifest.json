@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "VieRank — SEO for Etsy (honest data)",
+  "version": "1.2.1",
+  "description": "See VieRank's estimated sales/revenue, SEO score, tags, and keyword competition right on Etsy — every estimate honestly labeled.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "VieRank",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.etsy.com/*",
+    "http://localhost:3001/*"
+  ],
+  "optional_host_permissions": ["https://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.etsy.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

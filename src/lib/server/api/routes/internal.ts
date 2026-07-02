@@ -13,6 +13,9 @@ import type { AppEnv } from '../types';
 import { getDb, getEnv } from '../context';
 import { createConnectedShopRepo } from '../../services/oauth/connectedShopRepo';
 import { createTokenCipher } from '../../services/oauth/crypto';
+import { getEtsyContext } from '../../services/etsy/provider';
+import { refreshTrends, refreshBestSellers } from '../../services/etsy/refresh';
+import { SEED_CATEGORIES } from '../../services/etsy/seeds';
 
 const router = new Hono<AppEnv>();
 
@@ -128,6 +131,21 @@ router.get('/shops/:shopId/receipts', async (c) => {
     count: receipts.length,
     orders: receipts
   });
+});
+
+// POST /refresh-research?limit=N — manually run the research cron (best-sellers + trends)
+// to pre-warm the KV cache in dev. `limit` caps how many seed categories to process so a
+// local run stays cheap. (The scheduled handler only runs rank-track today, so this is the
+// way to populate best-sellers/etsy-trends without waiting on a cron trigger.)
+router.post('/refresh-research', async (c) => {
+  const env = getEnv(c);
+  const { client, cache, history } = getEtsyContext(env);
+  const limit = Math.max(1, Math.min(SEED_CATEGORIES.length, parseInt(c.req.query('limit') ?? '3', 10)));
+  const seeds = SEED_CATEGORIES.slice(0, limit);
+  const deps = { client, cache, history };
+  const trends = await refreshTrends(deps, seeds);
+  const best = await refreshBestSellers(deps, seeds);
+  return c.json({ categories: seeds.map((s) => s.name), trends, best });
 });
 
 export default router;
